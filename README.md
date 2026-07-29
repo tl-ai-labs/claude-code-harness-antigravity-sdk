@@ -22,17 +22,64 @@ no credentials and no spend.
 run against, the enforcement that stops the driver writing code, and every
 driver→worker hand-off from every run, verbatim.
 
-**How to run it.** Nothing in this block costs money or needs a credential:
+**How the split is enforced**, because this is the only interesting part: the
+driver's file-writing tools (`Edit`, `Write`, `MultiEdit`, `NotebookEdit`) are
+removed at process launch, a pre-execution hook blocks any shell command that
+would edit a file, and a post-run audit re-checks the whole transcript. All
+three share **one predicate**, so they cannot disagree with each other (§10–§13).
+The driver's only channel to the worker is a plain-text task file, and all 62 of
+them are in this repo.
+
+**How to run it.** In this order. Steps 1 and 2 cost nothing and need no
+credential, so you can check the repo is real before setting anything up:
 
 ```bash
+# 1. Prove the repo works — 290 tests, offline, under ten seconds
 pnpm install && pnpm build && pnpm test
+
+# 2. Print the entire plan of a real run without spending anything.
+#    --dry-run exits BEFORE preflight: no credential, no Docker, no corpus.
+node tools/harness-matrix/run-harness.mjs \
+  --task-dir tools/harness-matrix/tasks/kudos-wall \
+  --runtime claude-code \
+  --policy tools/harness-matrix/policies/all-gemini-flash-high.yaml \
+  --dry-run
+
+# 3. SETUP, once, before any live run. Nothing above this line needed it.
+#    Driver:
+npm install -g @anthropic-ai/claude-code
+export CLAUDE_CODE_OAUTH_TOKEN=...             # or ANTHROPIC_API_KEY
+#    Worker (the Antigravity SDK, in its own venv):
+python3 -m venv tools/harness-matrix/sdk-probe/sdkprobe
+tools/harness-matrix/sdk-probe/sdkprobe/bin/pip install google-antigravity
+gcloud auth application-default login
+export GOOGLE_CLOUD_PROJECT=your-project-id    # your project, not ours
+export GOOGLE_CLOUD_LOCATION=asia-south1       # any region with Gemini quota
+#    Plus: Docker running, for both kinds. For SWE-bench Pro only, also clone
+#    Scale's evaluator at its pinned SHA into its own venv (§19.2).
+
+# 4a. SDLC, live — the cheapest real run. ~$3–4, 20–30 min.
+node tools/harness-matrix/run-harness.mjs \
+  --task-dir tools/harness-matrix/tasks/kudos-wall \
+  --runtime claude-code \
+  --policy tools/harness-matrix/policies/all-gemini-flash-high.yaml
+
+# 4b. SWE-bench Pro, live — build the corpus first (public data, no
+#     credential), then run one instance. ~$2, 15–40 min.
+node tools/swe/fetch-instances-pro.mjs \
+  --ids navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a
+node tools/harness-matrix/run-harness.mjs \
+  --instance-dir studies/swe-pro-corpus/navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a \
+  --runtime claude-code \
+  --policy tools/harness-matrix/policies/all-gemini-flash-high.yaml
 ```
 
-That is 290 tests, offline, in under ten seconds. To run a workload **live** you
-need a Google Cloud project with Vertex AI enabled (§16) and a Claude Code login
-(§17); SWE-bench Pro additionally needs Docker and ~30 GB of free disk (§19).
-Setup is §17, one step at a time, and `--dry-run` prints the whole plan without
-spending anything.
+**Preflight checks every one of those credentials at $0** on a real launch,
+before any model call or Docker build, and exits **2** naming whichever is
+missing — so a misconfigured machine costs nothing to discover. Budget ~30 GB of
+free disk for SWE-bench Pro, and run one at a time: two concurrent Docker runs
+fight over memory (§25). Full setup with explanations is §16–§17; §25 is the
+troubleshooting table, one row per failure anyone has actually hit.
 
 **What was already run.** Ten runs, all of them delegated, **$28.29 in total**:
 
@@ -167,7 +214,7 @@ which input flag you pass — there is no `--kind` argument.
 
 | Level | What you get | Needs | Cost |
 |---|---|---|---|
-| **A. Verify** | Build the tree, run ~300 tests, read every hand-off and every SDK receipt from 10 real runs, re-run the delegation lint over the committed corpus | Node 22, pnpm | **$0** |
+| **A. Verify** | Build the tree, run ~290 tests, read every hand-off and every SDK receipt from 10 real runs, re-run the delegation lint over the committed corpus | Node 22, pnpm | **$0** |
 | **B. Run SDLC live** | A full delegated SDLC walk on your machine, your own evidence bundle | A + a Google Cloud project with Vertex AI + a Claude Code seat | Gemini tokens + Claude Code tokens |
 | **C. Run SWE-bench Pro live** | A graded bug-fix run against Scale AI's official evaluator | B + ~30 GB disk + the corpus fetch + the evaluator clone | As B, plus several minutes of local Docker per instance ($0 in tokens) |
 
@@ -182,16 +229,17 @@ git clone https://github.com/tl-ai-labs/claude-code-harness-antigravity-sdk
 cd claude-code-harness-antigravity-sdk
 pnpm install
 pnpm build          # one tsc pass over packages/pricing and packages/swe-bench
-pnpm test           # 301 tests, offline, no network, no credentials
+pnpm test           # 290 tests, offline, no network, no credentials
 ```
 
-Expected on a fresh clone: **`# pass 293 · # fail 0 · # skipped 8`**, in about
+Expected on a fresh clone: **`# pass 282 · # fail 0 · # skipped 8`**, in about
 7 seconds. The 8 skips are not failures and not a broken clone — they are tests
 that need inputs a fresh clone does not have, and each one prints its own reason:
-six need a SWE-bench Pro corpus instance (`no corpus instance at …`, see §19.1),
-two need a specific unpublished run directory (`no runs/ on this machine`,
-`no finished run at runs/uptime-ping/…`). Fetch a corpus instance and six of them
-start running.
+**five** need a SWE-bench Pro corpus instance (`no corpus instance at …`, see
+§19.1), **three** need run directories this repo does not publish
+(`no runs/ on this machine` twice, `no finished run at runs/uptime-ping/…`
+once). Fetch a corpus instance and five of them start running; the other three
+only run on the machine that produced those runs.
 
 Requires **Node 22** and **pnpm**. Node 24+ has broken native module builds for
 this dependency set; if `pnpm install` fails on a native module, that is why.
@@ -1336,7 +1384,7 @@ never manufacture, so the ceiling sits well clear of observed usage.
 One command per claim. All offline, all free.
 
 ```bash
-# The tree builds and the suite is green: 301 tests, 293 pass, 0 fail, 8 skipped
+# The tree builds and the suite is green: 290 tests, 282 pass, 0 fail, 8 skipped
 # (the 8 skips each print their own reason — see §5)
 pnpm install && pnpm build && pnpm test
 
@@ -1364,12 +1412,14 @@ ls tools/harness-matrix/runs/*/*/*/evidence-bundle/delegation/worker-task-*.md |
 # No absolute host paths leaked into the published evidence
 grep -rl "/Users/" tools/harness-matrix/runs || echo "clean"
 
-# Nothing that looks like a credential shipped
 # Nothing that looks like a credential shipped. These are the SAME patterns
-# bundle-run.mjs aborts a bundle on. EXPECTED OUTPUT: exactly one path,
-# tools/harness-matrix/sdk-probe/test_proxy_offline.py — a documented usage
-# example whose literal value is the string "sk-ant-REHEARSAL-not-a-real-key".
-# Anything else is a real finding.
+# bundle-run.mjs aborts a bundle on. EXPECTED OUTPUT: exactly two paths, both
+# of them this repo talking about the patterns rather than carrying a secret —
+#   tools/harness-matrix/sdk-probe/test_proxy_offline.py  (a documented usage
+#     example whose literal value is the string "sk-ant-REHEARSAL-not-a-real-key")
+#   README.md                                             (this file, which
+#     quotes that same string in the comment you are reading)
+# Any THIRD path is a real finding.
 grep -rEl "sk-ant-[A-Za-z0-9_-]{10,}|ya29.[A-Za-z0-9._-]{20,}|AIza[0-9A-Za-z_-]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|Bearer [A-Za-z0-9._-]{24,}|(OAUTH_TOKEN|ACCESS_TOKEN|API_KEY|SECRET_KEY)[[:space:]]*[=:][[:space:]]*[\"']?[A-Za-z0-9._-]{16,}" . --exclude-dir=node_modules --exclude-dir=.git
 
 # A full run rehearsal — no model call, no spend
