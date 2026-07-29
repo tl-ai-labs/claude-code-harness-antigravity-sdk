@@ -285,16 +285,19 @@ So nothing here needs it at build time or at run time. Grep the tree for
 | Path | What it is |
 |---|---|
 | `tools/swe/fetch-instances-pro.mjs` | **Builds the SWE-bench Pro corpus.** Reads the public split through the HuggingFace datasets-server API — no credential, no local `datasets` install. §19.1. |
-| `tools/lib/benchmark-brief.mjs` | Renders a benchmark's descriptive brief. |
-| `tools/lib/evidence.mjs` | Evidence-path helpers. |
-| `tools/lib/select-flag.mjs` | Parses `--select slot=model-id` for a policy `select:` slot. Exported and unit-tested, but **nothing in this repo calls it** — its caller is the console orchestrator, which is not published here. `run-harness.mjs` does not accept `--select` (§19.4). |
+| `tools/lib/benchmark-brief.mjs` | Renders a benchmark's descriptive brief. Imported by `export-dashboard.mjs`; ships with its unit test. |
 
 ### `templates/` and `scaffolds/`
 
+Only what a run actually reads. The source monorepo's `templates/` also holds
+18 more console-orchestrator policies and three console templates
+(`swe-bench`, `swe-bench-pro`, `process-baseline`); none is read by any file in
+this repo, so none is here.
+
 | Path | What it is |
 |---|---|
-| `templates/policies/*.yaml` | **19 policy files from the console orchestrator.** Shipped as the reference implementation of the shared schema — §8.4 explains why there are policies in two directories. |
-| `templates/<id>/template.yaml` | Execution templates — `sdlc-mini`, `swe-bench-pro`, `swe-bench`, `process-baseline`. `sdlc-mini` is the one the SDLC kind drives, and its `stages:` list is the authority on the SDLC flow. |
+| `templates/sdlc-mini/template.yaml` | The execution template the SDLC kind drives. Its `stages:` list is the authority on the SDLC flow; both published tasks name it. |
+| `templates/policies/opus-plus-flash.yaml` | **One** console policy, shipped because §8.4 names it as the reference the harness's four policies were migrated onto. Nothing here loads it — it is a document. |
 | `scaffolds/service-web/` | The starting codebase an SDLC task builds on: a NestJS + Prisma chassis with its own conventions file and chassis test. |
 
 ### `tools/harness-matrix/runs/`
@@ -472,6 +475,9 @@ was right:**
    honest limitation below.
 3. **`select` slots became available on the harness**, so "one model, two
    adapters, three APIs" can now be *asked* on the surface where the SDK runs.
+   Asked in the schema, that is: no policy here declares a slot, `run-harness.mjs`
+   has no `--select` flag (§19.4), and the CLI parser for it is console-side and
+   not published. The validator accepts the shape; nothing here exercises it.
 4. **Recorded runs did not move.** Every cell id is unchanged (`opus`,
    `flash-high`, `flash-35-high`, `flash-25-high`) because that string is the
    `modelId` every manifest, audit record and export already carries. Only the
@@ -497,8 +503,12 @@ There are two directories, and that is the correct answer rather than a leftover
 
 | Directory | Files | Configures |
 |---|---|---|
-| `templates/policies/` | 19 | The **console orchestrator** — the SDLC product's own model routing across its phases |
+| `templates/policies/` | 19 in the source monorepo, **1 here** | The **console orchestrator** — the SDLC product's own model routing across its phases |
 | `tools/harness-matrix/policies/` | 4 | The **harness matrix** — one file per experimental column |
+
+The count differs because this repo is the harness, not the console. Only
+`opus-plus-flash.yaml` ships, as the reference below; the other 18 configure a
+program that is not here and that no file here can load.
 
 They are separate because they configure **two different programs**. A harness
 cell (a runtime-pinned experimental column) is not a console route (a production
