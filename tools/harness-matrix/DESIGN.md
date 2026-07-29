@@ -2585,6 +2585,32 @@ publication. Directory depths are preserved exactly, so no import path is
 rewritten and the code Google runs is byte-identical to the code that produced
 the evidence Google is shown.
 
+One file ships that no import audit could ever have found:
+`tools/swe/fetch-instances-pro.mjs`. Nothing under `tools/harness-matrix`
+imports it, but the Pro kind's `--instance-dir` names a directory that script
+and only that script produces. Shipping ten runs' worth of Pro evidence while
+withholding the one tool that rebuilds their inputs would make the Pro leg
+unreproducible by construction. It is safe to publish on its own terms — four
+`node:` imports, no monorepo dependency, and it reads the *public* split through
+the HuggingFace datasets-server API, so it needs no credential.
+
+**The generated README is an operator manual, not a summary.** The first version
+was 86 lines and described what the harness is, on the assumption that a reader
+who wanted to run it would go read this document. That assumption does not hold
+for this audience: the recipient has no access to this monorepo, no access to
+our GCP project, and no way to ask a question and get an answer the same hour.
+Anything not in that README is unavailable to them. So it states every step from
+`git clone` to a graded run of **both** kinds, at equal depth, including the
+steps that are awkward to state — that `gemini_worker.py` falls back to *our*
+project id and must be overridden, that the Homebrew venv needs an `expat`
+workaround, that the Pro corpus, the pinned Scale evaluator clone and the second
+grading venv are not shipped and must be built. It documents the SDLC kind's run
+path *first*, because SDLC is the only live path needing no corpus and no
+evaluator, and is therefore the cheapest way for a reader to prove the cable
+works before investing in the Pro setup. `extract-repo.test.mjs` asserts the
+fifteen steps a reader could not recover from by inspection, so a later edit
+cannot quietly trim it back to a summary.
+
 Two guards close the two ways a correct-looking extraction can be wrong.
 `assertNoHostPaths` is described above. `assertImportsResolve` walks every
 emitted `.mjs` and resolves each relative specifier against the output tree,

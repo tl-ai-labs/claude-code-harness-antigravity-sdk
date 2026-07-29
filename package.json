@@ -12,6 +12,7 @@
     "build": "pnpm -r build",
     "test": "pnpm build && node --test \"tools/**/*.test.mjs\"",
     "run-harness": "node tools/harness-matrix/run-harness.mjs",
-    "dry-run": "node tools/harness-matrix/run-harness.mjs --dry-run"
+    "dry-run": "node tools/harness-matrix/run-harness.mjs --dry-run",
+    "fetch-instances": "node tools/swe/fetch-instances-pro.mjs"
   }
 }
