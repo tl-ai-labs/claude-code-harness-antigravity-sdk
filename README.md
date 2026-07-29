@@ -16,6 +16,41 @@ no credentials and no spend.
 
 ---
 
+## TL;DR
+
+**What is in here.** The harness (`run-harness.mjs`), the two workloads it was
+run against, the enforcement that stops the driver writing code, and every
+driver→worker hand-off from every run, verbatim.
+
+**How to run it.** Nothing in this block costs money or needs a credential:
+
+```bash
+pnpm install && pnpm build && pnpm test
+```
+
+That is 290 tests, offline, in under ten seconds. To run a workload **live** you
+need a Google Cloud project with Vertex AI enabled (§16) and a Claude Code login
+(§17); SWE-bench Pro additionally needs Docker and ~30 GB of free disk (§19).
+Setup is §17, one step at a time, and `--dry-run` prints the whole plan without
+spending anything.
+
+**What was already run.** Ten runs, all of them delegated, **$28.29 in total**:
+
+| Workload | Runs | Resolved | Graded by |
+|---|---|---|---|
+| SWE-bench Pro | 6 | 3 | Scale AI's official evaluator, run locally with the network blocked |
+| SDLC | 4 | 4 | the scaffold's own build + test, re-run in the container |
+
+**What the evidence is.** 62 hand-off files and 62 Antigravity SDK token
+receipts, committed to this repo. §21 is the map; §24 gives one command per
+claim if you want to check a specific number rather than trust it.
+
+**Read §9 before believing anything.** Ten runs is not a leaderboard, and this
+repo does not claim Gemini did the thinking. §9 states exactly what the evidence
+proves and what it cannot.
+
+---
+
 ## Read this first
 
 You do not need to read this whole file to use the repo. Pick a lane:
