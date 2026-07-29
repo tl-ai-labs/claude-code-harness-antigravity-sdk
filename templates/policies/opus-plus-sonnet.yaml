@@ -1,0 +1,88 @@
+# Workforce Ops · Pass 4 — premium-judgment on Opus 4.7,
+# cost-efficient mechanical work on Sonnet 4.6.
+#
+# Pure-Anthropic two-tier: Sonnet is closer to Opus in quality than Flash
+# (less risk on cross-file reasoning), but the cost gap is smaller — Sonnet
+# is ~40% cheaper than Opus on input, ~40% cheaper on output. Useful as a
+# "stay-on-one-vendor" data point against the Opus+Gemini orchestrations.
+# Schema v2 (2026-07-28): every model declares the API doorway it is reached
+# through, alongside the adapter that reaches it. `adapter` alone was ambiguous
+# — `mcp` gets to Gemini on both AI Studio and Vertex, which meter, quota and
+# price separately, and until now which one ran was decided by the machine's
+# environment rather than by this file. See packages/policy/src/types.ts.
+version: 2
+name: opus-plus-sonnet
+
+models:
+  - id: opus
+    adapter: builtin-anthropic
+    api: anthropic
+    model_name: claude-opus-4-7
+    pricing: { input: 5.00, input_cached: 0.50, output: 25.00 }
+    pricing_source: https://platform.claude.com/docs/en/docs/about-claude/pricing
+    auth: { env: ANTHROPIC_API_KEY }
+  - id: sonnet
+    adapter: builtin-anthropic
+    api: anthropic
+    model_name: claude-sonnet-4-6
+    pricing: { input: 3.00, input_cached: 0.30, output: 15.00 }
+    pricing_source: https://platform.claude.com/docs/en/docs/about-claude/pricing
+    auth: { env: ANTHROPIC_API_KEY }
+
+rules:
+  # Premium-judgment phases — stay on Opus
+  - when: { phase: requirements_analysis }
+    use: opus
+    reason: "Judgment-heavy, low volume — premium"
+  - when: { phase: architecture_design }
+    use: opus
+    reason: "Foundational, decision-bearing — premium"
+  - when: { phase: plan_task_packets }
+    use: opus
+    reason: "Needs full context to slice work cleanly — premium"
+  - when: { phase: senior_code_review }
+    use: opus
+    reason: "Cross-file reasoning + judgment — premium"
+  - when: { phase: security_review }
+    use: opus
+    reason: "Risk-bearing, low volume — premium"
+
+  # High-volume mechanical phases — Sonnet (capable, ~40% cheaper than Opus)
+  - when:
+      phase: codegen
+      task_type:
+        - controller_handler
+        - service_method
+        - dto
+        - module_wiring
+        - migration
+        - seed_data
+        - entity
+        - guard
+        - interceptor
+        - filter
+        - react_component
+        - react_page
+        - api_client
+        - frontend_util
+        - frontend_config
+        - frontend_html
+    use: sonnet
+    reason: "Schema-driven boilerplate — Sonnet handles it at lower cost than Opus"
+  - when: { phase: tests }
+    use: sonnet
+    reason: "Scaffold-heavy, pattern-based — cost-efficient tier"
+  - when: { phase: docs }
+    use: sonnet
+    reason: "Volume work — cost-efficient tier"
+
+  # Debug with escalation: Sonnet first, escalate to Opus after 2 retries
+  - when: { phase: debug, retry_count: { gte: 2 } }
+    use: opus
+    reason: "Escalation: 2 Sonnet attempts failed"
+  - when: { phase: debug }
+    use: sonnet
+    reason: "Most debugs have clear cause — cost-efficient tier"
+
+  - default: opus
+    reason: "Unrecognized task — fail safe to premium"

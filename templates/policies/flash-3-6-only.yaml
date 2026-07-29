@@ -1,0 +1,49 @@
+# Flash-3.6 / Fable-5 study — Run 1 of 4: Gemini 3.6 Flash alone, every phase,
+# NO escalation. The single-model economic-tier baseline — what does the whole
+# SDLC cost, and how well does it verify, when one cheap frontier-Flash model
+# does requirements + design + planning + codegen + review + debug with no
+# premium safety net? This is the floor the other three policies are read against.
+#
+# WHY this runs here and not in the orchestrator (ai-sdlc-multi-model-orchestration):
+#   ai-studies-console's run-executor IS the orchestrator — for every packet it
+#   calls pickModel(phase, task_type, retry_count, policy) and dispatches that one
+#   packet to the chosen model through a direct API adapter. There is no
+#   `claude --model X` CLI-session driver, so a Gemini-FIRST policy launches
+#   natively: Flash 3.6 does the judgment phases because it is dispatched, not
+#   impersonated. (This used to point at a study write-up under docs/studies/;
+#   that file was per-person working notes, not repo documentation, and was
+#   deleted 2026-07-29. Everything load-bearing from it is stated right here.)
+#
+# ADAPTER: antigravity-sdk (spelled `gemini-antigravity` before 2026-07-28; the
+#   loader still accepts that alias so frozen snapshots replay) with
+#   `api: vertex` → Vertex (enterprise backend, active when
+#   GCP_PROJECT_ID + GOOGLE_APPLICATION_CREDENTIALS are set, as in .env). The
+#   model is pinned to region: global because Gemini 3.6 Flash GA is served ONLY
+#   on the `global` Vertex endpoint (it 404s on regional endpoints). This pin
+#   overrides GOOGLE_CLOUD_LOCATION from .env so the model always resolves.
+#
+# PRICING confirmed 2026-07-22 against Gemini 3.6 Flash's public launch rate
+#   (input 1.50 / cache-read 0.15 / output 7.50 per 1M tokens, the standard tier
+#   served on the `global` Vertex endpoint this policy pins). Cost is computed from
+#   this frozen block × the real metered tokens, so the rate must stay correct.
+# Schema v2 (2026-07-28): every model declares the API doorway it is reached
+# through, alongside the adapter that reaches it. `adapter` alone was ambiguous
+# — `mcp` gets to Gemini on both AI Studio and Vertex, which meter, quota and
+# price separately, and until now which one ran was decided by the machine's
+# environment rather than by this file. See packages/policy/src/types.ts.
+version: 2
+name: flash-3-6-only
+
+models:
+  - id: flash-36
+    adapter: antigravity-sdk
+    api: vertex
+    model_name: gemini-3.6-flash
+    display_name: gemini-3.6-flash
+    region: global
+    pricing: { input: 1.50, input_cached: 0.15, output: 7.50 } # confirmed 2026-07-22 (Gemini 3.6 Flash launch rate)
+    pricing_source: https://cloud.google.com/vertex-ai/generative-ai/pricing
+
+rules:
+  - default: flash-36
+    reason: "Single-model economic baseline — Gemini 3.6 Flash on every phase, no escalation"

@@ -1,0 +1,17 @@
+{
+  "model": "gemini-2.5-flash",
+  "thinking": "NONE",
+  "sdk": "google-antigravity",
+  "sdk_version": "0.1.7",
+  "vertex_project": "ai-studies-console",
+  "vertex_location": "asia-south1",
+  "usage": {
+    "prompt_token_count": 50459,
+    "cached_content_token_count": 0,
+    "candidates_token_count": 3311,
+    "thoughts_token_count": 385,
+    "total_token_count": 54155
+  },
+  "tool_call_count": 2,
+  "text": "I have successfully rewritten the `test/modules/kudos.spec.ts` file to bypass NestJS DI, manually instantiating `PrismaService`, `KudosService`, and `KudosController`. This resolves the `esbuild` compatibility issue with `vitest`.\n\nI have also run `pnpm build` and `pnpm test`, and both commands passed successfully.\n\nThe tests now correctly run without relying on NestJS DI, ensuring compatibility with `esbuild`."
+}

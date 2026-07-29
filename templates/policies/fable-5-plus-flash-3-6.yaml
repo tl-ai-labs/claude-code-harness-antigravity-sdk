@@ -1,0 +1,107 @@
+# Flash-3.6 / Fable-5 study — Run 4 of 4: the orchestrated split, and the
+# headline data point of the study. Fable 5 is the frontier/judgment tier;
+# Gemini 3.6 Flash is the economic tier for high-volume mechanical work; debug
+# escalates back up to Fable 5 after two failed repair rounds.
+#
+# WHY: premium judgment where it moves quality (requirements, architecture,
+#   planning, senior + security review) runs on Fable 5; schema-driven
+#   boilerplate (codegen, tests, docs) runs on the far cheaper 3.6 Flash. It is
+#   the direct successor to study 1's opus-plus-flash.yaml, one generation up:
+#   Opus 4.7 -> Fable 5, 3.5 Flash -> 3.6 Flash. The rule set (phases, the 16
+#   codegen task_types, the debug escalation) is kept identical to
+#   opus-plus-flash so the two studies are directly comparable.
+#
+# VOCABULARY NOTE: sdlc-mini fires requirements_analysis / architecture_design /
+#   plan_task_packets / codegen+task_type / senior_code_review / debug+retry_count.
+#   security_review, tests and docs rules are defined for parity with study 1 and
+#   for templates that use them; in sdlc-mini they simply never match and cost
+#   nothing. A phase outside the vocabulary falls to the default (frontier).
+#
+# ADAPTERS & PRICING: fable-5 → builtin-anthropic (see fable-5-only.yaml);
+#   flash-36 → antigravity-sdk on api: vertex, region global (see flash-3-6-only.yaml).
+#   BOTH prices confirmed 2026-07-22 against the public launch rates — Fable 5
+#   (10.00 / 1.00 / 50.00) and Flash 3.6 (1.50 / 0.15 / 7.50) per 1M tokens.
+# Schema v2 (2026-07-28): every model declares the API doorway it is reached
+# through, alongside the adapter that reaches it. `adapter` alone was ambiguous
+# — `mcp` gets to Gemini on both AI Studio and Vertex, which meter, quota and
+# price separately, and until now which one ran was decided by the machine's
+# environment rather than by this file. See packages/policy/src/types.ts.
+version: 2
+name: fable-5-plus-flash-3-6
+
+models:
+  - id: fable-5
+    adapter: builtin-anthropic
+    api: anthropic
+    model_name: claude-fable-5
+    display_name: claude-fable-5
+    pricing: { input: 10.00, input_cached: 1.00, output: 50.00 } # confirmed 2026-07-22 (platform.claude.com/pricing)
+    pricing_source: https://platform.claude.com/docs/en/about-claude/pricing
+    auth: { env: ANTHROPIC_API_KEY }
+  - id: flash-36
+    adapter: antigravity-sdk
+    api: vertex
+    model_name: gemini-3.6-flash
+    display_name: gemini-3.6-flash
+    region: global
+    pricing: { input: 1.50, input_cached: 0.15, output: 7.50 } # confirmed 2026-07-22 (Gemini 3.6 Flash launch rate)
+    pricing_source: https://cloud.google.com/vertex-ai/generative-ai/pricing
+
+rules:
+  # Premium-judgment phases — Fable 5 (the frontier tier).
+  - when: { phase: requirements_analysis }
+    use: fable-5
+    reason: "Judgment-heavy, low volume — frontier"
+  - when: { phase: architecture_design }
+    use: fable-5
+    reason: "Foundational, decision-bearing — frontier"
+  - when: { phase: plan_task_packets }
+    use: fable-5
+    reason: "Needs full context to slice work cleanly — frontier"
+  - when: { phase: senior_code_review }
+    use: fable-5
+    reason: "Cross-file reasoning + judgment — frontier"
+  - when: { phase: security_review }
+    use: fable-5
+    reason: "Risk-bearing, low volume — frontier"
+
+  # High-volume mechanical phases — Gemini 3.6 Flash (the economic tier). Same
+  # task_type list as study 1's opus-plus-flash so the studies compare.
+  - when:
+      phase: codegen
+      task_type:
+        - controller_handler
+        - service_method
+        - dto
+        - module_wiring
+        - migration
+        - seed_data
+        - entity
+        - guard
+        - interceptor
+        - filter
+        - react_component
+        - react_page
+        - api_client
+        - frontend_util
+        - frontend_config
+        - frontend_html
+    use: flash-36
+    reason: "Schema-driven boilerplate — economic tier"
+  - when: { phase: tests }
+    use: flash-36
+    reason: "Scaffold-heavy, pattern-based — economic tier"
+  - when: { phase: docs }
+    use: flash-36
+    reason: "Volume work — economic tier"
+
+  # Debug with escalation: cheap tier first, escalate to Fable 5 after 2 retries.
+  - when: { phase: debug, retry_count: { gte: 2 } }
+    use: fable-5
+    reason: "Escalation: 2 economic-tier attempts failed — send to the frontier"
+  - when: { phase: debug }
+    use: flash-36
+    reason: "Most debugs have a clear cause — economic tier"
+
+  - default: fable-5
+    reason: "Unrecognized task — fail safe to the frontier"

@@ -1,0 +1,51 @@
+# Aggressive cost optimization — Gemini Flash for everything except security.
+# Useful as a "what-if" comparator: how much would we save if we pushed even
+# review work to cost-efficient tier? Demo highlights the quality trade-off.
+# Schema v2 (2026-07-28): every model declares the API doorway it is reached
+# through, alongside the adapter that reaches it. `adapter` alone was ambiguous
+# — `mcp` gets to Gemini on both AI Studio and Vertex, which meter, quota and
+# price separately, and until now which one ran was decided by the machine's
+# environment rather than by this file. See packages/policy/src/types.ts.
+version: 2
+name: cost-extreme
+
+models:
+  - id: opus
+    adapter: builtin-anthropic
+    api: anthropic
+    # model_name corrected 2026-07-26 (was claude-opus-4-20250514): this file
+    # already carried the Opus 4.x GA rate card, and the dashboard carried a
+    # label override rewriting that id to "Claude Opus 4.7" for display — two
+    # workarounds for one stale id. @study-console/pricing has no entry for it,
+    # so any run of this template would be the one run the exporter could not
+    # restate from stored tokens. Naming the model it was standing in for
+    # removes the override, the audit finding and the restatement hole at once.
+    model_name: claude-opus-4-7
+    pricing: { input: 5.00, input_cached: 0.50, output: 25.00 }   # GA Opus 4.x rate (corrected 2026-07-20; was the 3.x-era 15/75)
+    auth: { env: ANTHROPIC_API_KEY }
+  - id: gemini-flash
+    adapter: mcp
+    # Vertex, NOT AI Studio — corrected 2026-07-29. The v2 migration wrote
+    # `api: ai-studio` + an API-key auth block here; every Gemini call in this
+    # corpus (413) ran on Vertex ADC or the Antigravity seat, none on an AI
+    # Studio key. `api` outranks the environment in GeminiAdapter, so the wrong
+    # value silently reroutes the run onto another wallet and quota pool rather
+    # than failing. Full rationale in flash-3-5-high.yaml.
+    api: vertex
+    region: asia-south1               # loader REQUIRES a region for api: vertex
+    model_name: gemini-2.5-flash
+    # input_cached corrected 2026-07-26 (was 0.075): Google prices Gemini
+    # cache reads at input x 0.1, not x 0.25. Table fixed 2026-07-23; these
+    # inline blocks were the follow-up that was missed.
+    #
+    # List rates, and also what a regional call bills: Vertex's non-global
+    # surcharge is scoped to Gemini 3 and later, so 2.5 in asia-south1 owes list.
+    pricing: { input: 0.30, input_cached: 0.03, output: 2.50 }
+    # No `auth:` — Vertex uses Application Default Credentials (gcloud login).
+
+rules:
+  - when: { phase: security_review }
+    use: opus
+    reason: "Security-critical — keep premium even in cost-extreme mode"
+  - default: gemini-flash
+    reason: "Everything else on cost-efficient tier"

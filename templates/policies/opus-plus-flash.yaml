@@ -1,0 +1,223 @@
+# Pass 3 — premium-judgment on Opus 4.7, cost-efficient mechanical work on
+# Gemini 3.5 Flash. Most aggressive cost optimization that still maintains
+# quality parity on mechanical tasks. Flash is the cost-efficient tier here.
+#
+# ---------------------------------------------------------------------------
+# SCHEMA v2 — one policy, four Flash doorways (2026-07-28)
+# ---------------------------------------------------------------------------
+# WHAT CHANGED. Until today there were FOUR files: this one plus
+# `opus-plus-flash-direct.yaml`, `-antigravity.yaml` and `-claude-router.yaml`.
+# Their rules blocks were byte-identical; the only difference was which single
+# Gemini entry sat in `models[]`. Switching gateway therefore meant switching
+# FILES, which is the one thing a policy must never require — editing or
+# swapping a policy between runs silently re-bases every run already exported
+# from it (DESIGN §2.4), and three copies of the same rules drift (they did:
+# two of them carried gemini-2.5-flash's rate card under a 3.5-flash binding
+# and priced every Flash call ~5x low until 2026-07-26).
+#
+# Now every model × adapter × API combination is its own entry with its own id,
+# and the rules point at the LOGICAL slot `gemini-flash`, resolved at run time:
+#
+#     (default)                        --select gemini-flash=flash-mcp-ai-studio
+#     --select gemini-flash=flash-agsdk-vertex
+#     --select gemini-flash=flash-router-ai-studio
+#
+# The rules abstraction is untouched — a rule still names exactly one id, and
+# what reaches an adapter is always a concrete model. Nothing about the routing
+# grid moved; templates-golden.test.ts replays all four old files through this
+# one and asserts adapter, vendor model name and price block are unchanged.
+#
+# THE THREE DELETED FILES ARE NOT ORPHANED. Every run already exported under
+# those names froze its own `policy_snapshot.yaml` inside its bundle and reads
+# that, never this directory. Their dashboards, costs and evidence bundles are
+# untouched by the collapse.
+#
+# REGION, and the one deliberate correction. `opus-plus-flash-direct.yaml`'s own
+# header ended: "the canonical file additionally pins `region: asia-south1`;
+# this one does not, and that divergence predates the merge. Fix (b) before
+# anyone runs a gateway comparison for real." One shared region per doorway IS
+# that fix — both Vertex entries below pin asia-south1, so MCP-vs-Antigravity is
+# a comparison of doorways rather than of regions.
+version: 2
+name: opus-plus-flash
+
+models:
+  - id: opus
+    adapter: builtin-anthropic
+    api: anthropic
+    model_name: claude-opus-4-7
+    # Opus 4.5+ list price — the old 15/1.50/75 block predated the Opus 4.5
+    # price drop and overstated every Opus-side cost 3x (opus-plus-sonnet.yaml
+    # and gemini-flash-only.yaml already carry the corrected, sourced rates).
+    pricing: { input: 5.00, input_cached: 0.50, output: 25.00 }
+    pricing_source: https://platform.claude.com/docs/en/docs/about-claude/pricing
+    auth: { env: ANTHROPIC_API_KEY }
+
+  # --- the four Gemini 3.5 Flash doorways -----------------------------------
+  # Same vendor model, same rate card, four different routes to it. They differ
+  # ONLY in how the call is made and where it lands, which is exactly what the
+  # gateway comparison is measuring. Pricing is identical on purpose: the study
+  # question is latency, quota behaviour and reported-token fidelity per
+  # doorway, not list price.
+
+  - id: flash-mcp-vertex
+    # Gateway A′ — MCP Gemini server against Vertex AI (ADC + pinned region).
+    # This is the historic behaviour of `opus-plus-flash.yaml`: the file carried
+    # `region: asia-south1` and the adapter picked Vertex whenever service-account
+    # credentials were present. That "whenever" is the provenance hole v2 closes
+    # — the doorway is now stated by the file, not decided by the machine.
+    adapter: mcp
+    api: vertex
+    model_name: gemini-3.5-flash
+    display_name: gemini-3.5-flash (Vertex)
+    # The old 0.30/0.075/2.50 block was gemini-2.5-flash's rate card — it
+    # understated every Flash-side cost 5x for this 3.5-flash model.
+    pricing: { input: 1.50, input_cached: 0.15, output: 9.00 }
+    pricing_source: https://ai.google.dev/gemini-api/docs/pricing
+    # REGION (changed 2026-07-17, was `global`): Vertex's `global` endpoint runs
+    # Gemini Flash on Dynamic Shared Quota — there is no per-project bucket;
+    # Google serves you from a shared pool and returns 429 RESOURCE_EXHAUSTED
+    # when it won't. On the night of 2026-07-16 that pool starved this project
+    # for 3+ hours: every call, even a 1-token probe, got 429 — Flash produced
+    # zero tokens across two 12-instance SWE-bench Pro runs while billing was
+    # enabled and no quota cap/override existed (verified live via the
+    # cloudbilling + serviceusage APIs). Regional pools are separate capacity:
+    # probes at the same moment returned HTTP 200 from asia-south1,
+    # asia-southeast1, and asia-northeast1. asia-south1 (Mumbai) chosen —
+    # closest to the team, healthy pool, same model + list pricing. The earlier
+    # `global` pin came from probing only us-central1, which 404s because
+    # gemini-3.5-flash simply isn't deployed there (nor us-east4/5, us-west1,
+    # us-south1, europe-west1/4 — all verified 404 on 2026-07-17).
+    region: asia-south1
+    # No `auth:` — Vertex authenticates through ADC
+    # (GOOGLE_APPLICATION_CREDENTIALS). Naming an API-key variable here would
+    # re-introduce in one line the ambiguity this schema exists to remove.
+
+  - id: flash-mcp-ai-studio
+    # Gateway A — MCP Gemini server against Google AI Studio (API key).
+    # Was `opus-plus-flash-direct.yaml`, whose header called itself
+    # "functionally identical" to the canonical file while actually reaching a
+    # different API. Both routes now exist side by side and say so.
+    adapter: mcp
+    api: ai-studio
+    model_name: gemini-3.5-flash
+    display_name: gemini-3.5-flash (AI Studio)
+    pricing: { input: 1.50, input_cached: 0.15, output: 9.00 }
+    pricing_source: https://ai.google.dev/gemini-api/docs/pricing
+    # AI Studio has no region axis — the key selects the endpoint. A `region:`
+    # here would be recorded and never used, which is worse than absent.
+    auth: { env: GEMINI_API_KEY }
+
+  - id: flash-agsdk-vertex
+    # Gateway B — Antigravity SDK, Gemini Enterprise seat, Vertex only.
+    # Was `opus-plus-flash-antigravity.yaml`. The SDK cannot reach AI Studio at
+    # all, which the loader now enforces (ADAPTER_APIS) instead of letting it
+    # surface as a vendor 4xx on the first delegated phase.
+    adapter: antigravity-sdk
+    api: vertex
+    model_name: gemini-3.5-flash
+    display_name: gemini-3.5-flash (Antigravity SDK)
+    # Corrected 2026-07-26. This block was gemini-2.5-FLASH's rate card sitting
+    # under a gemini-3.5-flash binding, so every Flash-side call here was priced
+    # ~5x LOW. It escaped notice because the Opus block in the same file was
+    # ~3x HIGH until 2026-07-20 — the two errors partly cancelled in the total.
+    pricing: { input: 1.50, input_cached: 0.15, output: 9.00 }
+    pricing_source: https://ai.google.dev/gemini-api/docs/pricing
+    # asia-south1, matching flash-mcp-vertex above. The old file pinned nothing
+    # and inherited `global` — the endpoint that starved on 2026-07-16 — so an
+    # MCP-vs-Antigravity comparison was silently also a region comparison. Same
+    # region on both Vertex entries is what makes the doorway the only variable.
+    region: asia-south1
+    # No env key — the Antigravity SDK uses its own profile (Enterprise seat).
+
+  - id: flash-router-ai-studio
+    # Gateway C — local Claude Router daemon (localhost:3456) forwarding to
+    # Google AI Studio with the vendor `usage` block preserved.
+    # Was `opus-plus-flash-claude-router.yaml`. The daemon's own configuration
+    # is not recorded in the run, so the policy has to state which vendor
+    # endpoint it is pointed at — otherwise that is an undeclared variable
+    # sitting underneath every number the gateway comparison produces.
+    adapter: claude-router
+    api: ai-studio
+    model_name: gemini-3.5-flash
+    display_name: gemini-3.5-flash (Claude Router)
+    # Corrected 2026-07-26 — same defect as the Antigravity block above:
+    # gemini-2.5-flash's rate card under a gemini-3.5-flash binding.
+    pricing: { input: 1.50, input_cached: 0.15, output: 9.00 }
+    pricing_source: https://ai.google.dev/gemini-api/docs/pricing
+    # GEMINI_API_KEY is read by the Claude Router daemon, not by our adapter.
+    auth: { env: GEMINI_API_KEY }
+
+# Logical slots. A rule names the slot; the run picks one of its options with
+# `--select`, or gets `default`. Every option is a real id above, so a selection
+# can never invent a model, and a typo fails at load rather than mid-run.
+select:
+  gemini-flash:
+    default: flash-mcp-vertex
+    options:
+      - flash-mcp-vertex
+      - flash-mcp-ai-studio
+      - flash-agsdk-vertex
+      - flash-router-ai-studio
+    reason: >-
+      Which doorway serves the cost-efficient tier. Default is MCP→Vertex on
+      asia-south1 because that is what every graded run behind the published
+      Flash numbers actually used.
+
+rules:
+  # Premium-judgment phases — stay on Opus
+  - when: { phase: requirements_analysis }
+    use: opus
+    reason: "Judgment-heavy, low volume — premium"
+  - when: { phase: architecture_design }
+    use: opus
+    reason: "Foundational, decision-bearing — premium"
+  - when: { phase: plan_task_packets }
+    use: opus
+    reason: "Needs full context to slice work cleanly — premium"
+  - when: { phase: senior_code_review }
+    use: opus
+    reason: "Cross-file reasoning + judgment — premium"
+  - when: { phase: security_review }
+    use: opus
+    reason: "Risk-bearing, low volume — premium"
+
+  # High-volume mechanical phases — Gemini Flash
+  - when:
+      phase: codegen
+      task_type:
+        - controller_handler
+        - service_method
+        - dto
+        - module_wiring
+        - migration
+        - seed_data
+        - entity
+        - guard
+        - interceptor
+        - filter
+        - react_component
+        - react_page
+        - api_client
+        - frontend_util
+        - frontend_config
+        - frontend_html
+    use: gemini-flash
+    reason: "Schema-driven boilerplate — cost-efficient tier"
+  - when: { phase: tests }
+    use: gemini-flash
+    reason: "Scaffold-heavy, pattern-based — cost-efficient tier"
+  - when: { phase: docs }
+    use: gemini-flash
+    reason: "Volume work — cost-efficient tier"
+
+  # Debug with escalation: try cost-efficient tier first, escalate to Opus after 2 retries
+  - when: { phase: debug, retry_count: { gte: 2 } }
+    use: opus
+    reason: "Escalation: 2 cost-efficient tier attempts failed"
+  - when: { phase: debug }
+    use: gemini-flash
+    reason: "Most debugs have clear cause — cost-efficient tier"
+
+  - default: opus
+    reason: "Unrecognized task — fail safe to premium"

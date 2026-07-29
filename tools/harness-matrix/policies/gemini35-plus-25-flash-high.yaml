@@ -1,0 +1,220 @@
+# gemini35-plus-25-flash-high — the TIERED column of the cc×agSDK SDLC card:
+# premium worker on judgment, cost-efficient worker on volume.
+#
+# WHY THIS POLICY EXISTS (2026-07-26). all-gemini-flash-high and
+# all-gemini-25-flash-high are the two CLEAN columns — one generation each,
+# every stage. They answer "does a generation of model progress show up in an
+# agentic SDLC harness". They do not answer the question the tokenomics track
+# actually cares about: "which stages is the premium model worth paying for?"
+# That needs a column where the generations are MIXED per stage, which is what
+# this file is.
+#
+# WHERE THE TIER SPLIT COMES FROM — it is NOT invented here. templates/policies/
+# opus-plus-flash.yaml has been the console's cost-optimised pass since pass 3,
+# and its thesis is that the premium tier buys JUDGMENT, not typing:
+#
+#   requirements_analysis  → opus    "Judgment-heavy, low volume — premium"
+#   architecture_design    → opus    "Foundational, decision-bearing — premium"
+#   plan_task_packets      → opus    "Needs full context to slice work cleanly"
+#   senior_code_review     → opus    "Cross-file reasoning + judgment — premium"
+#   security_review        → opus    "Risk-bearing, low volume — premium"
+#   codegen / tests / docs → flash   "Schema-driven boilerplate — cost-efficient"
+#   debug (retry_count≥2)  → opus    "Escalation: 2 cost-efficient attempts failed"
+#   default                → opus    "Unrecognized task — fail safe to premium"
+#
+# This file maps that same split onto the harness's SDLC stage ids, with
+# opus→gemini-3.5-flash (premium) and gemini-flash→gemini-2.5-flash
+# (cost-efficient). Reusing the console's split rather than authoring a new one
+# is the whole point: the harness leg and the console leg then disagree about
+# the MODELS and about nothing else, so a delta between them is attributable.
+#
+#   console phase            harness stage    tier
+#   ─────────────────────────────────────────────────────────
+#   requirements_analysis    requirements     premium  (3.5)
+#   architecture_design      design           premium  (3.5)
+#   plan_task_packets        plan-packets     premium  (3.5)
+#   codegen + tests + docs   execute          cheap    (2.5)
+#   debug                    verify repairs   cheap    (2.5) — see below
+#   senior_code_review       review           premium  (3.5)
+#   security_review          security_review  premium  (3.5) — see below
+#   (default rule)           judge            premium  (3.5)
+#
+# VERIFY REPAIRS INHERIT THE EXECUTE BINDING. The harness bills a verify
+# stage's repair rounds under the EXECUTE stage's binding, so pinning execute
+# to 2.5 automatically puts repairs on 2.5 — which is exactly what the console
+# rule `debug → gemini-flash "Most debugs have clear cause"` asks for. No extra
+# rule is needed, and adding one would let the two drift apart.
+#
+# ---------------------------------------------------------------------------
+# MIGRATED TO THE UNIFIED SCHEMA — version 2 (2026-07-29)
+# ---------------------------------------------------------------------------
+# Full rationale lives in all-opus.yaml. This file gains the most from it,
+# because the thing it exists to mirror — opus-plus-flash.yaml — is now written
+# in the SAME schema. Before the migration the two legs were compared through a
+# hand-maintained table in this comment block; the two files can now be diffed
+# directly, and the mapping table above is a reading aid rather than the only
+# record of the correspondence. Both cell ids (`flash-35-high`, `flash-25-high`)
+# are UNCHANGED, because they are the `modelId` recorded runs already carry.
+#
+# TWO GAPS THIS MIGRATION CLOSES, AND ONE IT DOES NOT:
+#
+# CLOSED — SECURITY_REVIEW is now stated. It used to read "(no analog)" in the
+# table above, because a `phases:` map could only list stage ids somebody had
+# already decided existed, and there was no way to record an intent for a stage
+# the templates might emit later. There is a rule for it below. It resolves to
+# the same premium tier the `default` rule would have given it, so nothing about
+# any run changes — what changes is that routing security review to premium is
+# now a stated decision matching the console's, rather than an accident of the
+# fail-safe. The underlying gap is unchanged and still tracked separately: six
+# console policies route this phase and the templates that would emit it are
+# still being reconciled.
+#
+# CLOSED — the tier split is now expressed with the console's own matcher, so
+# the two legs share one routing vocabulary rather than two.
+#
+# NOT CLOSED — the escalation rule (`debug, retry_count: {gte: 2} → opus`). The
+# SCHEMA can express it now; `retry_count` is a first-class matcher key and the
+# rule would validate. The RESOLVER cannot yet honour it: the harness resolves
+# every stage exactly once, before the run, at `retry_count: 0`
+# (policy-core.mjs → resolveHarnessStages), and each retry re-uses that one
+# resolved binding. Writing the rule today would produce a file that reads as
+# though it escalates and never does — strictly worse than not having it. Wiring
+# it means resolving per ATTEMPT rather than per stage, which is a real change
+# to the harness's execution loop and is deliberately NOT smuggled in here.
+# Recorded so nobody reads this column as already testing escalation: it does
+# not. Whoever builds it should know escalation is not a new idea needing a
+# design — the console has shipped this exact rule since pass 3, and the table
+# above is the precedent to port.
+#
+# HELD CONSTANT vs both clean columns: driver pin, driver effort, region, retry
+# policy, limits.
+#
+# NOT held constant — worker thinking level, and NOT by choice (2026-07-26).
+# The premium tier runs gemini-3.5-flash at thinking HIGH; the cost-efficient
+# tier runs gemini-2.5-flash at NONE, because Vertex hard-rejects
+# thinking_level on 2.5 Flash (the 400 is quoted verbatim at that tier's worker
+# leaf below). So the execute stage differs from its 3.5 siblings in two
+# variables, not one. Whoever reads a delta on this column must attribute it to
+# "generation + thinking, jointly" — the platform gives no way to separate them
+# for this model, and pretending otherwise would be the dishonest read.
+version: 2
+name: gemini35-plus-25-flash-high
+models:
+  # ---- the two cells ------------------------------------------------------
+  # Both are delegated Opus→Gemini cells on claude-code and they share a driver
+  # leaf; ONLY the worker differs. That shared `driver: opus-anthropic` is the
+  # structural version of what used to be a promise in a comment ("SAME driver —
+  # only the worker tiers"): there is now literally one driver entry, so the two
+  # tiers cannot drift apart by editing one of them.
+  - id: flash-35-high                 # UNCHANGED id — premium tier
+    composition: delegated
+    runtime: claude-code
+    driver: opus-anthropic
+    worker: flash-35-agsdk-vertex
+  - id: flash-25-high                 # UNCHANGED id — cost-efficient tier
+    composition: delegated
+    runtime: claude-code
+    driver: opus-anthropic
+    worker: flash-25-agsdk-vertex
+
+  # ---- driver leaf, shared by both tiers ----------------------------------
+  - id: opus-anthropic
+    adapter: builtin-anthropic        # HELD CONSTANT with every sibling policy
+    api: anthropic
+    model_name: claude-opus-4-6
+    reasoning:
+      effort: high                    # driver effort pin (--effort high)
+    # No `pricing:` — composition member, priced from real receipts (all-opus.yaml).
+
+  # ---- premium tier worker: judgment-heavy, low-volume stages -------------
+  - id: flash-35-agsdk-vertex
+    adapter: antigravity-sdk
+    api: vertex
+    model_name: gemini-3.5-flash      # premium tier (console's `opus` slot)
+    region: asia-south1
+    reasoning:
+      tier: high                      # was `worker_thinking: HIGH`
+
+  # ---- cost-efficient tier worker: high-volume mechanical stages ----------
+  - id: flash-25-agsdk-vertex
+    adapter: antigravity-sdk          # same cable as the premium tier — only the model tiers
+    api: vertex
+    model_name: gemini-2.5-flash      # cost-efficient tier (console's `gemini-flash` slot)
+    region: asia-south1
+    # NO `reasoning:` BLOCK — DO NOT ADD ONE (2026-07-26, carried through the
+    # 2026-07-29 migration). Under the legacy schema this was the absent
+    # `worker_thinking` key; `reasoning.tier` is where that value now lives, so
+    # omitting the block is how this tier keeps saying the same thing. The
+    # resolver omits `worker_thinking` from the binding entirely when no tier is
+    # declared, which audit.mjs reads as NONE.
+    #
+    # This tier carried `worker_thinking: HIGH` for parity with the 3.5 tier,
+    # which reads sensibly and is impossible: Vertex rejects the parameter on
+    # this model outright, verbatim —
+    #
+    #   AntigravityConnectionError: Agent execution terminated due to
+    #   error. ("request failed (code 400): Unable to submit request
+    #   because thinking_level is not supported by this model..")
+    #
+    # It cost a whole paid tiered run to learn. The 2026-07-26 kudos-wall run's
+    # first execute delegation 400'd on exactly this; the driver then silently
+    # dropped the flag and retried, so both execute delegations ran at NONE
+    # while every header row still advertised HIGH — an unannounced change to
+    # the experiment that every gate passed. The audit's
+    # delegation-policy-mismatch family (audit.mjs) now catches that class of
+    # drift, but the honest fix is to not ask for the impossible: declaring no
+    # tier resolves to NONE, which is what this tier can actually run.
+    #
+    # CONSEQUENCE FOR THE COMPARISON, stated so nobody reads this column as a
+    # clean single-variable A/B: execute differs from the 3.5 tier in BOTH model
+    # generation and thinking level, because on Vertex today those two cannot be
+    # varied independently for 2.5 Flash. That is a platform constraint to
+    # report, not a defect to hide.
+rules:
+  # One rule per stage, mirroring opus-plus-flash.yaml's structure rather than
+  # collapsing them into an array — the per-stage `reason` is the record of WHY
+  # each stage sits in its tier, and it is the thing a reader comparing the two
+  # legs is actually looking for.
+  - when: { phase: requirements }
+    use: flash-35-high
+    reason: console requirements_analysis — judgment-heavy, low volume → premium
+  - when: { phase: design }
+    use: flash-35-high
+    reason: console architecture_design — foundational, decision-bearing → premium
+  - when: { phase: plan-packets }
+    use: flash-35-high
+    reason: console plan_task_packets — needs full context to slice work cleanly → premium
+  - when: { phase: execute }
+    use: flash-25-high
+    reason: console codegen + tests + docs — schema-driven boilerplate → cost-efficient
+  - when: { phase: review }
+    use: flash-35-high
+    reason: console senior_code_review — cross-file reasoning + judgment → premium
+  - when: { phase: security_review }
+    use: flash-35-high
+    reason: console security_review — risk-bearing, low volume → premium
+  - when: { phase: judge }
+    use: flash-35-high
+    reason: adjudication is judgment — premium, matching the console's fail-safe default
+  # SWE-bench Pro's phases are NOT tiered here. The console's split is a map of
+  # SDLC phases and has no honest Pro analog (a bug fix is not "schema-driven
+  # boilerplate"), so pointing --kind swepro at this file falls through to the
+  # default below and runs premium throughout — the same fail-safe the console
+  # uses. A tiered Pro column should be designed on its own evidence, not
+  # inherited by accident from an SDLC file.
+  - default: flash-35-high
+    # Quoted because the value contains a colon-space, which YAML would
+    # otherwise read as a nested mapping key.
+    reason: "console `default: opus` — unrecognised stage fails safe to premium"
+retry:
+  type: flat
+  max_attempts: 3
+# LIMITS: byte-identical to all-gemini-flash-high.yaml, all-gemini-25-flash-high
+# .yaml and all-opus.yaml. DESIGN §2.4 treats a limit as part of the STUDY
+# DEFINITION, not a tuning knob — two columns compared under different ceilings
+# are not comparable, and a budget stop mid-stage is indistinguishable in the
+# manifest from a model that gave up.
+limits:
+  phase_timeout_min: 45
+  cmd_timeout_min: 15
+  phase_budget_usd: 8.00

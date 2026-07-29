@@ -1,0 +1,142 @@
+# all-gemini-25-flash-high — the CROSS-GENERATION column of the cc×agSDK SDLC
+# card: Gemini 2.5 Flash as the worker instead of 3.5 Flash.
+#
+# WHY THIS POLICY EXISTS (2026-07-26). The cc×agSDK study asks "a FIXED Claude
+# Code harness delegating to DIFFERENT worker models" — so the study's columns
+# are worker models and every other knob must be held constant, or the delta
+# measures the environment instead of the model. Same driver pin, same driver
+# effort, same region, same retry policy, same limits.
+#
+# THE ONE KNOB THAT COULD NOT BE HELD CONSTANT — worker thinking level. This
+# file was authored as a strict near-clone in which "exactly one token differs
+# from all-gemini-flash-high.yaml — `worker:`". That turned out to be
+# unrunnable: Vertex hard-rejects thinking_level on 2.5 Flash (the 400 is
+# quoted verbatim at the worker leaf below), so the 3.5 column's HIGH has no
+# counterpart here and this column runs at NONE. Two variables move between
+# the columns, not one. Say so when reporting a delta from this card; the
+# platform offers no way to separate them for this model today.
+#
+# WHY 2.5 FLASH AND NOT 3.5 PRO (the originally intended premium column).
+# Probed against Vertex on 2026-07-26 before any spend, per the pricing/lane
+# preflight rule that exists because the `global` endpoint silently starved
+# this project for 3+ hours on 2026-07-16:
+#
+#   gemini-3.5-flash @ asia-south1  → LIVE
+#   gemini-3.5-pro   @ asia-south1  → 404 (publisher model not found / no access)
+#   gemini-3.5-pro   @ global       → 404
+#   gemini-3.5-pro   @ us-central1  → 404
+#   gemini-2.5-flash @ asia-south1  → LIVE
+#   gemini-2.5-pro   @ global       → LIVE   (global ONLY — not asia-south1)
+#
+# 3.5 Pro is not entitled to the ai-studies-console project in any region
+# tried, so the intended cheap-vs-premium axis is not runnable today. The two
+# remaining candidates were 2.5 Flash @ asia-south1 and 2.5 Pro @ global.
+# 2.5 Flash wins on study hygiene: 2.5 Pro would change the model AND the
+# endpoint in the same column, making any delta un-attributable, and it would
+# route through the precise `global` shared-quota pool whose 2026-07-16
+# starvation cost two SWE-bench Pro runs ~$1.78 each before the dead lane
+# surfaced mid-patch. A confounded column that can die mid-run is worth less
+# than a clean one. The question this column answers instead — "does a
+# generation of model progress show up in an agentic SDLC harness, with
+# everything else nailed down?" — is a real one, and it feeds both the Google
+# model-ladder ask and the Flash 3.6 shootout track.
+#
+# IF 3.5 PRO IS LATER ENTITLED: add all-gemini-35-pro-high.yaml as a THIRD
+# column rather than editing this file. DESIGN §2.4 forbids changing a study
+# definition mid-matrix; a new column is additive and leaves recorded runs
+# comparable, whereas mutating this one silently re-bases everything already
+# exported.
+#
+# ---------------------------------------------------------------------------
+# MIGRATED TO THE UNIFIED SCHEMA — version 2 (2026-07-29)
+# ---------------------------------------------------------------------------
+# Full rationale lives in all-opus.yaml. The near-clone relationship with
+# all-gemini-flash-high.yaml survives the migration intact and is still the
+# point of this file: diff the two and the differences are the worker leaf's
+# `model_name` and its ABSENT `reasoning` block, and nothing else.
+#
+# The cell id `flash-25-high` is UNCHANGED — it is the `modelId` every recorded
+# manifest and export already carries.
+version: 2
+name: all-gemini-25-flash-high
+models:
+  # ---- the cell -----------------------------------------------------------
+  - id: flash-25-high                 # UNCHANGED id — this is `modelId` everywhere
+    composition: delegated            # driver→worker cell, see all-gemini-flash-high.yaml
+    runtime: claude-code
+    driver: opus-anthropic
+    worker: flash-25-agsdk-vertex
+
+  # ---- driver leaf --------------------------------------------------------
+  # HELD CONSTANT with all-opus and all-gemini-flash-high, byte for byte. That
+  # is the study hygiene this column depends on: if the driver entry here ever
+  # diverges from its siblings, the column stops measuring the worker.
+  - id: opus-anthropic
+    adapter: builtin-anthropic
+    api: anthropic
+    model_name: claude-opus-4-6
+    reasoning:
+      effort: high
+    # No `pricing:` — composition member, priced from real receipts (all-opus.yaml).
+
+  # ---- worker leaf --------------------------------------------------------
+  - id: flash-25-agsdk-vertex
+    adapter: antigravity-sdk          # same cable as the 3.5 column — held constant
+    api: vertex
+    model_name: gemini-2.5-flash      # the generation difference vs all-gemini-flash-high
+    region: asia-south1               # same region — held constant, and required for vertex
+    # NO `reasoning:` BLOCK — DO NOT ADD ONE (2026-07-26, carried through the
+    # 2026-07-29 migration). Under the legacy schema this was the absent
+    # `worker_thinking` key; `reasoning.tier` is where that value now lives, so
+    # omitting the block is how this file keeps saying the same thing. The
+    # resolver omits `worker_thinking` from the binding entirely when no tier is
+    # declared, which audit.mjs reads as NONE — an absent key is a real, load-
+    # bearing state here, not a missing value.
+    #
+    # The line this replaced read `worker_thinking: HIGH  # SDK
+    # ThinkingLevel.HIGH — parity with the 3.5 Flash column`, which reads
+    # sensibly and was never runnable: Vertex rejects the parameter on this
+    # model outright, verbatim —
+    #
+    #   AntigravityConnectionError: Agent execution terminated due to
+    #   error. ("request failed (code 400): Unable to submit request
+    #   because thinking_level is not supported by this model..")
+    #
+    # This file had never been launched, so the 400 would have fired on the
+    # FIRST delegation of the FIRST stage and every stage after it — a dead
+    # column, discoverable only by burning a run. It was found instead on the
+    # 2026-07-26 kudos-wall tiered run, where the same key on the same model
+    # 400'd once and the driver quietly retried without the flag. Declaring no
+    # tier resolves to NONE, which is what this model can actually run.
+    #
+    # CONSEQUENCE FOR THE COMPARISON vs all-gemini-flash-high: the two columns
+    # differ in BOTH generation and thinking level, so this is not a single-
+    # variable A/B. On Vertex today those cannot be varied independently for
+    # 2.5 Flash — report the pair, do not claim the model generation alone
+    # explains a delta.
+    #
+    # No `pricing:` — composition member. See all-opus.yaml.
+rules:
+  # SWE-bench Pro's three phases, named explicitly. Was `phases.{repro,localize,
+  # patch}`.
+  - when: { phase: [repro, localize, patch] }
+    use: flash-25-high
+    reason: SWE-bench Pro phases — delegated Opus→2.5-Flash cell throughout
+  # Fallback for the SDLC kind's template-driven stage ids — same mechanism as
+  # the sibling policies. Pro routing is unchanged by it.
+  - default: flash-25-high
+    reason: unrecognised stage — delegated Opus→2.5-Flash cell
+retry:
+  type: flat
+  max_attempts: 3
+# LIMITS: byte-identical to all-gemini-flash-high.yaml and all-opus.yaml.
+# DESIGN §2.4 treats a limit as part of the STUDY DEFINITION, not a tuning
+# knob — two columns compared under different ceilings are not comparable, and
+# a budget stop mid-stage is indistinguishable in the manifest from a model
+# that gave up. Full rationale lives in all-opus.yaml; the delegated-cell
+# addendum (worker gets 60% of the phase clock, driver keeps 40% to conduct
+# with) lives in all-gemini-flash-high.yaml and applies here unchanged.
+limits:
+  phase_timeout_min: 45
+  cmd_timeout_min: 15
+  phase_budget_usd: 8.00

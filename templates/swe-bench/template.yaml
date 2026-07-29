@@ -1,0 +1,66 @@
+# SWE-bench Verified execution template (SWE-04) — Option B engine.
+#
+# A run = ONE policy over all frozen instances of the study; each instance is
+# an independent packet chain. No LLM judge: the score stage delegates to the
+# official, unmodified SWE-bench harness (SWE-05) — deterministic ground truth.
+#
+# Studies using this template are created EXPLICITLY with template_id
+# "swe-bench" (tools/run-swe.mjs) — the brief classifier is never consulted.
+# Frozen inputs live at studies/{study}/instances/{instance_id}/instance.json
+# (agent-safe only; sealed.json may not enter a study directory — enforced by
+# @study-console/swe-bench loadInstances + the planted-hint test).
+#
+# Phase mapping (decision proven in SWE-03): localize routes as
+# requirements_analysis (judgment-heavy premium tier), patch as debug/build_fix
+# (cost-efficient tier with policy escalation on retries).
+template_id: swe-bench
+version: 0.1.0
+kind: swe-bench
+title: SWE-bench Verified — patch generation under a routing policy
+
+stages:
+  - id: ingest
+    title: Load frozen instances + prepare repo workspaces
+    executor: deterministic-tool
+    bypassable: false
+    config:
+      tool: swe-ingest
+
+  - id: localize
+    title: Localize the files to edit (one packet per instance)
+    executor: llm-task
+    bypassable: false
+    config:
+      packet: swe-localize
+      phase: requirements_analysis
+      task_type: swe_localize
+
+  - id: patch
+    title: Generate the fix as a unified diff (one packet per instance)
+    executor: llm-task
+    bypassable: false
+    config:
+      packet: swe-patch
+      phase: debug
+      task_type: build_fix
+      inputs_from: [localize]
+
+  - id: package
+    title: Emit predictions.jsonl (pass@1 enforced) + clean workspaces
+    executor: deterministic-tool
+    bypassable: false
+    config:
+      tool: swe-package
+
+  - id: score
+    title: Official harness verdict (replaces the LLM judge)
+    executor: verify
+    bypassable: false
+    config:
+      method: swe-harness
+      max_workers: 1
+
+  - id: report
+    title: Run report
+    executor: report
+    bypassable: false

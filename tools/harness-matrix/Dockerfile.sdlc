@@ -1,0 +1,38 @@
+# SDLC EXECUTION image for the harness matrix — the containerized toolchain
+# every command of an SDLC run (the agent's pnpm build/test AND the verify
+# gate's, identically, via run-in-env.sh) executes in. One shared image for
+# every SDLC run: unlike SWE-bench Pro there is no per-instance base to seal
+# — the task environment is the service-web scaffold, which enters the run
+# as a plain host-side copy (kinds/sdlc.mjs provisions the workdir), so this
+# image carries ONLY the toolchain, never task state. That is also why there
+# is no git-seal layer here: the workdir's git (init + scaffold-base tag) is
+# created on the host at provision time, not extracted from an image.
+#
+# No --platform pin (unlike the Pro build): Scale's images exist only as
+# linux/amd64 and need Rosetta; this image builds natively (arm64 on this
+# Mac), which is faster and exercises nothing platform-specific — the
+# scaffold is pure TypeScript + Prisma with engines fetched per-platform at
+# pnpm install time INSIDE the container, so host/container never mix
+# binaries.
+#
+# node:22-bookworm (not -slim, not alpine): ships bash + GNU coreutils
+# (run-in-env.sh needs GNU `timeout`), git, and the OpenSSL Prisma's engines
+# link against — zero extra layers. Node 22 matches the chassis floor
+# (@types/node ^22) and the node@22 discipline this repo already runs under.
+FROM node:22-bookworm
+
+# pnpm via corepack, PINNED — the scaffold's pnpm-lock.yaml is
+# lockfileVersion 9.0, so the pnpm major must be 9 and the exact version is
+# pinned so every run (and every machine) resolves installs identically.
+RUN corepack enable && corepack prepare pnpm@9.12.3 --activate
+
+# Prisma engine downloads happen at `pnpm install` time inside the running
+# container (network is NOT nulled for SDLC — greenfield task, no fix to
+# leak) and land in the workdir's node_modules, which lives on the host
+# mount. Nothing else to prepare here.
+
+WORKDIR /app
+# The node base image's default entrypoint is docker-entrypoint.sh, not a
+# shell — run-in-env.sh interposes an explicit `bash` for this image
+# (writeRunInEnv's `shell` parameter), so no ENTRYPOINT override is needed;
+# the entrypoint script exec's whatever command it is handed.

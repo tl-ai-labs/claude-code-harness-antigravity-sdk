@@ -1,0 +1,63 @@
+# SDLC — build the machine. v0.3.0: the orchestrator's canonical fixed flow.
+# The five-phase framework: (1) requirements finalization, (2) design
+# finalization, (3) building the task packets, (4) execution, (5) judging &
+# review. SDLC stays FIXED — no bypassable stages (decision 2026-07-09).
+#
+# Artifact chaining: `inputs_from` feeds prior stage outputs into a stage's
+# packets as input slices; `packets_from` makes the execute stage consume the
+# packet list PLANNED by plan-packets instead of static config.
+#
+# v0.7.0: phases/task_types speak the POLICY vocabulary (the synced orchestrator
+# rules match on requirements_analysis / architecture_design / plan_task_packets /
+# codegen+task_type / senior_code_review). A phase outside that vocabulary always
+# falls to the policy's default rule (premium fail-safe) — correct but never cheap,
+# so the cost-tier routing only fires when these names align.
+# v0.8.0: verify gains the debug/repair loop — build/test failures feed the
+# real error log back through `debug`-phase packets (policy retry_count rules
+# escalate later rounds to premium), then re-verify. Live mode only.
+template_id: sdlc-mini
+version: 0.8.0
+kind: sdlc
+title: SDLC — canonical flow
+scaffold: service-web
+stages:
+  - id: requirements
+    title: Requirements finalization
+    executor: llm-task
+    bypassable: false
+    config: { packet: single, phase: requirements_analysis, task_type: requirements_finalization }
+  - id: design
+    title: Design finalization
+    executor: llm-task
+    bypassable: false
+    config: { packet: single, phase: architecture_design, task_type: design_doc, inputs_from: [requirements] }
+  - id: plan-packets
+    title: Building the task packets
+    executor: llm-task
+    bypassable: false
+    config: { packet: single, phase: plan_task_packets, task_type: packet_planning, inputs_from: [requirements, design] }
+  - id: execute
+    title: Execution
+    executor: llm-task
+    bypassable: false
+    # task_type here is the FALLBACK when a planned packet doesn't set its own;
+    # service_method is in the policies' codegen mechanical-tier list.
+    config: { packet: planned, packets_from: plan-packets, phase: codegen, task_type: service_method, inputs_from: [design], output: files }
+  - id: verify
+    title: Verification — integrity + build + tests
+    executor: verify
+    bypassable: false
+    config: { method: build-and-test, repair: { max_rounds: 3 } }
+  - id: review
+    title: Senior review
+    executor: llm-task
+    bypassable: false
+    config: { packet: single, phase: senior_code_review, task_type: senior_review, inputs_from: [design, execute] }
+  - id: judge
+    title: Judge scoring
+    executor: judge
+    bypassable: false
+  - id: report
+    title: Report
+    executor: report
+    bypassable: false

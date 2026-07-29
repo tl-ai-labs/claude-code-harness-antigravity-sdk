@@ -1,0 +1,29 @@
+{
+  "scaffold_id": "service-web",
+  "version": "0.2.0",
+  "slots": [
+    "src/modules/**",
+    "test/modules/**",
+    "prisma/schema.prisma#models"
+  ],
+  "files": {
+    ".gitignore": "02892f9ee06b9509a993ec037816f59d048de827c52c2c292a7f3f3a556fe21d",
+    "CONVENTIONS.md": "cc80b8d59d4be3ab4916784cb76ae0dde732ce8d64889c1d01ebeec4d21da569",
+    "package.json": "a6517f399db3c39488e9e4357d4833cb476141c21efae53650687a68db9dd355",
+    "pnpm-lock.yaml": "20c524b717ba783b9967c03cc0a411855d977e9b40070de1e4efd35808c8f748",
+    "pnpm-workspace.yaml": "a385d617711e5fee4d1a28174ef753f123a28720ad44def148985cc1ad461817",
+    "prisma/schema.prisma": "503672df04d6338ea8ceb76429abe2b20152076c6cce2475bf4254bbf99ed76b",
+    "prisma/seed.mjs": "e42c4485ac0a705e753aa315e7ab18d14a8f36acae481c611a52c13107fae220",
+    "scaffold.json": "c0918ae709123f825e0bb5922416bea6e27e59a9c97ddfccd734ead8891f3933",
+    "src/app.module.ts": "e3290777db69a10db0632beb144befecbae42964c1a6170bb2d5adf13315f2f6",
+    "src/main.ts": "3d9225e7365e8b1f8e30f15a3083f540ed00814281f9c8903d18d5d0a431b56b",
+    "src/platform/config.ts": "00ce21e2e50061ec91ab25c6801ef52f12d34e0af2f26d918f25ffd03256fbb2",
+    "src/platform/health.controller.ts": "f8f046e0ca5f1dbc240121919537f4fd9fb8606a84c68bbbdd0368fe57e63594",
+    "test/platform/chassis.test.ts": "be846df7ffc3bbd91d6908c80a9ea0b0b548bcf1e298502540ebf9a560468f7b",
+    "tsconfig.json": "440ba90f0df34b4e332ec865e02adbeb91b438d2263504837fac9b6e35350ce6",
+    "vitest.config.ts": "5b7ce3fed5caade8c7156ee318b3e921db49316d9aa813eba33c591843364b9f"
+  },
+  "partial_files": [
+    "prisma/schema.prisma"
+  ]
+}

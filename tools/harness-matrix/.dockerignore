@@ -1,0 +1,12 @@
+# Neither harness Dockerfile COPYs anything from the build context, but
+# docker still tars the whole context directory to the daemon before
+# building. runs/ accumulates per-run workdirs (full repo checkouts,
+# node_modules) — gigabytes that would be uploaded on every image build for
+# nothing. Excluding them makes both the Pro seal build and the SDLC env
+# build start instantly regardless of run history.
+runs/
+sdk-probe/
+# Same reasoning: the shared pnpm store grows to hundreds of MB of package
+# tarballs. It is mounted into the container at run time, never COPYed, so it
+# has no business in the build context.
+.pkg-store/

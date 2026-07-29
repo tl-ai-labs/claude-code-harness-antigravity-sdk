@@ -1,0 +1,1167 @@
+[
+  {
+    "file": "01-ansible-748f-07261459-localize-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "instance_ansible__ansible-748f534312f2073a25a87871f5bd05882891b8c4-v0f01c69f1e2528b935359cfe578530722bca2c59",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T14-59-15",
+      "delegation": "localize-a1-1",
+      "phase": "localize",
+      "attempt": 1,
+      "idx": 1,
+      "path": "instance_ansible__ansible-748f534312f2073a25a87871f5bd05882891b8c4-v0f01c69f1e2528b935359cfe578530722bca2c59/claude-code--all-gemini-flash-high/2026-07-26T14-59-15/out/worker-task-localize-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 26,
+      "total_tokens": 808729
+    }
+  },
+  {
+    "file": "02-ansible-748f-07261459-patch-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "instance_ansible__ansible-748f534312f2073a25a87871f5bd05882891b8c4-v0f01c69f1e2528b935359cfe578530722bca2c59",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T14-59-15",
+      "delegation": "patch-a1-1",
+      "phase": "patch",
+      "attempt": 1,
+      "idx": 1,
+      "path": "instance_ansible__ansible-748f534312f2073a25a87871f5bd05882891b8c4-v0f01c69f1e2528b935359cfe578530722bca2c59/claude-code--all-gemini-flash-high/2026-07-26T14-59-15/out/worker-task-patch-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 1,
+      "tool_calls": 19,
+      "total_tokens": 435222
+    }
+  },
+  {
+    "file": "03-ansible-748f-07261459-patch-a1-2.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "instance_ansible__ansible-748f534312f2073a25a87871f5bd05882891b8c4-v0f01c69f1e2528b935359cfe578530722bca2c59",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T14-59-15",
+      "delegation": "patch-a1-2",
+      "phase": "patch",
+      "attempt": 1,
+      "idx": 2,
+      "path": "instance_ansible__ansible-748f534312f2073a25a87871f5bd05882891b8c4-v0f01c69f1e2528b935359cfe578530722bca2c59/claude-code--all-gemini-flash-high/2026-07-26T14-59-15/out/worker-task-patch-a1-2.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 2,
+      "tool_calls": 15,
+      "total_tokens": 610465
+    }
+  },
+  {
+    "file": "04-ansible-748f-07261459-repro-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "instance_ansible__ansible-748f534312f2073a25a87871f5bd05882891b8c4-v0f01c69f1e2528b935359cfe578530722bca2c59",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T14-59-15",
+      "delegation": "repro-a1-1",
+      "phase": "repro",
+      "attempt": 1,
+      "idx": 1,
+      "path": "instance_ansible__ansible-748f534312f2073a25a87871f5bd05882891b8c4-v0f01c69f1e2528b935359cfe578530722bca2c59/claude-code--all-gemini-flash-high/2026-07-26T14-59-15/out/worker-task-repro-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 22,
+      "total_tokens": 708667
+    }
+  },
+  {
+    "file": "05-navidrome-3bc9-07240932-localize-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-24T09-32-34",
+      "delegation": "localize-a1-1",
+      "phase": "localize",
+      "attempt": 1,
+      "idx": 1,
+      "path": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a/claude-code--all-gemini-flash-high/2026-07-24T09-32-34/out/worker-task-localize-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 8,
+      "total_tokens": 174997
+    }
+  },
+  {
+    "file": "06-navidrome-3bc9-07240932-patch-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-24T09-32-34",
+      "delegation": "patch-a1-1",
+      "phase": "patch",
+      "attempt": 1,
+      "idx": 1,
+      "path": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a/claude-code--all-gemini-flash-high/2026-07-24T09-32-34/out/worker-task-patch-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 26,
+      "total_tokens": 836352
+    }
+  },
+  {
+    "file": "07-navidrome-3bc9-07240932-repro-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-24T09-32-34",
+      "delegation": "repro-a1-1",
+      "phase": "repro",
+      "attempt": 1,
+      "idx": 1,
+      "path": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a/claude-code--all-gemini-flash-high/2026-07-24T09-32-34/out/worker-task-repro-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 8,
+      "total_tokens": 171948
+    }
+  },
+  {
+    "file": "08-navidrome-3bc9-07240932-repro-a1-2.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-24T09-32-34",
+      "delegation": "repro-a1-2",
+      "phase": "repro",
+      "attempt": 1,
+      "idx": 2,
+      "path": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a/claude-code--all-gemini-flash-high/2026-07-24T09-32-34/out/worker-task-repro-a1-2.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 8,
+      "total_tokens": 167751
+    }
+  },
+  {
+    "file": "09-navidrome-3bc9-07240932-repro-a2-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-24T09-32-34",
+      "delegation": "repro-a2-1",
+      "phase": "repro",
+      "attempt": 2,
+      "idx": 1,
+      "path": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a/claude-code--all-gemini-flash-high/2026-07-24T09-32-34/out/worker-task-repro-a2-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 6,
+      "total_tokens": 118351
+    }
+  },
+  {
+    "file": "10-navidrome-3bc9-07241117-localize-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-24T11-17-08",
+      "delegation": "localize-a1-1",
+      "phase": "localize",
+      "attempt": 1,
+      "idx": 1,
+      "path": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a/claude-code--all-gemini-flash-high/2026-07-24T11-17-08/out/worker-task-localize-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 21,
+      "total_tokens": 608728
+    }
+  },
+  {
+    "file": "11-navidrome-3bc9-07241117-patch-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-24T11-17-08",
+      "delegation": "patch-a1-1",
+      "phase": "patch",
+      "attempt": 1,
+      "idx": 1,
+      "path": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a/claude-code--all-gemini-flash-high/2026-07-24T11-17-08/out/worker-task-patch-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 4,
+      "total_tokens": 73037
+    }
+  },
+  {
+    "file": "12-navidrome-3bc9-07241117-patch-a1-2.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-24T11-17-08",
+      "delegation": "patch-a1-2",
+      "phase": "patch",
+      "attempt": 1,
+      "idx": 2,
+      "path": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a/claude-code--all-gemini-flash-high/2026-07-24T11-17-08/out/worker-task-patch-a1-2.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 2,
+      "total_tokens": 42760
+    }
+  },
+  {
+    "file": "13-navidrome-3bc9-07241117-patch-a1-3.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-24T11-17-08",
+      "delegation": "patch-a1-3",
+      "phase": "patch",
+      "attempt": 1,
+      "idx": 3,
+      "path": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a/claude-code--all-gemini-flash-high/2026-07-24T11-17-08/out/worker-task-patch-a1-3.md"
+    },
+    "metrics": {
+      "max_code_lines": 4,
+      "total_code_lines": 7,
+      "code_fences": 2,
+      "shell_fences": 0,
+      "tool_calls": 3,
+      "total_tokens": 56593
+    }
+  },
+  {
+    "file": "14-navidrome-3bc9-07241117-repro-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-24T11-17-08",
+      "delegation": "repro-a1-1",
+      "phase": "repro",
+      "attempt": 1,
+      "idx": 1,
+      "path": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a/claude-code--all-gemini-flash-high/2026-07-24T11-17-08/out/worker-task-repro-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 5,
+      "total_tokens": 102020
+    }
+  },
+  {
+    "file": "15-navidrome-3bc9-07241117-repro-a1-2.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-24T11-17-08",
+      "delegation": "repro-a1-2",
+      "phase": "repro",
+      "attempt": 1,
+      "idx": 2,
+      "path": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a/claude-code--all-gemini-flash-high/2026-07-24T11-17-08/out/worker-task-repro-a1-2.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 6,
+      "total_tokens": 114520
+    }
+  },
+  {
+    "file": "16-navidrome-3bc9-07241117-repro-a1-3.md",
+    "label": "solution-leaked",
+    "families": [
+      "driver-dictated-code",
+      "driver-dictation-phrasing"
+    ],
+    "source": {
+      "target": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-24T11-17-08",
+      "delegation": "repro-a1-3",
+      "phase": "repro",
+      "attempt": 1,
+      "idx": 3,
+      "path": "instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a/claude-code--all-gemini-flash-high/2026-07-24T11-17-08/out/worker-task-repro-a1-3.md"
+    },
+    "metrics": {
+      "max_code_lines": 36,
+      "total_code_lines": 36,
+      "code_fences": 1,
+      "shell_fences": 0,
+      "tool_calls": 5,
+      "total_tokens": 86824
+    }
+  },
+  {
+    "file": "17-navidrome-b398-07262145-localize-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "instance_navidrome__navidrome-b3980532237e57ab15b2b93c49d5cd5b2d050013",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T21-45-39",
+      "delegation": "localize-a1-1",
+      "phase": "localize",
+      "attempt": 1,
+      "idx": 1,
+      "path": "instance_navidrome__navidrome-b3980532237e57ab15b2b93c49d5cd5b2d050013/claude-code--all-gemini-flash-high/2026-07-26T21-45-39/out/worker-task-localize-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 29,
+      "total_tokens": 1183200
+    }
+  },
+  {
+    "file": "18-navidrome-b398-07262145-patch-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "instance_navidrome__navidrome-b3980532237e57ab15b2b93c49d5cd5b2d050013",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T21-45-39",
+      "delegation": "patch-a1-1",
+      "phase": "patch",
+      "attempt": 1,
+      "idx": 1,
+      "path": "instance_navidrome__navidrome-b3980532237e57ab15b2b93c49d5cd5b2d050013/claude-code--all-gemini-flash-high/2026-07-26T21-45-39/out/worker-task-patch-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 49,
+      "total_tokens": 1763164
+    }
+  },
+  {
+    "file": "19-navidrome-b398-07262145-repro-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "instance_navidrome__navidrome-b3980532237e57ab15b2b93c49d5cd5b2d050013",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T21-45-39",
+      "delegation": "repro-a1-1",
+      "phase": "repro",
+      "attempt": 1,
+      "idx": 1,
+      "path": "instance_navidrome__navidrome-b3980532237e57ab15b2b93c49d5cd5b2d050013/claude-code--all-gemini-flash-high/2026-07-26T21-45-39/out/worker-task-repro-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 32,
+      "total_tokens": 2566912
+    }
+  },
+  {
+    "file": "20-navidrome-b398-07262145-repro-a1-2.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "instance_navidrome__navidrome-b3980532237e57ab15b2b93c49d5cd5b2d050013",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T21-45-39",
+      "delegation": "repro-a1-2",
+      "phase": "repro",
+      "attempt": 1,
+      "idx": 2,
+      "path": "instance_navidrome__navidrome-b3980532237e57ab15b2b93c49d5cd5b2d050013/claude-code--all-gemini-flash-high/2026-07-26T21-45-39/out/worker-task-repro-a1-2.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 5,
+      "total_tokens": 82077
+    }
+  },
+  {
+    "file": "21-navidrome-b398-07262145-repro-a1-3.md",
+    "label": "solution-leaked",
+    "families": [
+      "driver-dictated-code"
+    ],
+    "source": {
+      "target": "instance_navidrome__navidrome-b3980532237e57ab15b2b93c49d5cd5b2d050013",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T21-45-39",
+      "delegation": "repro-a1-3",
+      "phase": "repro",
+      "attempt": 1,
+      "idx": 3,
+      "path": "instance_navidrome__navidrome-b3980532237e57ab15b2b93c49d5cd5b2d050013/claude-code--all-gemini-flash-high/2026-07-26T21-45-39/out/worker-task-repro-a1-3.md"
+    },
+    "metrics": {
+      "max_code_lines": 40,
+      "total_code_lines": 40,
+      "code_fences": 1,
+      "shell_fences": 0,
+      "tool_calls": 3,
+      "total_tokens": 71435
+    }
+  },
+  {
+    "file": "22-nodebb-f083-07261603-localize-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "instance_NodeBB__NodeBB-f083cd559d69c16481376868c8da65172729c0ca-vnan",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T16-03-32",
+      "delegation": "localize-a1-1",
+      "phase": "localize",
+      "attempt": 1,
+      "idx": 1,
+      "path": "instance_NodeBB__NodeBB-f083cd559d69c16481376868c8da65172729c0ca-vnan/claude-code--all-gemini-flash-high/2026-07-26T16-03-32/out/worker-task-localize-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 16,
+      "total_tokens": 657113
+    }
+  },
+  {
+    "file": "23-nodebb-f083-07261603-patch-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "instance_NodeBB__NodeBB-f083cd559d69c16481376868c8da65172729c0ca-vnan",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T16-03-32",
+      "delegation": "patch-a1-1",
+      "phase": "patch",
+      "attempt": 1,
+      "idx": 1,
+      "path": "instance_NodeBB__NodeBB-f083cd559d69c16481376868c8da65172729c0ca-vnan/claude-code--all-gemini-flash-high/2026-07-26T16-03-32/out/worker-task-patch-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 23,
+      "total_tokens": 1445604
+    }
+  },
+  {
+    "file": "24-nodebb-f083-07261603-repro-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "instance_NodeBB__NodeBB-f083cd559d69c16481376868c8da65172729c0ca-vnan",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T16-03-32",
+      "delegation": "repro-a1-1",
+      "phase": "repro",
+      "attempt": 1,
+      "idx": 1,
+      "path": "instance_NodeBB__NodeBB-f083cd559d69c16481376868c8da65172729c0ca-vnan/claude-code--all-gemini-flash-high/2026-07-26T16-03-32/out/worker-task-repro-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 28,
+      "total_tokens": 843061
+    }
+  },
+  {
+    "file": "25-nodebb-f083-07261603-repro-a1-2.md",
+    "label": "solution-leaked",
+    "families": [
+      "driver-dictated-code"
+    ],
+    "source": {
+      "target": "instance_NodeBB__NodeBB-f083cd559d69c16481376868c8da65172729c0ca-vnan",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T16-03-32",
+      "delegation": "repro-a1-2",
+      "phase": "repro",
+      "attempt": 1,
+      "idx": 2,
+      "path": "instance_NodeBB__NodeBB-f083cd559d69c16481376868c8da65172729c0ca-vnan/claude-code--all-gemini-flash-high/2026-07-26T16-03-32/out/worker-task-repro-a1-2.md"
+    },
+    "metrics": {
+      "max_code_lines": 24,
+      "total_code_lines": 24,
+      "code_fences": 1,
+      "shell_fences": 0,
+      "tool_calls": 14,
+      "total_tokens": 387382
+    }
+  },
+  {
+    "file": "26-kudos-wall-07260610-design-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T06-10-19",
+      "delegation": "design-a1-1",
+      "phase": "design",
+      "attempt": 1,
+      "idx": 1,
+      "path": "kudos-wall/claude-code--all-gemini-flash-high/2026-07-26T06-10-19/out/worker-task-design-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 17,
+      "total_tokens": 327755
+    }
+  },
+  {
+    "file": "27-kudos-wall-07260610-execute-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T06-10-19",
+      "delegation": "execute-a1-1",
+      "phase": "execute",
+      "attempt": 1,
+      "idx": 1,
+      "path": "kudos-wall/claude-code--all-gemini-flash-high/2026-07-26T06-10-19/out/worker-task-execute-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 7,
+      "total_code_lines": 7,
+      "code_fences": 1,
+      "shell_fences": 0,
+      "tool_calls": 36,
+      "total_tokens": 984436
+    }
+  },
+  {
+    "file": "28-kudos-wall-07260610-execute-a1-2.md",
+    "label": "solution-leaked",
+    "families": [
+      "driver-dictated-code"
+    ],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T06-10-19",
+      "delegation": "execute-a1-2",
+      "phase": "execute",
+      "attempt": 1,
+      "idx": 2,
+      "path": "kudos-wall/claude-code--all-gemini-flash-high/2026-07-26T06-10-19/out/worker-task-execute-a1-2.md"
+    },
+    "metrics": {
+      "max_code_lines": 29,
+      "total_code_lines": 29,
+      "code_fences": 1,
+      "shell_fences": 0,
+      "tool_calls": 25,
+      "total_tokens": 665260
+    }
+  },
+  {
+    "file": "29-kudos-wall-07260610-judge-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T06-10-19",
+      "delegation": "judge-a1-1",
+      "phase": "judge",
+      "attempt": 1,
+      "idx": 1,
+      "path": "kudos-wall/claude-code--all-gemini-flash-high/2026-07-26T06-10-19/out/worker-task-judge-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 13,
+      "total_tokens": 282481
+    }
+  },
+  {
+    "file": "30-kudos-wall-07260610-plan-packets-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T06-10-19",
+      "delegation": "plan-packets-a1-1",
+      "phase": "plan-packets",
+      "attempt": 1,
+      "idx": 1,
+      "path": "kudos-wall/claude-code--all-gemini-flash-high/2026-07-26T06-10-19/out/worker-task-plan-packets-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 8,
+      "total_code_lines": 8,
+      "code_fences": 1,
+      "shell_fences": 0,
+      "tool_calls": 10,
+      "total_tokens": 166897
+    }
+  },
+  {
+    "file": "31-kudos-wall-07260610-requirements-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T06-10-19",
+      "delegation": "requirements-a1-1",
+      "phase": "requirements",
+      "attempt": 1,
+      "idx": 1,
+      "path": "kudos-wall/claude-code--all-gemini-flash-high/2026-07-26T06-10-19/out/worker-task-requirements-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 15,
+      "total_tokens": 270269
+    }
+  },
+  {
+    "file": "32-kudos-wall-07260610-review-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T06-10-19",
+      "delegation": "review-a1-1",
+      "phase": "review",
+      "attempt": 1,
+      "idx": 1,
+      "path": "kudos-wall/claude-code--all-gemini-flash-high/2026-07-26T06-10-19/out/worker-task-review-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 7,
+      "total_code_lines": 7,
+      "code_fences": 1,
+      "shell_fences": 0,
+      "tool_calls": 19,
+      "total_tokens": 472020
+    }
+  },
+  {
+    "file": "33-kudos-wall-07262119-design-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T21-19-05",
+      "delegation": "design-a1-1",
+      "phase": "design",
+      "attempt": 1,
+      "idx": 1,
+      "path": "kudos-wall/claude-code--all-gemini-flash-high/2026-07-26T21-19-05/out/worker-task-design-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 16,
+      "total_tokens": 295293
+    }
+  },
+  {
+    "file": "34-kudos-wall-07262119-execute-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T21-19-05",
+      "delegation": "execute-a1-1",
+      "phase": "execute",
+      "attempt": 1,
+      "idx": 1,
+      "path": "kudos-wall/claude-code--all-gemini-flash-high/2026-07-26T21-19-05/out/worker-task-execute-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 30,
+      "total_tokens": 875025
+    }
+  },
+  {
+    "file": "35-kudos-wall-07262119-judge-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T21-19-05",
+      "delegation": "judge-a1-1",
+      "phase": "judge",
+      "attempt": 1,
+      "idx": 1,
+      "path": "kudos-wall/claude-code--all-gemini-flash-high/2026-07-26T21-19-05/out/worker-task-judge-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 14,
+      "total_tokens": 356461
+    }
+  },
+  {
+    "file": "36-kudos-wall-07262119-plan-packets-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T21-19-05",
+      "delegation": "plan-packets-a1-1",
+      "phase": "plan-packets",
+      "attempt": 1,
+      "idx": 1,
+      "path": "kudos-wall/claude-code--all-gemini-flash-high/2026-07-26T21-19-05/out/worker-task-plan-packets-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 7,
+      "total_tokens": 119143
+    }
+  },
+  {
+    "file": "37-kudos-wall-07262119-requirements-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T21-19-05",
+      "delegation": "requirements-a1-1",
+      "phase": "requirements",
+      "attempt": 1,
+      "idx": 1,
+      "path": "kudos-wall/claude-code--all-gemini-flash-high/2026-07-26T21-19-05/out/worker-task-requirements-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 17,
+      "total_tokens": 312127
+    }
+  },
+  {
+    "file": "38-kudos-wall-07262119-review-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--all-gemini-flash-high",
+      "run": "2026-07-26T21-19-05",
+      "delegation": "review-a1-1",
+      "phase": "review",
+      "attempt": 1,
+      "idx": 1,
+      "path": "kudos-wall/claude-code--all-gemini-flash-high/2026-07-26T21-19-05/out/worker-task-review-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 7,
+      "total_code_lines": 7,
+      "code_fences": 1,
+      "shell_fences": 0,
+      "tool_calls": 17,
+      "total_tokens": 400281
+    }
+  },
+  {
+    "file": "39-kudos-wall-07260637-design-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--gemini35-plus-25-flash-high",
+      "run": "2026-07-26T06-37-07",
+      "delegation": "design-a1-1",
+      "phase": "design",
+      "attempt": 1,
+      "idx": 1,
+      "path": "kudos-wall/claude-code--gemini35-plus-25-flash-high/2026-07-26T06-37-07/out/worker-task-design-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 13,
+      "total_tokens": 239731
+    }
+  },
+  {
+    "file": "40-kudos-wall-07260637-execute-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--gemini35-plus-25-flash-high",
+      "run": "2026-07-26T06-37-07",
+      "delegation": "execute-a1-1",
+      "phase": "execute",
+      "attempt": 1,
+      "idx": 1,
+      "path": "kudos-wall/claude-code--gemini35-plus-25-flash-high/2026-07-26T06-37-07/out/worker-task-execute-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 50,
+      "total_tokens": 2113377
+    }
+  },
+  {
+    "file": "41-kudos-wall-07260637-execute-a1-2.md",
+    "label": "clean",
+    "families": [
+      "driver-proxy-shell-command"
+    ],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--gemini35-plus-25-flash-high",
+      "run": "2026-07-26T06-37-07",
+      "delegation": "execute-a1-2",
+      "phase": "execute",
+      "attempt": 1,
+      "idx": 2,
+      "path": "kudos-wall/claude-code--gemini35-plus-25-flash-high/2026-07-26T06-37-07/out/worker-task-execute-a1-2.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 7,
+      "total_tokens": 132007
+    }
+  },
+  {
+    "file": "42-kudos-wall-07260637-execute-a1-3.md",
+    "label": "solution-leaked",
+    "families": [
+      "driver-dictated-code"
+    ],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--gemini35-plus-25-flash-high",
+      "run": "2026-07-26T06-37-07",
+      "delegation": "execute-a1-3",
+      "phase": "execute",
+      "attempt": 1,
+      "idx": 3,
+      "path": "kudos-wall/claude-code--gemini35-plus-25-flash-high/2026-07-26T06-37-07/out/worker-task-execute-a1-3.md"
+    },
+    "metrics": {
+      "max_code_lines": 10,
+      "total_code_lines": 10,
+      "code_fences": 1,
+      "shell_fences": 0,
+      "tool_calls": 13,
+      "total_tokens": 557150
+    }
+  },
+  {
+    "file": "43-kudos-wall-07260637-execute-a1-4.md",
+    "label": "solution-leaked",
+    "families": [
+      "driver-dictated-code"
+    ],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--gemini35-plus-25-flash-high",
+      "run": "2026-07-26T06-37-07",
+      "delegation": "execute-a1-4",
+      "phase": "execute",
+      "attempt": 1,
+      "idx": 4,
+      "path": "kudos-wall/claude-code--gemini35-plus-25-flash-high/2026-07-26T06-37-07/out/worker-task-execute-a1-4.md"
+    },
+    "metrics": {
+      "max_code_lines": 125,
+      "total_code_lines": 128,
+      "code_fences": 2,
+      "shell_fences": 0,
+      "tool_calls": 2,
+      "total_tokens": 54155
+    }
+  },
+  {
+    "file": "44-kudos-wall-07260637-execute-a2-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--gemini35-plus-25-flash-high",
+      "run": "2026-07-26T06-37-07",
+      "delegation": "execute-a2-1",
+      "phase": "execute",
+      "attempt": 2,
+      "idx": 1,
+      "path": "kudos-wall/claude-code--gemini35-plus-25-flash-high/2026-07-26T06-37-07/out/worker-task-execute-a2-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 7,
+      "total_code_lines": 7,
+      "code_fences": 1,
+      "shell_fences": 0,
+      "tool_calls": 8,
+      "total_tokens": 126053
+    }
+  },
+  {
+    "file": "45-kudos-wall-07260637-execute-a2-2.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--gemini35-plus-25-flash-high",
+      "run": "2026-07-26T06-37-07",
+      "delegation": "execute-a2-2",
+      "phase": "execute",
+      "attempt": 2,
+      "idx": 2,
+      "path": "kudos-wall/claude-code--gemini35-plus-25-flash-high/2026-07-26T06-37-07/out/worker-task-execute-a2-2.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 2,
+      "total_tokens": 22166
+    }
+  },
+  {
+    "file": "46-kudos-wall-07260637-execute-a2-3.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--gemini35-plus-25-flash-high",
+      "run": "2026-07-26T06-37-07",
+      "delegation": "execute-a2-3",
+      "phase": "execute",
+      "attempt": 2,
+      "idx": 3,
+      "path": "kudos-wall/claude-code--gemini35-plus-25-flash-high/2026-07-26T06-37-07/out/worker-task-execute-a2-3.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 2,
+      "total_tokens": 36429
+    }
+  },
+  {
+    "file": "47-kudos-wall-07260637-judge-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--gemini35-plus-25-flash-high",
+      "run": "2026-07-26T06-37-07",
+      "delegation": "judge-a1-1",
+      "phase": "judge",
+      "attempt": 1,
+      "idx": 1,
+      "path": "kudos-wall/claude-code--gemini35-plus-25-flash-high/2026-07-26T06-37-07/out/worker-task-judge-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 14,
+      "total_tokens": 289735
+    }
+  },
+  {
+    "file": "48-kudos-wall-07260637-plan-packets-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--gemini35-plus-25-flash-high",
+      "run": "2026-07-26T06-37-07",
+      "delegation": "plan-packets-a1-1",
+      "phase": "plan-packets",
+      "attempt": 1,
+      "idx": 1,
+      "path": "kudos-wall/claude-code--gemini35-plus-25-flash-high/2026-07-26T06-37-07/out/worker-task-plan-packets-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 15,
+      "total_tokens": 298075
+    }
+  },
+  {
+    "file": "49-kudos-wall-07260637-requirements-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--gemini35-plus-25-flash-high",
+      "run": "2026-07-26T06-37-07",
+      "delegation": "requirements-a1-1",
+      "phase": "requirements",
+      "attempt": 1,
+      "idx": 1,
+      "path": "kudos-wall/claude-code--gemini35-plus-25-flash-high/2026-07-26T06-37-07/out/worker-task-requirements-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 16,
+      "total_tokens": 283591
+    }
+  },
+  {
+    "file": "50-kudos-wall-07260637-review-a1-1.md",
+    "label": "clean",
+    "families": [],
+    "source": {
+      "target": "kudos-wall",
+      "harness": "claude-code--gemini35-plus-25-flash-high",
+      "run": "2026-07-26T06-37-07",
+      "delegation": "review-a1-1",
+      "phase": "review",
+      "attempt": 1,
+      "idx": 1,
+      "path": "kudos-wall/claude-code--gemini35-plus-25-flash-high/2026-07-26T06-37-07/out/worker-task-review-a1-1.md"
+    },
+    "metrics": {
+      "max_code_lines": 0,
+      "total_code_lines": 0,
+      "code_fences": 0,
+      "shell_fences": 0,
+      "tool_calls": 16,
+      "total_tokens": 350471
+    }
+  }
+]

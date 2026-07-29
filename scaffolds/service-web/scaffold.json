@@ -1,0 +1,22 @@
+{
+  "scaffold_id": "service-web",
+  "version": "0.2.0",
+  "stack": [
+    "NestJS",
+    "Prisma",
+    "TypeScript",
+    "Vitest"
+  ],
+  "slots": [
+    "src/modules/**",
+    "test/modules/**",
+    "prisma/schema.prisma#models"
+  ],
+  "commands": {
+    "install": "pnpm install",
+    "build": "pnpm build",
+    "test": "pnpm test",
+    "start": "pnpm start",
+    "seed": "pnpm seed"
+  }
+}

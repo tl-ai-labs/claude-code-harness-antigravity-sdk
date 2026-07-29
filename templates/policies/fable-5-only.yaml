@@ -1,0 +1,38 @@
+# Flash-3.6 / Fable-5 study — Run 3 of 4: Fable 5 alone, every phase. The
+# single-model FRONTIER baseline — the quality ceiling and the cost ceiling the
+# other three policies are read against. One premium model does requirements +
+# design + planning + codegen + review + debug end to end.
+#
+# ADAPTER: builtin-anthropic → Claude via @anthropic-ai/sdk (auth ANTHROPIC_API_KEY,
+#   present in .env). The Anthropic adapter already treats claude-fable-5 as a
+#   new-family model (omits the unsupported `temperature` param), so the model
+#   string works as-is — no adapter change needed.
+#
+# PRICING confirmed 2026-07-22 against the published Claude pricing page: Fable 5
+#   is input 10.00 / cache-read 1.00 / output 50.00 per 1M tokens (first-party,
+#   global inference — the default builtin-anthropic path, no US 1.1x multiplier).
+#   The same confirmed rate is used everywhere fable-5 appears in the study so the
+#   four policies stay apples-to-apples. NOTE: Fable 5 uses the newer tokenizer
+#   (~30% more tokens for the same text than Sonnet 4.6 and earlier) — the adapter
+#   meters real tokens, so that is already reflected in cost; no rate adjustment.
+# Schema v2 (2026-07-28): every model declares the API doorway it is reached
+# through, alongside the adapter that reaches it. `adapter` alone was ambiguous
+# — `mcp` gets to Gemini on both AI Studio and Vertex, which meter, quota and
+# price separately, and until now which one ran was decided by the machine's
+# environment rather than by this file. See packages/policy/src/types.ts.
+version: 2
+name: fable-5-only
+
+models:
+  - id: fable-5
+    adapter: builtin-anthropic
+    api: anthropic
+    model_name: claude-fable-5
+    display_name: claude-fable-5
+    pricing: { input: 10.00, input_cached: 1.00, output: 50.00 } # confirmed 2026-07-22 (platform.claude.com/pricing)
+    pricing_source: https://platform.claude.com/docs/en/about-claude/pricing
+    auth: { env: ANTHROPIC_API_KEY }
+
+rules:
+  - default: fable-5
+    reason: "Single-model frontier baseline — Fable 5 on every phase"

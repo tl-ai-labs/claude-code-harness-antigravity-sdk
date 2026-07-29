@@ -1,0 +1,144 @@
+# all-gemini-flash-high — the SECOND policy (DESIGN §2.2): Gemini 3.5 Flash
+# at High thinking on every phase.
+#
+# High, not Low/Medium, because (a) SWE-bench Pro is hard and G4 already
+# showed Flash needing Opus rescues at low effort; (b) on the agy seat the
+# marginal cost of High is $0, so there is no cost reason to handicap it;
+# (c) "Flash at its best thinking" is the honest version of the
+# Google-facing question "how far does Flash get in a harness". Flash over
+# 3.1 Pro because Flash is the G4-comparable model and the Vertex gateway
+# serves 3.5 Flash — a future claude-code×gemini run compares like-for-like.
+#
+# The claude-code cell is the DELEGATED form (DESIGN §2.5) — Google
+# email ask 3b verbatim: "Claude Code as Harness and when it calls Gemini
+# it should call Gemini + Antigravity together either using Skills or
+# CLI". Claude Code's driver seat is welded to Anthropic (`claude` has no
+# non-Anthropic --model), so this cell is inherently TWO-model: the pinned
+# Opus 4.6 driver orchestrates and a provisioned Skill delegates all
+# substantive work to Gemini through the Antigravity SDK (`gemini_worker.py`,
+# pip google-antigravity → Vertex). MECHANISM CHANGED 2026-07-23: Teja parked
+# the agy CLI (2026-07-21), so the worker now uses the SDK, not `agy -p`. The
+# SDK is the right tool here precisely because it is Gemini-only auth and
+# Gemini is the verified-working path — it returns real UsageMetadata (token
+# counts) that the CLI never printed, so this cell is no longer a $0/no-numbers
+# blind spot: the worker's Gemini spend is recorded as token counts in
+# worker_usage sidecars and priced downstream. (The SDK's Claude path is D6-
+# blocked — tool results returned as `assistant` messages, 400 on Opus/Sonnet
+# — which is exactly why the DRIVER stays Claude Code's own seat and is NOT
+# routed through the SDK.) Reported always as "Opus driver → Flash worker",
+# never as pure Gemini; per-attempt delegation_calls in the manifest is the
+# honesty meter. Cell stays GATED ON EXPLICIT GO (needs the sdk-probe venv
+# built + ADC + pricing preflight; runs after cross 1 + its own smoke).
+#
+# ---------------------------------------------------------------------------
+# MIGRATED TO THE UNIFIED SCHEMA — version 2 (2026-07-29)
+# ---------------------------------------------------------------------------
+# Full rationale lives in all-opus.yaml, the same way the `limits` rationale
+# does. In one line: the cell that used to be a `bindings.claude-code:
+# {driver, worker, worker_thinking}` map is now a COMPOSITION entry naming two
+# ordinary models[] entries, each of which declares its own adapter and API —
+# so the frozen policy_snapshot.yaml of a run finally records the cable the run
+# used instead of leaving it hardcoded in runtimes.mjs.
+#
+# THIS IS THE FILE THE UNIFICATION WAS FOR. It is the only cell on the matrix
+# that reaches a second vendor, and it did it through the Antigravity SDK
+# against Vertex without a single character in the policy saying so. Reading the
+# entries below top to bottom now answers "what ran, through what, against
+# what": Opus 4.6 through the built-in Anthropic lane, Gemini 3.5 Flash through
+# the Antigravity SDK against Vertex in asia-south1.
+#
+# The cell id `flash-high` is UNCHANGED, because it is the `modelId` every
+# recorded manifest, audit record and dashboard export already carries.
+version: 2
+name: all-gemini-flash-high
+models:
+  # ---- the cell -----------------------------------------------------------
+  # `delegated` is the two-seat form: an Anthropic driver in Claude Code's own
+  # seat, conducting a Gemini worker it reaches through the Skill. The resolver
+  # refuses a delegated cell on any runtime but claude-code, for the reason in
+  # the header — the driver seat is welded to Anthropic and reaches Gemini only
+  # by delegating, so "delegated" is meaningless anywhere else.
+  - id: flash-high                    # UNCHANGED id — this is `modelId` everywhere
+    composition: delegated
+    runtime: claude-code
+    driver: opus-anthropic
+    worker: flash-35-agsdk-vertex
+
+  # ---- driver leaf --------------------------------------------------------
+  - id: opus-anthropic
+    adapter: builtin-anthropic        # the `claude` CLI talks to Anthropic itself
+    api: anthropic
+    model_name: claude-opus-4-6       # same pin as all-opus: agy's Claude ceiling
+    reasoning:
+      effort: high                    # was `thinking.claude-code`; --effort high
+    # No `pricing:` — composition member, priced from real receipts (all-opus.yaml).
+
+  # ---- worker leaf --------------------------------------------------------
+  # THIS ENTRY IS THE POINT OF THE WHOLE MIGRATION. Under the legacy schema the
+  # worker was the bare string `gemini-3.5-flash` and everything else about how
+  # it was reached lived in runtimes.mjs. All three facts below were true of
+  # every recorded run and none of them were in the policy.
+  - id: flash-35-agsdk-vertex
+    # Named model-adapter-api, matching the console's convention in
+    # templates/policies/opus-plus-flash.yaml (flash-mcp-vertex,
+    # flash-agsdk-vertex, flash-mcp-ai-studio, flash-router-ai-studio). Ravi's
+    # "Gemini can be accessed through 2 adapters and 3 APIs" is exactly that
+    # naming: one entry per combination, each with its own id.
+    adapter: antigravity-sdk          # gemini_worker.py → pip google-antigravity
+    api: vertex                       # the SDK's only doorway; validated at load
+    model_name: gemini-3.5-flash      # SDK model id passed to gemini_worker.py --model
+    region: asia-south1               # pinned, and the loader REQUIRES it for vertex:
+                                      # an unpinned region falls back to the shared
+                                      # `global` endpoint, which starved this project
+                                      # for 3+ hours on 2026-07-16 and killed two Pro
+                                      # runs at ~$1.78 each mid-patch.
+    reasoning:
+      tier: high                      # was `worker_thinking: HIGH`; the resolver
+                                      # upper-cases it back to the SDK's
+                                      # ThinkingLevel.HIGH (the only probe-verified
+                                      # level) when it builds the binding.
+    # No `pricing:` — composition member. The worker's spend comes from the real
+    # UsageMetadata in its worker_usage sidecars, never from a number typed here.
+    #
+    # WHY THERE IS NO `select:` SLOT YET, though the schema now offers one. A
+    # slot would let this policy hold flash-mcp-vertex and flash-mcp-ai-studio
+    # beside this entry and let `--select` pick per run — which is exactly what
+    # opus-plus-flash.yaml does on the console. The harness cannot honestly
+    # offer it: gemini_worker.py speaks the Antigravity SDK and only the
+    # Antigravity SDK, so an `mcp` option here would pass validation and then
+    # fail at the first delegation, which is the precise class of failure this
+    # schema change exists to end. The slot lands the day a worker script speaks
+    # a second lane, not before.
+rules:
+  # SWE-bench Pro's three phases, named explicitly. Was `phases.{repro,localize,
+  # patch}`.
+  - when: { phase: [repro, localize, patch] }
+    use: flash-high
+    reason: SWE-bench Pro phases — delegated Opus→Flash cell throughout
+  # Fallback for stage ids not named above (the SDLC kind's template-driven
+  # stages) — same mechanism as all-opus.yaml; Pro routing is unchanged by it.
+  # NOTE: an SDLC×this-policy cell is the DELEGATED form on every stage and
+  # stays gated on explicit go, exactly like the Pro cell.
+  - default: flash-high
+    reason: unrecognised stage — delegated Opus→Flash cell
+retry:
+  type: flat
+  max_attempts: 3
+# LIMITS RAISED 2026-07-25 — identical change to all-opus.yaml, applied in the
+# same commit because DESIGN §2.4 forbids changing a limit mid-matrix: a limit
+# is part of the study definition, so both cells move together or neither does.
+# Full rationale lives in all-opus.yaml; the delegated cell has one extra
+# reason of its own, which is DESIGN §11 defect 3:
+#   The Skill used to hand the WORKER the driver's entire phase clock
+#   (--timeout == phase_timeout_min), so one gemini_worker.py call was
+#   authorised to burn the whole attempt, leaving the driver no runway to
+#   verify the result, re-delegate on a bad answer, or write the contract file
+#   the gate requires. That is now arithmetic in runtimes.mjs: the worker gets
+#   60% of the phase and the driver keeps 40% to conduct with. A bigger phase
+#   ceiling is what makes that split survivable — 60% of 10 min was 6 min,
+#   which is under a single Flash-High delegation on a real repo; 60% of 45 is
+#   27 min, comfortably above the 2026-07-24 navidrome hand-offs.
+limits:
+  phase_timeout_min: 45
+  cmd_timeout_min: 15
+  phase_budget_usd: 8.00

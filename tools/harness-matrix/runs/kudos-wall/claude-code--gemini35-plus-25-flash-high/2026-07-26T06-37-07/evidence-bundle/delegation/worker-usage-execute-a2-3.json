@@ -1,0 +1,17 @@
+{
+  "model": "gemini-2.5-flash",
+  "thinking": "NONE",
+  "sdk": "google-antigravity",
+  "sdk_version": "0.1.7",
+  "vertex_project": "ai-studies-console",
+  "vertex_location": "asia-south1",
+  "usage": {
+    "prompt_token_count": 33823,
+    "cached_content_token_count": 0,
+    "candidates_token_count": 682,
+    "thoughts_token_count": 1924,
+    "total_token_count": 36429
+  },
+  "tool_call_count": 2,
+  "text": "I have successfully rewritten the test at `test/modules/kudos.spec.ts` to use manual dependency injection, as requested.\n\nThe changes include:\n*   Removal of NestJS testing module imports and `INestApplication`.\n*   Manual instantiation of `PrismaService`, `KudosService`, and `KudosController` in the `beforeAll` hook.\n*   Ensuring `prismaService.kudos.deleteMany()` is called in `beforeEach`.\n*   Ensuring `prismaService.$disconnect()` is called in `afterAll` while removing any `app.close()` calls.\n*   Removal of `app` declaration.\n\nAll specified requirements have been met."
+}

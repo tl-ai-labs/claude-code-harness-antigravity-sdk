@@ -1,0 +1,45 @@
+# Workforce Ops v1.1 POC — MID-tier sweep companion to flash-3-5-high.yaml.
+# Single-model build with Gemini 3.5 Flash at thinkingLevel=low (one tier
+# down from high). Runs head-to-head against glm-5-2-low.yaml on the same
+# v1.1 idempotency enhancement, seeded from Pass 1.
+#
+# Tier-pairing note: Gemini's "low" thinkingLevel and GLM's "low"
+# reasoning_effort are vendor-labeled the same but not necessarily
+# equivalent in actual compute. Disclosed in the study ledger.
+#
+# Pricing-as-of: 2026-06-30 (Google first-party).
+# Schema v2 (2026-07-28): every model declares the API doorway it is reached
+# through, alongside the adapter that reaches it. `adapter` alone was ambiguous
+# — `mcp` gets to Gemini on both AI Studio and Vertex, which meter, quota and
+# price separately, and until now which one ran was decided by the machine's
+# environment rather than by this file. See packages/policy/src/types.ts.
+version: 2
+name: flash-3-5-low
+
+models:
+  - id: flash-3-5
+    adapter: mcp
+    # Vertex, NOT AI Studio — corrected 2026-07-29. The v2 migration wrote
+    # `api: ai-studio` + an API-key auth block here; no Gemini call in this
+    # corpus has ever used AI Studio. `api` outranks the environment in
+    # GeminiAdapter, so the wrong value reroutes the run silently onto another
+    # wallet and quota pool instead of failing. Full rationale in the sibling
+    # flash-3-5-high.yaml, which carries the tier-sweep's canonical block.
+    api: vertex
+    region: asia-south1               # loader REQUIRES a region for api: vertex
+    model_name: gemini-3.5-flash
+    display_name: gemini-3.5-flash (low)
+    reasoning:
+      tier: low
+    # Vendor LIST price; the Vertex regional surcharge is applied downstream by
+    # the exporter's restatement, not baked in here.
+    pricing:
+      input: 1.50
+      input_cached: 0.15
+      output: 9.00
+    pricing_source: https://ai.google.dev/gemini-api/docs/pricing
+    # No `auth:` — Vertex uses Application Default Credentials (gcloud login).
+
+rules:
+  - default: flash-3-5
+    reason: "v1.1 POC MID — Gemini 3.5 Flash, thinkingLevel=low, every phase"

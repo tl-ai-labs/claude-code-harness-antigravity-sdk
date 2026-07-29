@@ -1,0 +1,20 @@
+// CHASSIS FILE — datasource + generator are platform-owned.
+// SLOT EXCEPTION: models APPEND their domain models below the marker;
+// they never modify the datasource/generator blocks or AppMeta.
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Platform bookkeeping — proves the DB pipeline works before models exist.
+model AppMeta {
+  key   String @id
+  value String
+}
+
+// ═══ MODEL SLOT — generated domain models are appended below ═══

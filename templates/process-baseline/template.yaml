@@ -1,0 +1,62 @@
+# Process execution — press Send. The standard 9-step baseline designed to
+# cover ~80% of non-SDLC use cases. bypassable: true steps may be skipped in
+# a study's plan WITH a recorded reason; the rest are unavoidable.
+#
+# SAME FRAMEWORK as SDLC (decision 2026-07-09), steps skipped where they don't
+# apply. Mapping to the five-phase framework:
+#   (1) requirements finalization  → intake (the corpus IS the requirement set)
+#   (2) design finalization        → schema-design
+#   (3) building the task packets  → packetize
+#   (4) execution                  → mechanical
+#   (5) judging & review           → judgment-review · compliance-review ·
+#                                    ground-truth-verify · judge
+# v0.2.0: artifact chaining — mechanical and the reviews consume the
+# schema-design output as an input slice (inputs_from).
+template_id: process-baseline
+version: 0.2.0
+kind: process-execution
+title: Process-execution baseline
+stages:
+  - id: intake
+    title: Corpus intake & fingerprint (≈ requirements)
+    executor: deterministic-tool
+    bypassable: false
+    config: { tool: corpus-intake }
+  - id: schema-design
+    title: Understanding & schema design (≈ design)
+    executor: llm-task
+    bypassable: false
+    config: { packet: single, phase: design, task_type: schema_design }
+  - id: packetize
+    title: Packetize (≈ building the task packets)
+    executor: deterministic-tool
+    bypassable: false
+    config: { tool: packetize }
+  - id: mechanical
+    title: Mechanical execution (≈ execution)
+    executor: llm-task
+    bypassable: false
+    config: { packet: batches, batches: 3, phase: mechanical, task_type: unit_batch, inputs_from: [schema-design] }
+  - id: judgment-review
+    title: Judgment review — senior model, sampled (≈ review)
+    executor: llm-task
+    bypassable: true
+    config: { packet: single, phase: review, task_type: senior_review, inputs_from: [schema-design, mechanical] }
+  - id: compliance-review
+    title: Compliance / PII review (≈ review)
+    executor: llm-task
+    bypassable: true
+    config: { packet: single, phase: review, task_type: compliance_review, inputs_from: [mechanical] }
+  - id: ground-truth-verify
+    title: Ground-truth verification (≈ judging)
+    executor: verify
+    bypassable: true
+    config: { method: ground-truth-eval }
+  - id: judge
+    title: Judge scoring (≈ judging)
+    executor: judge
+    bypassable: false
+  - id: report
+    title: Report / rollup
+    executor: report
+    bypassable: false

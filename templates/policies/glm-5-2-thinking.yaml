@@ -1,0 +1,38 @@
+# Workforce Ops v1.1 POC — single-model build with GLM-5.2 at maximum
+# reasoning effort + thinking enabled. Runs head-to-head against
+# flash-3-5-high.yaml on the same v1.1 idempotency enhancement, seeded from
+# Pass 1.
+#
+# Routes via the new `builtin-openai-compat` adapter (uses the openai npm
+# package against Z.ai's OpenAI-compatible endpoint).
+#
+# Pricing-as-of: 2026-06-30 (Z.ai first-party).
+# Schema v2 (2026-07-28): every model declares the API doorway it is reached
+# through, alongside the adapter that reaches it. `adapter` alone was ambiguous
+# — `mcp` gets to Gemini on both AI Studio and Vertex, which meter, quota and
+# price separately, and until now which one ran was decided by the machine's
+# environment rather than by this file. See packages/policy/src/types.ts.
+version: 2
+name: glm-5-2-thinking
+
+models:
+  - id: glm-5-2
+    adapter: builtin-openai-compat
+    api: openai-compat
+    model_name: glm-5.2
+    display_name: glm-5.2 (thinking, max)
+    endpoint: https://api.z.ai/api/paas/v4/
+    reasoning:
+      enabled: true
+      effort: max
+    pricing:
+      input: 1.40
+      input_cached: 0.26
+      output: 4.40
+    pricing_source: https://docs.z.ai/guides/overview/pricing
+    auth:
+      env: ZAI_API_KEY
+
+rules:
+  - default: glm-5-2
+    reason: "v1.1 POC — GLM-5.2, thinking enabled, reasoning_effort=max, every phase"

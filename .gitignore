@@ -1,0 +1,18 @@
+# Build output and deps. packages/*/dist is produced by `pnpm build`.
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Never commit credentials. The harness reads Vertex through gcloud ADC and
+# Claude Code through its own login; neither needs a file here.
+.env
+.env.*
+*.json.key
+gcs/*.json
+
+# OS noise
+.DS_Store
+
+# Run artifacts are ignored by tools/harness-matrix/.gitignore, which ships
+# with this repo and carries the full explanation — including the deliberate
+# un-ignore ladder that keeps evidence-bundle/delegation/ and nothing else.

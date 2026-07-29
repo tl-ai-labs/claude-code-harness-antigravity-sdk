@@ -1,0 +1,8 @@
+{
+  "task_id": "kudos-wall",
+  "template_id": "sdlc-mini",
+  "scaffold_id": "service-web",
+  "brief": "brief.md",
+  "brief_sha256": "26c62f79f5261eeb51566da9e9a371f72baff52af48eb7d49636fe0bc853f33a",
+  "source": "studies/kudos-wall-22-07-26-1941/brief.md (copied verbatim 2026-07-25 so the harness task is self-contained and the prompt input is pinned by hash)"
+}

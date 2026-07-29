@@ -1,0 +1,17 @@
+{
+  "model": "gemini-2.5-flash",
+  "thinking": "NONE",
+  "sdk": "google-antigravity",
+  "sdk_version": "0.1.7",
+  "vertex_project": "ai-studies-console",
+  "vertex_location": "asia-south1",
+  "usage": {
+    "prompt_token_count": 21379,
+    "cached_content_token_count": 0,
+    "candidates_token_count": 472,
+    "thoughts_token_count": 315,
+    "total_token_count": 22166
+  },
+  "tool_call_count": 2,
+  "text": "The `src/modules/kudos/prisma.service.ts` file has been updated. I removed the `enableShutdownHooks` method and the `INestApplication` import, addressing the compilation error. The file now adheres to the specified structure."
+}

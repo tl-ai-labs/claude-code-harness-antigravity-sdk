@@ -1,0 +1,187 @@
+# all-opus — the ANCHOR policy of the harness matrix (DESIGN §2.2).
+#
+# Strongest brain the runtime can drive, pinned to Antigravity's Claude ceiling
+# (Opus 4.6) so that when a second runtime returns the comparison is same-brain.
+# Claude Code must NOT float to its newer default — the Setup 1 rig rehearsal
+# drifted to opus-4-8, which would have poisoned the comparison (DESIGN §2.1).
+#
+# Thinking parity (verified 2026-07-21, DESIGN §2.1): every knob that exists is
+# pinned. claude-code has --effort, pinned `high` below as `reasoning.effort` —
+# it is the Opus 4.6 API default, but pinning beats trusting a default that
+# could drift.
+#
+# ===========================================================================
+# MIGRATED TO THE UNIFIED SCHEMA — version 2 (2026-07-29)
+# ===========================================================================
+# THIS BLOCK IS THE CANONICAL EXPLANATION for all four matrix policies. The
+# other three carry a short note and point here, the same way they already
+# point here for the `limits` rationale.
+#
+# WHY. Until now this repo had two policy layers doing the same job in
+# different words. The console's (templates/policies/*.yaml, 19 files) said
+# WHICH model AND how it is reached — `adapter` + `api`. The harness's (these
+# four files) said only WHICH model; the adapter and the API were hardcoded in
+# runtimes.mjs. So `worker: gemini-3.5-flash` was reached through the
+# Antigravity SDK against Vertex AI, and no policy file said so — meaning the
+# frozen policy_snapshot.yaml inside every recorded run did not record the
+# cable the run actually used. That is the exact provenance hole
+# packages/policy/src/types.ts documents for the console, left open on the one
+# surface where the Antigravity SDK actually runs.
+#
+# Ravi's 2026-07-28 instruction closed it: "integrate the SDLC policy &
+# Antigravity SDK into ONE policy and rollout code", "applicable to all the
+# policies", with opus-plus-flash.yaml as the reference that "shouldn't lose its
+# structural strength (in terms of rules and models abstraction), rather should
+# be extended to support model + adapter combinations (each having its own id)".
+#
+# WHAT THAT MEANS HERE, mechanically:
+#
+#   models[].bindings{runtime → …}   →  a COMPOSITION entry naming other
+#                                       models[] entries as driver/worker.
+#   models[].thinking{runtime → …}   →  `reasoning.effort` on the driver leaf,
+#                                       `reasoning.tier` on the worker leaf.
+#   phases{stage → id}               →  rules[], the console's matcher.
+#
+# Every model × adapter × API combination is now its own models[] entry with
+# its own id — Ravi's sentence applied literally — and a cell that COMBINES two
+# of them (an Anthropic driver orchestrating a Gemini worker) is likewise an
+# entry with its own id. A rule still names exactly one id, so the rules and
+# models abstraction is not weakened; it is the same abstraction reaching one
+# level further. Full engine rationale: packages/policy/core/policy-core.mjs.
+#
+# THE COMPOSITION ID IS THE OLD MODEL ID, DELIBERATELY. `opus` here,
+# `flash-high` in all-gemini-flash-high, and so on. That string is what the
+# resolver returns as `modelId` and what every manifest, audit record and
+# dashboard export stamps. Renaming it would re-base every recorded run against
+# a name those runs never used, so the cell ids are held fixed and only the NEW
+# leaf entries get new names.
+#
+# THREE THINGS FALL OUT FREE, which is the evidence the shape is right:
+#   1. No new schema fields were invented. `reasoning: {tier, effort}` already
+#      existed in the console's v2 schema and carries exactly what `thinking:`
+#      and `worker_thinking:` carried.
+#   2. `rules[]` brings the whole matcher, including `retry_count` — the
+#      escalation gemini35-plus-25-flash-high.yaml's header records as
+#      inexpressible. See that file for what is still missing to WIRE it.
+#   3. `select` slots become available on the harness, so "one model, two
+#      adapters, three APIs" can be asked on the surface where the SDK runs.
+#      Not used yet; the reason is at the worker leaf in the sibling files.
+#
+# NO PRICING BLOCKS IN THIS FILE — and the validator permits that, narrowly. A
+# models[] entry reachable ONLY as a composition member may omit `pricing`; one
+# a rule names directly may not. That exemption exists for this exact case:
+# claude-opus-4-6 has no row in @study-console/pricing, and the harness prices a
+# run from the driver's real cost receipts and the worker's real UsageMetadata
+# sidecars — never from the policy. Writing an invented price into a file to
+# satisfy a validator is precisely the failure the pricing-preflight rule exists
+# to prevent, so the schema permits the omission instead of inviting the lie.
+#
+# THE `antigravity:` BINDINGS ARE GONE, not converted. They read
+# `antigravity: "Claude Opus 4.6 (Thinking)"` with `thinking: product-internal`,
+# and had been inert since 2026-07-23, when the agy CLI runtime was removed from
+# runtimes.mjs (Teja parked the CLI 2026-07-21). Nothing reads them:
+# run-harness.mjs validates --runtime against the RUNTIMES registry and exits
+# before a policy file is ever opened, and that registry has one entry. Carrying
+# a value no code path can reach is how a reader gets told something false about
+# what a run did, so the fact is recorded here as history instead:
+#
+#   agy's Claude shipped ONLY as "Claude Opus 4.6 (Thinking)" with no level
+#   knob, recorded as `product-internal` and stamped in every manifest of that
+#   era. The open question of what that level actually is was posted to the
+#   Google thread and is still unanswered; if it is answered, those manifests
+#   get annotated retroactively.
+#
+# WHEN THE SDK-BASED ANTIGRAVITY HARNESS RETURNS (box 1, blocked on D6 — the SDK
+# returns Claude tool results as `assistant` messages, 400 on Opus/Sonnet), it
+# comes back as a SECOND composition entry with its own id and
+# `runtime: antigravity`, reached by a `select` slot or by its own policy file.
+# It does not come back as a second key inside this one, because a composition
+# is gateable precisely by naming exactly one runtime.
+#
+# BACKWARD COMPATIBILITY IS UNAFFECTED. Every policy_snapshot.yaml already
+# frozen inside a recorded run is still the LEGACY shape, and the loader still
+# reads that shape — detected by a top-level `phases` key, resolved by a
+# verbatim port of the pre-unification logic. Those files are never rewritten,
+# in memory or on disk. See policy-core.mjs → resolveLegacyHarnessStages.
+version: 2
+name: all-opus
+models:
+  # ---- the cell -----------------------------------------------------------
+  # A `solo` composition: one model, pinned to one runtime. The runtime pin is
+  # not decoration — it is what makes a cell gateable. Asking for a runtime no
+  # composition here declares is a designed preflight failure, exactly as an
+  # absent `bindings[runtime]` was under the legacy schema.
+  #
+  # `solo` rather than pointing the rules straight at the leaf, because a leaf a
+  # rule names directly is a routing target, and routing targets must carry
+  # pricing (see header). This is an anchor harness cell, not a priced console
+  # route.
+  - id: opus                          # UNCHANGED id — this is `modelId` everywhere
+    composition: solo
+    runtime: claude-code
+    driver: opus-anthropic
+
+  # ---- the model × adapter × API combination it names ---------------------
+  - id: opus-anthropic
+    # Claude Code's driver seat is welded to Anthropic: the `claude` CLI has no
+    # non-Anthropic --model, and it talks to Anthropic itself rather than
+    # through any adapter of ours. `builtin-anthropic` + `anthropic` is the
+    # honest name for that one lane, and it is the same pair the loader implies
+    # for legacy snapshots (LEGACY_IMPLIED_CABLE.driver) — so a migrated run and
+    # a replayed legacy run report the same cable rather than disagreeing.
+    adapter: builtin-anthropic
+    api: anthropic
+    model_name: claude-opus-4-6       # the pin — must not float (DESIGN §2.1)
+    reasoning:
+      effort: high                    # was `thinking.claude-code`; passed as --effort high
+    # No `pricing:` — reachable only as a composition member. See header.
+    # No `region:` — the anthropic api has no region axis.
+rules:
+  # SWE-bench Pro's three phases, named explicitly so Pro's routing is readable
+  # here rather than inferred from the fallback. Was `phases.{repro,localize,
+  # patch}`.
+  - when: { phase: [repro, localize, patch] }
+    use: opus
+    reason: SWE-bench Pro phases — anchor cell, one model throughout
+  # Fallback for every stage id not named above. This is how a three-slot Pro
+  # policy also serves the SDLC kind, whose stage ids come from the execution
+  # template rather than from this file. Was `phases.default`; a `default` rule
+  # is the same mechanism at the same precedence — consulted only after every
+  # `when` rule has failed to match — so Pro behaviour is unchanged by it.
+  - default: opus
+    reason: unrecognised stage — anchor cell routes everything to the same model
+retry:
+  type: flat          # flat | thinking-ladder | model-ladder | cross-model (§2.3)
+  max_attempts: 3     # per phase, counting the first attempt
+# LIMITS RAISED 2026-07-25 — closes DESIGN §11 recorded defects 1, 3 and 4.
+# WHAT changed: phase 10 → 45 min, cmd 10 → 15 min, budget $0.75 → $8.00.
+# WHY, in three parts:
+#   (a) The two timeouts were EQUAL (both 10), which DESIGN §2.4 records as a
+#       defect: one hung container command consumed the entire phase, leaving
+#       the model zero clock to diagnose and recover. It is not hypothetical —
+#       the first smoke died exactly this way, mid-recovery, and the manifest
+#       read as a runtime failure rather than the environment stall it was.
+#       The invariant §2.4 states is cmd MATERIALLY LESS THAN phase; 15 vs 45
+#       restores it at a 1:3 ratio, so a single stalled command costs a third
+#       of the attempt instead of all of it.
+#   (b) 10 min never covered the real work. The 2026-07-21 smoke's REPRO phase
+#       legitimately needed 1002 s (16.7 min) — already over the old ceiling —
+#       and the SDLC kind's EXECUTE stage is strictly larger than any Pro
+#       phase: it authors the whole delivery (modules + tests) across several
+#       worker delegations in ONE runtime invocation. 45 min is ~4x the
+#       observed per-phase time on the 2026-07-24 delegated navidrome run
+#       (~11 min/phase), so it is a hang detector, not a work limit.
+#   (c) $0.75/attempt was sized for a single Pro phase, not for an 8-stage
+#       SDLC walk whose execute stage delegates repeatedly. A budget stop mid
+#       stage is indistinguishable in the manifest from a model that gave up,
+#       which is the one failure shape this study must never manufacture.
+# STUDY-DEFINITION NOTE (§2.4 rule: never mid-matrix): this is applied to BOTH
+# policy files in the same commit, before any further cell runs. The two Pro
+# harness runs already recorded (2407-0932, 2407-1117) were made under the old
+# limits; each run ships its own policy_snapshot.yaml, so the difference is
+# visible per run rather than silently averaged. Re-run Pro under these limits
+# before comparing it against any new cell.
+limits:
+  phase_timeout_min: 45   # per runtime invocation (one phase attempt)
+  cmd_timeout_min: 15     # per run-in-env.sh container command (gates + agent)
+  phase_budget_usd: 8.00  # claude-code cells only (--max-budget-usd); agy has no budget knob

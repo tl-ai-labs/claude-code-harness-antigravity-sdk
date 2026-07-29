@@ -1,0 +1,17 @@
+{
+  "name": "claude-code-harness-antigravity-sdk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Claude Code as driver, Gemini via the Google Antigravity SDK as worker: a delegated agent harness run against SWE-bench Pro and a greenfield SDLC task.",
+  "packageManager": "pnpm@11.8.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm build && node --test \"tools/**/*.test.mjs\"",
+    "run-harness": "node tools/harness-matrix/run-harness.mjs",
+    "dry-run": "node tools/harness-matrix/run-harness.mjs --dry-run"
+  }
+}

