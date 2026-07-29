@@ -1,7 +1,12 @@
 # claude-code-harness-antigravity-sdk
 
-**Claude Code is the driver. Gemini 3.5 Flash, reached through Google's
-Antigravity SDK, is the worker. The driver is not allowed to write code.**
+**Claude Code is the driver. A Gemini model, reached through Google's Antigravity
+SDK, is the worker. The driver is not allowed to write code.**
+
+Which Gemini is a policy field, not a property of the harness. The four shipped
+policies cover **Gemini 3.5 Flash**, **Gemini 2.5 Flash**, a **mixed 3.5/2.5**
+cell, and a **no-worker** control (§8.1). The headline runs used 3.5 Flash;
+swapping the worker model is a `model_name:` edit in a YAML file (§8.2).
 
 This repository is the harness that enforces that split, the two workloads it
 was run against, the machinery that checks the split was not violated, and the
@@ -852,8 +857,10 @@ checks for one of these and fails with exit 2 if neither is present.
 > **our** paid project. You almost certainly cannot reach it, and you should not
 > want to. **Set `GOOGLE_CLOUD_PROJECT` to your own project id.**
 
-That project needs the **Vertex AI API enabled** and quota for
-`gemini-3.5-flash` in the region you pin.
+That project needs the **Vertex AI API enabled** and quota, in the region you
+pin, for whichever model your policy's worker leaf names — `gemini-3.5-flash`
+for the three headline policies, `gemini-2.5-flash` for the older-generation
+column, both for the tiered one (§8.1).
 
 ### 16.3 The complete environment-variable table
 
