@@ -13,6 +13,16 @@ gcs/*.json
 # OS noise
 .DS_Store
 
-# Run artifacts are ignored by tools/harness-matrix/.gitignore, which ships
-# with this repo and carries the full explanation — including the deliberate
-# un-ignore ladder that keeps evidence-bundle/delegation/ and nothing else.
+# Run artifacts are ignored by tools/harness-matrix/.gitignore. Committed
+# reference exemplars live under examples/<workload>/passes/reference/;
+# local `examples/<workload>/passes/<stamp>/` outputs from user runs are
+# ignored below.
+examples/*/passes/*
+!examples/*/passes/reference/
+!examples/*/passes/reference/**
+!examples/swe-bench-pro/passes/navidrome/
+!examples/swe-bench-pro/passes/navidrome/**
+
+# Local SWE-bench Pro corpus (fetched by tools/swe/fetch-instances-pro.mjs).
+# Not committed — fetch is deterministic, and the corpus is large.
+studies/swe-pro-corpus/

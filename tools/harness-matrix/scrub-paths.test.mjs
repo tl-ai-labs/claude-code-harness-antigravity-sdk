@@ -193,25 +193,32 @@ test("scrubTree refuses to emit a hand-off whose lint verdict moved", () => {
 
 // ---- against the real recorded evidence ------------------------------------
 
-const RUNS = join(HERE, "runs");
+// The tracked hand-offs live under examples/<workload>/passes/ — one reference
+// pass per workload in the deliverable. `git ls-files` from the repo root is
+// what stops an untracked local run under tools/harness-matrix/runs/ from
+// affecting the count. REPO_ROOT (imported above) is the harness's repo root,
+// re-used here rather than redeclared.
 
 /** Every tracked hand-off, via git so an untracked local run cannot affect the result. */
 function trackedHandoffs() {
-  const out = execFileSync("git", ["ls-files", "runs/**"], { cwd: HERE, encoding: "utf8" });
+  const out = execFileSync("git", ["ls-files", "examples/*/passes/**"], { cwd: REPO_ROOT, encoding: "utf8" });
   return out.split("\n").filter((p) => /worker-task-.+\.md$/.test(p));
 }
 
 test("the tracked evidence is present — this suite never silently skips", () => {
   const files = trackedHandoffs();
-  assert.ok(files.length >= 62,
-    `expected at least the 62 hand-offs on record, found ${files.length}`);
+  // 17 = 12 (kudos-wall reference) + 5 (swe-bench-pro navidrome). The exact
+  // number is checked here so a future pass added or removed shows up as a
+  // failure to update the count, not as silent drift.
+  assert.ok(files.length >= 17,
+    `expected at least the 17 hand-offs across the two reference passes, found ${files.length}`);
 });
 
 test("scrubbing changes no lint verdict on any recorded hand-off", () => {
   const rules = buildScrubRules();
   const moved = [];
   for (const rel of trackedHandoffs()) {
-    const abs = join(HERE, rel);
+    const abs = join(REPO_ROOT, rel);
     const text = readFileSync(abs, "utf8");
     const v = lintUnchangedByScrub(text, { rules, outDir: dirname(abs) });
     if (!v.equal) moved.push(`${rel}: ${v.before.join(",")} -> ${v.after.join(",")}`);
@@ -225,7 +232,7 @@ test("scrubbing every recorded hand-off leaves no host path behind", () => {
   const rules = buildScrubRules();
   const survivors = [];
   for (const rel of trackedHandoffs()) {
-    const scrubbed = scrubText(readFileSync(join(HERE, rel), "utf8"), rules);
+    const scrubbed = scrubText(readFileSync(join(REPO_ROOT, rel), "utf8"), rules);
     const hits = hostPathHits(scrubbed);
     if (hits.length) survivors.push(`${rel}: ${hits.slice(0, 2).join(", ")}`);
   }

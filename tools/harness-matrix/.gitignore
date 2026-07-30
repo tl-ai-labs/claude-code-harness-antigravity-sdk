@@ -1,55 +1,24 @@
-# Run artifacts: extracted workdirs (full repo checkouts), trajectories,
-# diffs, grades. Large and machine-local — evidence is exported to the
-# dashboard's instances.json layer, never committed raw.
-#
-# Written as `runs/**` and not `runs/` because git does not descend into an
-# excluded DIRECTORY at all — with `runs/` no `!` rule below could ever match.
-runs/**
-
-# ONE narrow exception (Sriram, 2026-07-28). The delegation folders are the
-# only proof that the cc-driver × Antigravity-SDK-worker cable actually ran:
-# each pair is the exact prompt the driver handed the worker and the usage
-# sidecar the SDK handed back (model, sdk version, Vertex project/location,
-# token counts). They were unfindable — ignored here, and absent from GCS
-# because the publisher is keyed to console studies and harness runs were
-# never registered as one. 134 files, 760 KB across 10 delegated runs (62
-# hand-offs: 6 SWE-bench Pro runs, 4 SDLC/kudos-wall), so the size argument
-# above does not apply to them. Count last recounted 2026-07-29, after the two
-# post-ceiling clean re-runs of 28 Jul were bundled; it grows by ~12 files per
-# delegated run, which is the intended behaviour — recount, do not re-scope.
-#
-# Scope is deliberately tight: ONLY the delegation subfolder of a built
-# evidence bundle. Everything else in runs/ — the 880 MB checkouts, the
-# trajectories, the graded diffs, the agent home directories — stays ignored.
-# bundle-run.mjs is what puts files here, and it credential-scans every one
-# and refuses to write the bundle at all on a hit.
-#
-# The ladder is explicit because each level only tells git "descend into this
-# directory"; the last line is the only one that un-ignores actual FILES.
-# Everything at those depths that is not named here — workdir/, out/, grade/,
-# the diffs, the manifests — is still matched by `runs/**` and stays ignored.
-!runs/*/
-!runs/*/*/
-!runs/*/*/*/
-!runs/*/*/*/evidence-bundle/
-!runs/*/*/*/evidence-bundle/delegation/
-!runs/*/*/*/evidence-bundle/delegation/*
+# Run artifacts. Every live invocation of run-harness.mjs writes into
+# runs/<task-id>/<runtime>--<policy>/<stamp>/, including the extracted
+# workdir (a full repo checkout), the trajectory, the diff, the grade, and
+# the agent home directory. Large, machine-local, and never committed.
+# Reference exemplars live under examples/<workload>/passes/ instead.
+runs/
 
 # Antigravity SDK worker venv (gemini_worker.py's interpreter). ~171M of
-# machine-local pip packages built per the sdk-probe/README.md steps; it is
-# a build artifact, never source. GEMINI_WORKER_PYTHON can point elsewhere,
-# but the default in-tree location must never be staged.
+# machine-local pip packages built per docs/setup.md; it is a build
+# artifact, never source. GEMINI_WORKER_PYTHON can point elsewhere, but
+# the default in-tree location must never be staged.
 sdk-probe/sdkprobe/
 
 # pnpm's content-addressable package store for the SDLC kind's container.
-# It lives HERE rather than inside a run's workdir on purpose: pnpm requires
-# its store on the same filesystem as node_modules to hardlink, and when it
-# is not, pnpm silently relocates the store INTO the project — which put
-# 5,238 store files inside the graded tree on 2026-07-26. Shared across runs,
-# so it also removes a per-run network fetch. Safe to delete at any time;
-# the next run repopulates it.
+# It lives HERE rather than inside a run's workdir on purpose: pnpm
+# requires its store on the same filesystem as node_modules to hardlink,
+# and when it is not, pnpm silently relocates the store INTO the project.
+# Shared across runs, so it also removes a per-run network fetch. Safe to
+# delete at any time; the next run repopulates it.
 .pkg-store/
 
-# Python bytecode caches (e.g. sdk-probe/__pycache__ from the probe scripts).
+# Python bytecode caches.
 __pycache__/
 *.pyc

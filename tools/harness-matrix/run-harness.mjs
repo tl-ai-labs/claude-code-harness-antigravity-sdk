@@ -12,12 +12,11 @@
  *
  *   kinds/swepro.mjs — SWE-bench Pro: sealed Scale instance images,
  *     REPRO → LOCALIZE → PATCH, Scale's official evaluator. Selected by
- *     --instance-dir. Behavior is byte-identical to the pre-split engine
- *     (verified by --dry-run diff at the split commit).
- *   kinds/sdlc.mjs — SDLC: the console's own templates/sdlc-mini/
- *     template.yaml driven end to end by an agent runtime against a fresh
- *     copy of scaffolds/service-web, graded by the scaffold's build+test.
- *     Selected by --task-dir.
+ *     --instance-dir (a directory produced by tools/swe/fetch-instances-pro.mjs).
+ *   kinds/sdlc.mjs — SDLC: templates/sdlc-mini/template.yaml driven end
+ *     to end by an agent runtime against a fresh copy of
+ *     scaffolds/service-web, graded by the scaffold's build+test.
+ *     Selected by --task-dir (an examples/<workload>/ directory).
  *
  * The script owns the loop — stage sequence, gates, retries, cleanup,
  * logging (kinds + kinds/lib.mjs). The runtime owns the inside of a phase —
@@ -32,7 +31,7 @@
  *   PATH=/opt/homebrew/opt/node@22/bin:$PATH \
  *     node tools/harness-matrix/run-harness.mjs \
  *       ( --instance-dir studies/swe-pro-corpus/instance_...   # SWE-bench Pro
- *       | --task-dir tools/harness-matrix/tasks/kudos-wall )   # SDLC
+ *       | --task-dir examples/kudos-wall )                      # SDLC
  *       --runtime claude-code \
  *       --policy tools/harness-matrix/policies/all-opus.yaml \
  *       [--dry-run] [--skip-grade] [--cleanup-images]

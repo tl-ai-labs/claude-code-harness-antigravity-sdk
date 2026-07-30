@@ -33,7 +33,7 @@ const cli = (args) => execFileSync(process.execPath, args, {
 });
 
 const dryRun = (policy) => cli([
-  "run-harness.mjs", "--kind", "sdlc", "--task-dir", "tasks/uptime-ping",
+  "run-harness.mjs", "--kind", "sdlc", "--task-dir", "../../examples/uptime-ping",
   "--runtime", "claude-code", "--policy", `policies/${policy}`, "--dry-run",
 ]);
 

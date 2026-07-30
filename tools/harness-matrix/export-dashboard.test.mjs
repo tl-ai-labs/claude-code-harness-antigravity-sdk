@@ -526,7 +526,7 @@ test("the delegated SDLC brief opens with the task spec, word for word", (t) => 
   assert.equal(run(["--runs-root", ws.runs, "--out", ws.out]).status, 0);
   const brief = readBrief(ws.out);
 
-  const spec = readFileSync(join(HERE, "tasks", "kudos-wall", "brief.md"), "utf8").trim();
+  const spec = readFileSync(join(HERE, "..", "..", "examples", "kudos-wall", "brief.md"), "utf8").trim();
   // Every non-heading line of the real spec must appear verbatim. Heading lines
   // are exempt because the reproduction lifts the title into the section header
   // and demotes the rest so a task's `## Scope` cannot outrank the study
@@ -576,7 +576,7 @@ test("a second task adds its spec to the brief rather than replacing the first",
   const brief = readBrief(ws.out);
   assert.match(brief, /^## The tasks/m, "a two-task card still uses the single-task heading");
   for (const task of ["kudos-wall", "uptime-ping"]) {
-    const spec = readFileSync(join(HERE, "tasks", task, "brief.md"), "utf8").trim();
+    const spec = readFileSync(join(HERE, "..", "..", "examples", task, "brief.md"), "utf8").trim();
     const firstBodyLine = spec.split("\n").map((l) => l.trim())
       .find((l) => l && !l.startsWith("#"));
     assert.ok(brief.includes(firstBodyLine), `${task}'s spec is not in the brief`);

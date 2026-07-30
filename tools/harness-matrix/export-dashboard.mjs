@@ -118,7 +118,7 @@ const ROOT = resolve(HERE, "../..");
 
 /**
  * Resolve a manifest-recorded, harness-relative path (`policies/x.yaml`,
- * `tasks/kudos-wall/brief.md`) to somewhere on disk.
+ * `examples/kudos-wall/brief.md`) to somewhere on disk.
  *
  * WHY THIS EXISTS AS A HELPER (Sriram, 2026-07-26). The policy snapshot used
  * to be resolved with a bare `join(ROOT, m.policy.file)`. The runner records
@@ -1366,7 +1366,7 @@ const trackTaskIds = [...new Set(
   }),
 )].sort();
 const trackTaskBriefs = isPro ? [] : trackTaskIds.map((id) => {
-  const p = resolveHarnessPath(join("tasks", id, "brief.md"));
+  const p = resolveHarnessPath(join("examples", id, "brief.md"));
   return { id, markdown: p ? readFileSync(p, "utf8").trim() : null };
 });
 

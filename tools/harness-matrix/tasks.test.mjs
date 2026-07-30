@@ -1,5 +1,5 @@
 /**
- * Integrity tests for the SDLC task corpus (tools/harness-matrix/tasks/*).
+ * Integrity tests for the SDLC task corpus (examples/*).
  *
  * A task directory is pure DATA — `task.json` plus the brief it pins by hash —
  * and the harness validates it inside `kinds/sdlc.mjs#run`, which is the right
@@ -11,7 +11,9 @@
  *
  * The corpus is walked rather than enumerated, so a task added later is covered
  * the moment its directory exists — no test edit, and no way to add a task that
- * is quietly untested.
+ * is quietly untested. Directories under examples/ that lack task.json (e.g.
+ * examples/swe-bench-pro/, which is fetched via --instance-dir rather than
+ * --task-dir) are skipped by the walk.
  *
  * Everything here is filesystem-only: no container, no network, no spend.
  */
@@ -27,13 +29,18 @@ import { parseYaml } from "./kinds/lib.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..", "..");
-const TASKS_DIR = join(HERE, "tasks");
+const TASKS_DIR = join(ROOT, "examples");
 
 const sha256 = (s) => createHash("sha256").update(s).digest("hex");
 
-/** Every task directory in the corpus, by id (= directory name). */
+/** Every SDLC task directory under examples/, by id (= directory name). A
+ * task is identified by the presence of task.json; other example directories
+ * (SWE-bench Pro, which is --instance-dir-shaped) are skipped. */
 const taskIds = readdirSync(TASKS_DIR)
-  .filter((name) => statSync(join(TASKS_DIR, name)).isDirectory())
+  .filter((name) => {
+    const dir = join(TASKS_DIR, name);
+    return statSync(dir).isDirectory() && existsSync(join(dir, "task.json"));
+  })
   .sort();
 
 test("the corpus is not empty", () => {
