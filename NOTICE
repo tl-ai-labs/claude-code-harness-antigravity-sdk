@@ -1,0 +1,18 @@
+Claude Code Harness — Antigravity SDK Connector
+Copyright (c) 2026 Tilicho Labs
+
+Licensed under the MIT License. See LICENSE.
+
+This distribution uses the following third-party components:
+
+- @anthropic-ai/claude-code — the Claude Code CLI, invoked by the harness
+  as the driver runtime. Installed globally by the user; not vendored.
+- google-antigravity — the Google Antigravity Python SDK, installed into
+  tools/harness-matrix/sdk-probe/sdkprobe/ by the setup wizard. Used by
+  gemini_worker.py to call Gemini models through Vertex AI.
+- Node dependencies under packages/*/node_modules/ after `pnpm install`,
+  each carrying its own license terms; see their respective LICENSE files.
+
+The harness does not vendor or redistribute Anthropic or Google model
+weights. All model calls go to the vendor's own API from the user's own
+machine using the user's own credentials.
