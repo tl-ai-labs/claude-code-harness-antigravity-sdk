@@ -20,7 +20,7 @@
  *
  * Idempotent — re-running is safe.
  *
- * THREE RULES THAT SHAPE THE FLOW (each exists because the opposite wasted a
+ * FOUR RULES THAT SHAPE THE FLOW (each exists because the opposite wasted a
  * reader's time on a fresh machine):
  *
  *  1. CRITICAL CHECKS STOP THE RUN. A check marked critical is one that makes
@@ -44,6 +44,47 @@
  *     GOOGLE_CLOUD_PROJECT is the exception and stays blocking: nothing
  *     downstream can catch it, since an unset project is a configuration
  *     error the worker cannot distinguish from a deliberate one.
+ *
+ *  4. THE WIZARD BUILDS INSIDE THE REPO AND NEVER CHANGES THE MACHINE. This is
+ *     the line that decides which missing thing gets installed and which gets a
+ *     `fix:` line, and it is not an accident of what was easy to script.
+ *
+ *     Installed, because each lives under this repository, is removable with a
+ *     single `rm -rf`, needs no privilege, and affects nothing else the reader
+ *     owns: `node_modules/` · the Gemini worker venv · the pinned Scale
+ *     evaluator clone · the SWE-bench Pro grading venv. See INSTALL_TARGETS,
+ *     which setup.test.mjs pins as being inside ROOT.
+ *
+ *     Reported with a fix line, never installed, because each is machine-global
+ *     and shared with every other thing the reader does: Node · pnpm · the
+ *     Claude Code CLI · Python · Docker · gcloud ADC · the environment
+ *     variables. Three reasons, and any one of them is sufficient:
+ *
+ *       (a) Node cannot be fixed from here even in principle. This file is a
+ *           Node program running on the very interpreter it would replace;
+ *           installing 22 mid-run leaves the current process on the old one,
+ *           with a re-exec into a binary that may not be on this shell's PATH
+ *           yet. That fails intermittently on somebody else's machine, which
+ *           is the exact class of bug this repository exists to not have.
+ *       (b) It is not our machine. A reader's laptop may pin Node for other
+ *           work, sit under corporate MDM, or manage runtimes with nvm, fnm,
+ *           asdf, volta, Homebrew or a .pkg. Choosing one is choosing wrong
+ *           for most people, and a repo you cloned four minutes ago silently
+ *           upgrading a system runtime is a hostile act regardless.
+ *       (c) Some are decisions, not installs. `gcloud auth application-default
+ *           login` opens a browser and picks an identity; GOOGLE_CLOUD_PROJECT
+ *           is a billing account only the reader knows. A wizard cannot answer
+ *           either one on their behalf.
+ *
+ *     pnpm is the near-miss worth naming: `npm install -g pnpm` is one line and
+ *     npm ships with Node. It stays a hint anyway — it is still a global write
+ *     to a machine we do not own, and `npm i -g` vs `corepack enable` vs
+ *     Homebrew is (b) in miniature.
+ *
+ *     The previous published deliverable
+ *     (github.com/tl-ai-labs/ai-sdlc-orchestrator-claude-code-harness) draws
+ *     the same line — it builds its bundled MCP server and writes its plugin
+ *     files, and for Node it prints `nvm install --lts` and exits.
  */
 
 import { spawnSync } from "node:child_process";
@@ -576,10 +617,24 @@ if (import.meta.url === pathToFileURL(process.argv[1] || "").href) {
   main().catch((e) => { console.error(e); process.exit(1); });
 }
 
+// Every path this wizard is allowed to create, in the order the setup steps
+// create them. RULE 4 in the header is the reason this list exists as data
+// rather than as prose: a boundary nobody can check is a boundary that erodes.
+// setup.test.mjs asserts each entry resolves inside ROOT, so an `ensureNode()`
+// that writes to /usr/local, or a venv relocated onto an absolute path outside
+// the clone, fails the suite instead of quietly changing a stranger's machine.
+const INSTALL_TARGETS = [
+  join(ROOT, "node_modules"),   // checkWorkspaceInstall  — pnpm install
+  WORKER_VENV,                  // ensureWorkerVenv       — Gemini worker venv
+  SWE_HARNESS,                  // ensureSweEvaluator     — Scale evaluator, pinned SHA
+  SWE_VENV,                     // ensureSweGradingVenv   — Pro grading venv
+];
+
 // Exported for tools/setup.test.mjs. Everything here is side-effect-free to
 // call except runChecks, which is driven in tests with synthetic check tuples
 // rather than the real registries — no venv, no network, no spend.
 export {
   checkNode, checkAnthropicAuth, checkGoogleProject, checkGoogleLocation,
   parseTestSummary, runChecks, OFFLINE_CHECKS, SDLC_CHECKS, SWE_PRO_CHECKS,
+  INSTALL_TARGETS, ROOT,
 };

@@ -2,13 +2,15 @@
  * setup.test.mjs — unit tests for the onboarding wizard.
  *
  * WHY THIS FILE EXISTS. `tools/setup.mjs` is the first thing a new reader of
- * this repository runs, on a machine nobody here has ever seen. Its three
- * behaviours are load-bearing and all three are easy to regress silently while
+ * this repository runs, on a machine nobody here has ever seen. Its four
+ * behaviours are load-bearing and all four are easy to regress silently while
  * "tidying up":
  *
  *   1. critical checks stop the run at the point of failure,
  *   2. auth is reported rather than enforced — EXCEPT GOOGLE_CLOUD_PROJECT,
- *   3. the mode registries nest, so `--swe-pro` really is a superset.
+ *   3. the mode registries nest, so `--swe-pro` really is a superset,
+ *   4. every path the wizard creates is inside the clone — it builds in the
+ *      repo and never modifies the machine.
  *
  * Every test here is offline and free. Nothing creates a venv, clones a repo,
  * reaches the network, or spends a token: the driver is exercised with
@@ -25,9 +27,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import { relative, isAbsolute } from "node:path";
+
 import {
   checkNode, checkAnthropicAuth, checkGoogleProject, checkGoogleLocation,
   parseTestSummary, runChecks, OFFLINE_CHECKS, SDLC_CHECKS, SWE_PRO_CHECKS,
+  INSTALL_TARGETS, ROOT,
 } from "./setup.mjs";
 
 // ─── helpers ───────────────────────────────────────────────────────────
@@ -252,6 +257,40 @@ test("no summary at all is null — a crashed runner is not a passing one", () =
 });
 
 // ─── toolchain ─────────────────────────────────────────────────────────
+
+// ─── the install boundary (RULE 4) ─────────────────────────────────────
+
+test("every path the wizard creates is inside the clone", () => {
+  // The whole basis on which this wizard is safe to run on a stranger's laptop:
+  // undo is `rm -rf` on the clone, and nothing outside it was touched. Node,
+  // pnpm, Docker, the Claude Code CLI and gcloud ADC are therefore REPORTED
+  // with a fix line and never installed — see RULE 4 in setup.mjs for why each
+  // of those is out of bounds, Node most of all (this file is a Node program
+  // running on the interpreter it would have to replace).
+  //
+  // If someone later adds a setup step that writes to /usr/local, ~/.nvm or
+  // any other machine-global location, this is the test that objects.
+  assert.ok(INSTALL_TARGETS.length > 0, "the list must not be silently emptied");
+  for (const target of INSTALL_TARGETS) {
+    assert.ok(isAbsolute(target), `${target} must be absolute`);
+    const rel = relative(ROOT, target);
+    assert.ok(rel && !rel.startsWith("..") && !isAbsolute(rel),
+      `${target} escapes the repository root — the wizard may not write there`);
+  }
+});
+
+test("no check function performs an install of a machine-global tool", () => {
+  // The toolchain checks are pure reads: they look at the machine and return a
+  // verdict plus a `fix` string. A failing one must hand the reader a command,
+  // not run it. Pinned by shape rather than by mocking a package manager —
+  // a check that installed something could not report `fix` on failure, since
+  // by then there would be nothing left to tell the reader to do.
+  for (const [label, fn] of [["Node ≥ 22", checkNode]]) {
+    const r = fn();
+    assert.equal(typeof r.ok, "boolean", `${label} must return a verdict`);
+    if (!r.ok) assert.ok(r.fix, `${label} must hand back a command, not run one`);
+  }
+});
 
 test("checkNode accepts the Node this suite is running on", () => {
   // The suite only runs under `pnpm test`, which runs under the repo's own

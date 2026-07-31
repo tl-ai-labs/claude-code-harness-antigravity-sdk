@@ -13,6 +13,33 @@ The setup wizard at [tools/setup.mjs](../tools/setup.mjs) automates most of
 this. Reading this file lets you set the same things up by hand, and
 troubleshoot when the wizard fails.
 
+### What the wizard will and will not do to your machine
+
+**It builds inside this clone. It never changes your machine.** That is the
+whole of it, and it is worth knowing before you run something you downloaded
+four minutes ago.
+
+| | |
+|---|---|
+| **Creates for you** | `node_modules/` · the Gemini worker venv · the pinned Scale evaluator clone · the SWE-bench Pro grading venv |
+| **Tells you how to install, never installs** | Node · pnpm · the Claude Code CLI · Python · Docker · gcloud ADC · every environment variable |
+
+Everything in the first row lives under this directory, needs no privilege, and
+is undone by deleting the clone. Everything in the second is global to your
+machine and shared with all your other work, so it stays your call. Node is the
+extreme case: the wizard is itself a Node program, running on the very
+interpreter it would have to replace — it prints the `nvm install --lts` line
+and stops, which is also what the
+[previous published deliverable](https://github.com/tl-ai-labs/ai-sdlc-orchestrator-claude-code-harness)
+does. And two of them are not installs at all but decisions only you can make:
+`gcloud auth application-default login` picks an identity, and
+`GOOGLE_CLOUD_PROJECT` names the account that gets billed.
+
+The consequence for the profiles below: `--sdlc` and `--swe-pro` build their
+venvs and clone the evaluator without asking, because asking would be a prompt
+with one sensible answer. Anything the wizard reports with a `fix:` line is
+something you run yourself, once, before re-running the wizard.
+
 ## Offline profile
 
 ```bash
