@@ -4,7 +4,7 @@
  * evidence bundle: a hash-sealed folder a partner can re-verify without
  * trusting anything we say about it.
  *
- * Why this exists (Sriram, 2026-07-25). The console path has had
+ * Why this exists. The SDLC orchestrator's own publish path has had
  * tools/swe/build-evidence-bundle.mjs since SWE-06, so a SWE-bench number
  * produced there could always be handed over with its own proof. The harness
  * path had nothing, which meant the delegated cc×SDK verdicts — the ones the
@@ -29,8 +29,8 @@
  * ABORTS on a hit rather than writing a bundle someone might send onward.
  *
  * The sealed grading row (grade/sample.jsonl) is deliberately withheld and
- * hashed instead, for the same reason the console bundle withholds its eval
- * input: a re-verifier should rebuild the grading contract from the public
+ * hashed instead, for the same reason the SDLC orchestrator's own evidence
+ * bundles withhold their eval input: a re-verifier should rebuild the grading contract from the public
  * dataset, not accept our copy of the thing we were graded against.
  *
  * Usage:

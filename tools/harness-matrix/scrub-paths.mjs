@@ -31,13 +31,17 @@
  * three shapes the corpus never needed (the corpus is hand-offs only, and only
  * the usage receipts mention the SDK's own state directory).
  *
+ * HOW TO RUN IT. Importable as a module (that is how the extractor uses it) and
+ * runnable as a command — see the CLI block at the bottom of this file for the
+ * two modes and their exit codes.
+ *
  * @see fixtures/delegation-corpus/README.md — the original one-off substitution
  * @see audit.mjs                            — lintDelegationText, used below
  */
 
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from "node:fs";
 import { join, dirname, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { homedir } from "node:os";
 import { lintDelegationText } from "./audit.mjs";
 
@@ -356,4 +360,132 @@ export function scrubTree(srcDir, destDir, opts = {}) {
     stats.files += 1;
   }
   return stats;
+}
+
+// ---- CLI -------------------------------------------------------------------
+
+/**
+ * WHY THIS FILE HAS A COMMAND-LINE ENTRY POINT.
+ *
+ * Every function above was written for one caller — the extractor that produced
+ * the published repo — and that caller ran once, from a scratch script that no
+ * longer exists. What survived into the repository was a library nobody could
+ * invoke: the module that decides whether a machine's directory layout reaches a
+ * public git history was reachable only by writing a second script to import it.
+ * The next person to prepare an extraction would either rewrite that script
+ * (a second, drifting copy of the ordering rules this module exists to own) or
+ * skip the step entirely, which is the failure mode with no error message.
+ *
+ * Two modes, because the module has two jobs and they are used at different
+ * moments:
+ *
+ *   --src/--dest  produce a scrubbed copy of a tree, then assert over the copy.
+ *                 The assertion is not optional and there is no flag to skip it:
+ *                 the docblock's promise is "substitute AND prove", and a scrub
+ *                 whose proof is opt-in is a scrub that silently regresses.
+ *   --check       assert over a tree somebody else produced. This is the mode a
+ *                 pre-push hook or a release checklist runs, and it is the one
+ *                 that still works when the extractor changes shape.
+ *
+ * Exit codes follow run-harness.mjs so the two compose in one shell chain:
+ * 0 clean, 1 the tool did its job and found something (leak, or a substitution
+ * that moved a lint verdict), 2 the invocation was wrong and nothing ran.
+ */
+function cliMain(argv) {
+  const flag = (name, fallback) => {
+    const i = argv.indexOf(`--${name}`);
+    return i >= 0 ? argv[i + 1] : fallback;
+  };
+  const usage = (msg) => {
+    console.error(msg);
+    console.error(
+      "usage: scrub-paths.mjs --src <dir> --dest <dir> [--files-from <file|->]\n" +
+      "                       [--repo-root <dir>] [--home <dir>] [--repo-dir-name <name>]\n" +
+      "                       [--workdir <dir>]\n" +
+      "       scrub-paths.mjs --check <dir> [--repo-dir-name <name>]\n\n" +
+      "  --src/--dest      copy a tree, rewriting host paths to /harness, /repo\n" +
+      "                    and /home/user, then assert none survived in the copy.\n" +
+      "  --files-from      newline-separated src-relative paths instead of a walk;\n" +
+      "                    `-` reads stdin, so `git ls-files | ... --files-from -`\n" +
+      "                    makes .gitignore the definition of what is publishable.\n" +
+      "  --check           assert only; writes nothing.\n\n" +
+      "exit: 0 clean · 1 a host path survived, or a scrub moved a lint verdict · 2 usage");
+    process.exit(2);
+  };
+
+  const src = flag("src");
+  const dest = flag("dest");
+  const check = flag("check");
+
+  // Mutually exclusive on purpose: --check writes nothing and --src writes a
+  // tree, so a command carrying both is ambiguous about whether anything was
+  // produced. Refusing beats guessing when the guess is "did we publish?".
+  if (check && (src || dest)) usage("--check cannot be combined with --src/--dest");
+  if (!check && !(src && dest)) usage("required: --check <dir>, or both --src <dir> and --dest <dir>");
+
+  const repoDirName = flag("repo-dir-name");
+  // Only pass the key through when it was given: hostPathHits defaults it to
+  // this repo's own directory name, and an explicit `undefined` would read as
+  // "no name to check" and quietly disable half the detector.
+  const detectOpts = repoDirName ? { repoDirName } : {};
+
+  if (check) {
+    // assertNoHostPaths throws with the offending files named; that message IS
+    // the report, so it is printed rather than re-wrapped.
+    try {
+      assertNoHostPaths(resolve(check), detectOpts);
+    } catch (e) {
+      console.error(e.message);
+      process.exit(1);
+    }
+    console.log(`scrub-paths: ${check} is clean — no host paths.`);
+    return;
+  }
+
+  const filesFrom = flag("files-from");
+  const files = filesFrom
+    // fd 0 for `-`: the list arrives on a pipe from `git ls-files`, and reading
+    // it synchronously keeps this whole entry point free of async plumbing.
+    ? readFileSync(filesFrom === "-" ? 0 : filesFrom, "utf8")
+        .split("\n").map((s) => s.trim()).filter(Boolean)
+    : undefined;
+
+  const rules = buildScrubRules({ repoRoot: flag("repo-root"), home: flag("home") });
+  const srcAbs = resolve(src);
+  const destAbs = resolve(dest);
+
+  // The one thing that would make this tool destructive rather than protective:
+  // writing the scrubbed copy back over its own source. Everything downstream
+  // assumes the source is immutable evidence, so the check is here, before the
+  // first write, not inside scrubTree where a library caller could pass past it.
+  if (destAbs === srcAbs || destAbs.startsWith(srcAbs + "/")) {
+    usage(`--dest must be outside --src (recorded runs are immutable evidence)`);
+  }
+
+  let stats;
+  try {
+    stats = scrubTree(srcAbs, destAbs, { rules, workdir: flag("workdir"), files, ...detectOpts });
+  } catch (e) {
+    console.error(e.message);
+    process.exit(1);
+  }
+
+  try {
+    assertNoHostPaths(destAbs, detectOpts);
+  } catch (e) {
+    console.error(e.message);
+    process.exit(1);
+  }
+
+  console.log(
+    `scrub-paths: ${stats.files} file(s) copied to ${dest}, ${stats.changed} rewritten ` +
+    `(${stats.replacements} host paths), ${stats.checked} hand-off(s) re-linted, ` +
+    `0 survived the sweep.`);
+}
+
+// Run only when executed directly. `import.meta.url` compared against argv[1]
+// is the ESM equivalent of `if __name__ == "__main__"` — importing this module
+// (which every test and the extractor do) must not execute the CLI.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  cliMain(process.argv.slice(2));
 }

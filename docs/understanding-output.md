@@ -106,9 +106,21 @@ voids the instance in the report.
 
 ### `evidence-bundle/` — the publishable subset
 
-Built by `bundle-run.mjs` after the run completes. The bundler
-credential-scans every file it writes and refuses to write the bundle
-at all on a hit. This is the subset safe to share externally.
+Not written by the run — built afterwards, by a separate command:
+
+```bash
+node tools/harness-matrix/bundle-run.mjs --run-dir <runDir>   # or --all
+```
+
+The bundler credential-scans every file it writes and refuses to write
+the bundle at all on a hit. This is the subset safe to share
+externally. If it is going outside the machine, sanitise it first —
+recorded evidence carries this laptop's absolute paths:
+
+```bash
+node tools/harness-matrix/scrub-paths.mjs --src <bundle> --dest <out>
+node tools/harness-matrix/scrub-paths.mjs --check <out>
+```
 
 ## Not in the run directory
 

@@ -1,5 +1,5 @@
 /**
- * @study-console/pricing — THE single source of truth for model prices.
+ * @harness/pricing — THE single source of truth for model prices.
  *
  * Operating rule #4: never inline a price anywhere else in this repo.
  * Operating rule #5: all computed costs are integer micro-USD ($1 = 1_000_000).
@@ -209,7 +209,7 @@ export function getPrice(modelId: string): ModelPrice {
   const p = PRICES[modelId];
   if (!p) {
     throw new Error(
-      `@study-console/pricing: no price for model '${modelId}'. Known: ${Object.keys(PRICES).join(", ")}`
+      `@harness/pricing: no price for model '${modelId}'. Known: ${Object.keys(PRICES).join(", ")}`
     );
   }
   return p;

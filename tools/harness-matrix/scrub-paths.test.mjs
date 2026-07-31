@@ -18,7 +18,7 @@ import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, mkdirSync, mkdtempSync, readdirSync, statSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { tmpdir } from "node:os";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 import {
@@ -190,6 +190,92 @@ test("scrubTree refuses to emit a hand-off whose lint verdict moved", () => {
   assert.throws(() => scrubTree(src, dest, { rules: badRules }),
     /changed the lint verdict/);
 });
+
+// ---- the CLI ---------------------------------------------------------------
+
+// The CLI is tested by RUNNING it, not by importing a main(): its whole reason
+// to exist is that someone types it at a shell, and the parts that break there
+// — exit codes, the direct-execution guard, stdin — are exactly the parts an
+// in-process call would not exercise. Each case below is a real process.
+const CLI = join(HERE, "scrub-paths.mjs");
+const runCli = (args, input) =>
+  spawnSync(process.execPath, [CLI, ...args], { encoding: "utf8", input });
+
+/** A source tree carrying one hand-off and one receipt, both with host paths. */
+function leakyTree() {
+  const src = mkdtempSync(join(tmpdir(), "scrub-cli-src-"));
+  mkdirSync(join(src, "out"), { recursive: true });
+  writeFileSync(join(src, "out", "worker-task-repro-a1-1.md"),
+    `Read ${ROOT}/tools/harness-matrix/DESIGN.md and report what you find.\n`);
+  writeFileSync(join(src, "out", "worker-usage-repro-a1-1.json"),
+    `{"cacheDir":"${HOME}/.gemini/antigravity/brain/abc"}`);
+  return src;
+}
+
+/** The synthetic machine's rule bases, as the CLI flags that select them. */
+const CLI_MACHINE = ["--repo-root", ROOT, "--home", HOME, "--repo-dir-name", REPO_DIR];
+
+test("CLI --src/--dest scrubs the tree, asserts the copy, and reports", () => {
+  const src = leakyTree();
+  const dest = join(mkdtempSync(join(tmpdir(), "scrub-cli-dest-")), "out-tree");
+  const r = runCli(["--src", src, "--dest", dest, ...CLI_MACHINE]);
+
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /2 file\(s\) copied/);
+  assert.match(r.stdout, /0 survived the sweep/);
+  assert.equal(readFileSync(join(dest, "out", "worker-task-repro-a1-1.md"), "utf8"),
+    `Read ${HARNESS_PLACEHOLDER}/DESIGN.md and report what you find.\n`);
+  // The source is recorded evidence; the CLI must never have written to it.
+  assert.match(readFileSync(join(src, "out", "worker-task-repro-a1-1.md"), "utf8"),
+    new RegExp(REPO_DIR));
+});
+
+test("CLI --files-from - takes the publishable list from stdin", () => {
+  const src = leakyTree();
+  const dest = join(mkdtempSync(join(tmpdir(), "scrub-cli-list-")), "out-tree");
+  // The receipt is deliberately absent from the list: this is how `git ls-files`
+  // keeps .gitignore the single definition of what gets published.
+  const r = runCli(["--src", src, "--dest", dest, "--files-from", "-", ...CLI_MACHINE],
+    "out/worker-task-repro-a1-1.md\n");
+
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /1 file\(s\) copied/);
+  assert.ok(!statSyncSafe(join(dest, "out", "worker-usage-repro-a1-1.json")),
+    "a file absent from the list must not be copied");
+});
+
+test("CLI --check exits 0 on a clean tree and 1 on a leak, naming the file", () => {
+  const clean = mkdtempSync(join(tmpdir(), "scrub-cli-clean-"));
+  writeFileSync(join(clean, "a.md"), `${HARNESS_PLACEHOLDER}/runs/x`);
+  const ok = runCli(["--check", clean]);
+  assert.equal(ok.status, 0, ok.stderr);
+  assert.match(ok.stdout, /is clean/);
+
+  const leaky = mkdtempSync(join(tmpdir(), "scrub-cli-leak-"));
+  mkdirSync(join(leaky, "nested"), { recursive: true });
+  writeFileSync(join(leaky, "nested", "leaky.json"), `{"cwd":"${HOME}/Desktop/x"}`);
+  const bad = runCli(["--check", leaky]);
+  assert.equal(bad.status, 1, "a surviving host path must fail the command, not just print");
+  assert.match(bad.stderr, /nested\/leaky\.json/);
+});
+
+test("CLI refuses a bad invocation with exit 2, before writing anything", () => {
+  // Neither mode selected.
+  assert.equal(runCli([]).status, 2);
+  // Both modes at once — ambiguous about whether a tree was produced.
+  assert.equal(runCli(["--check", "/tmp", "--src", "/tmp", "--dest", "/tmp/x"]).status, 2);
+  // --dest inside --src: the scrubbed copy would land on top of the evidence.
+  const src = leakyTree();
+  const r = runCli(["--src", src, "--dest", join(src, "copy"), ...CLI_MACHINE]);
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /immutable evidence/);
+  assert.ok(!statSyncSafe(join(src, "copy")), "nothing may be written on a usage error");
+});
+
+/** statSync that answers "does this exist?" instead of throwing. */
+function statSyncSafe(p) {
+  try { return statSync(p); } catch { return null; }
+}
 
 // ---- against the real recorded evidence ------------------------------------
 

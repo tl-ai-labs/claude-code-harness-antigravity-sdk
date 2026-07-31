@@ -4,11 +4,12 @@
  * one RUNTIME (who does the work) × one POLICY (model/thinking/retry/limit
  * config), through a script-owned recipe to a graded verdict.
  *
- * 2026-07-25 kind split — mirroring the console's segregation logic
- * (run-executor.ts iterates a template's stages and dispatches on executor
- * kind; the task-type specifics live in the template data, not the engine):
- * this file no longer contains any benchmark-specific code. It resolves the
- * two adapters and hands over:
+ * 2026-07-25 kind split — mirroring the dispatch design of the production
+ * SDLC orchestrator this harness was built alongside (its executor iterates
+ * a template's stages and dispatches on executor kind; the task-type
+ * specifics live in the template data, not the engine): this file no longer
+ * contains any benchmark-specific code. It resolves the two adapters and
+ * hands over:
  *
  *   kinds/swepro.mjs — SWE-bench Pro: sealed Scale instance images,
  *     REPRO → LOCALIZE → PATCH, Scale's official evaluator. Selected by

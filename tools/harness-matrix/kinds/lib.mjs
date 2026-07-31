@@ -577,7 +577,7 @@ export async function runStageAttempts({
  * A DELEGATED cell has two regimes at once: the recorded cost_usd covers
  * the DRIVER only (CLI-reported); the worker's Gemini spend is captured as
  * real token COUNTS in its usage sidecars, but NOT converted to dollars
- * here — that pricing happens downstream via @study-console/pricing
+ * here — that pricing happens downstream via @harness/pricing
  * getVertexRates(model, "asia-south1"), which applies the +10% non-global
  * Vertex surcharge over the global pin (verified 2026-07-23; pricing-
  * preflight discipline). A partial dollar total would be worse than an

@@ -1,6 +1,6 @@
 # CHASSIS FILE — makes the scaffold its own pnpm root (independent of the
-# study-console workspace) and approves the dependency build scripts the
-# stack needs. Models never modify this.
+# repository workspace that contains it) and approves the dependency build
+# scripts the stack needs. Models never modify this.
 packages:
   - "."
 allowBuilds:

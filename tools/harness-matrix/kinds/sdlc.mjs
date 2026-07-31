@@ -1,18 +1,19 @@
 /**
- * kinds/sdlc.mjs — the SDLC task kind: the console's own SDLC flow
+ * kinds/sdlc.mjs — the SDLC task kind: a template-driven SDLC flow
  * (templates/<template_id>/template.yaml, normally sdlc-mini) driven end to
  * end by ONE agent runtime against a fresh copy of the platform scaffold,
  * graded by the scaffold's own build+test. Selected by --task-dir.
  *
- * This is the console's segregation logic transplanted into the harness:
- * exactly as run-executor.ts iterates a template's stages and dispatches on
- * executor kind, this kind loads template.yaml LIVE and walks its stages —
- * the stage list, order, and verify-repair budget live in the template
- * data, not in this code. What differs from the console is WHO fills a
- * stage: there, each stage fans out through the orchestrator's model
- * router; here, every model-driven stage is one stateless invocation of
- * the SAME agent runtime under the SAME policy (the harness-matrix study
- * design: procedure fixed, runtime varies).
+ * The stage-dispatch design is transplanted from the production SDLC
+ * orchestrator this harness was built alongside (a separate repository —
+ * its stage iterator is not in this tree): the engine iterates a
+ * template's stages and dispatches on executor kind, so this kind loads
+ * template.yaml LIVE and walks its stages — the stage list, order, and
+ * verify-repair budget live in the template data, not in this code. What
+ * differs from that orchestrator is WHO fills a stage: there, each stage
+ * fans out through a model router; here, every model-driven stage is one
+ * stateless invocation of the SAME agent runtime under the SAME policy
+ * (the harness-matrix study design: procedure fixed, runtime varies).
  *
  * Differences from kinds/swepro.mjs, each with a reason:
  *   - No sealed per-instance image: the task environment is the scaffold,

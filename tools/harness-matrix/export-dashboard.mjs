@@ -68,7 +68,7 @@
  *    The harness deliberately records worker spend as raw token counts and
  *    refuses to convert them to dollars (a partial dollar total would be
  *    worse than an honest split). THIS script is that downstream: it prices
- *    each usage sidecar through @study-console/pricing `getVertexRates(model,
+ *    each usage sidecar through @harness/pricing `getVertexRates(model,
  *    region)`, which applies the +10% non-global Vertex surcharge. The region
  *    and the paying Google Cloud project both come from the sidecar itself
  *    (`vertex_location` / `vertex_project`), so a run executed outside the
@@ -100,7 +100,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 // The single source of truth for prices. Relative into the built package
 // because tools/harness-matrix is a plain .mjs tree with no node_modules —
-// workspace resolution ("@study-console/pricing") is not available here.
+// workspace resolution ("@harness/pricing") is not available here.
 import { getVertexRates, costMicroUsd, microToUsd, PRICING_VERSION } from "../../packages/pricing/dist/index.js";
 import { benchmarkBrief } from "../lib/benchmark-brief.mjs";
 // The audit's own readers. Imported rather than re-derived here so the shape
@@ -407,7 +407,7 @@ function readRun(runDir) {
    *      started recording it are still fully reportable. That retroactive path
    *      is the whole reason this reads from disk instead of demanding a re-run.
    *
-   * Anthropic's split is mapped to the console's telemetry contract, which is a
+   * Anthropic's split is mapped to the DASHBOARD's telemetry contract, which is a
    * DIFFERENT convention from the pricing package's: here `input_tokens` is the
    * WHOLE prompt and `input_tokens_cached` is the cached slice of it. Cache
    * CREATION counts as fresh — those tokens were read and written for the first
@@ -570,7 +570,7 @@ function readRun(runDir) {
           },
           // TWO DIFFERENT CONVENTIONS, DELIBERATELY NOT MIXED UP. The pricing
           // package needs DISJOINT buckets (fresh and cache_read are billed at
-          // different rates, so double-counting would overcharge). The console's
+          // different rates, so double-counting would overcharge). The dashboard's
           // telemetry contract is the opposite: `input_tokens` is the WHOLE
           // prompt and `input_tokens_cached` is the cached slice of it — see
           // lib/simulate.ts (`fresh = input_tokens - input_tokens_cached`) and
@@ -891,7 +891,7 @@ const deliveredCount = runs.filter((r) => !r.m.failed_at).length;
  * instances. Batches here are added over time (one instance today, two
  * tomorrow), so a side-by-side cost/token matrix across columns with different
  * samples compares nothing — and the what-if projector on that surface can
- * model cost but cannot model whether a test would have passed. The console
+ * model cost but cannot model whether a test would have passed. The dashboard
  * uses this key to show the comparison surface only when it is honest, which
  * is a decision the run evidence has to carry, not the view.
  */
@@ -951,8 +951,8 @@ const artifacts = isPro
       // verdict came from Scale's Docker evaluator rather than from us, which
       // is true whether or not the instance resolved. The card badge reads THIS;
       // build_ok above stays "everything in this column resolved" so the green
-      // "Resolved ✓" tile keeps meaning what it says. The console exporter
-      // stamps the same field for the same reason.
+      // "Resolved ✓" tile keeps meaning what it says. The SDLC orchestrator's
+      // own exporter stamps the same field for the same reason.
       harness_graded: true,
       test_pass_rate: runs.length ? resolvedCount / runs.length : 0,
       files: patchFiles,
@@ -1112,9 +1112,9 @@ const v1Manifest = {
       worker_region: workerRegion,
       summary: `${runtimeName} driver → ${WORKER_SDK_LABEL} worker (Gemini on Vertex ${workerRegion})`,
       // ---- display-ready strings -----------------------------------------
-      // The console renders these VERBATIM in the cable strip that sits above
-      // every study tab. They live here, not in the dashboard, on purpose: the
-      // harness is the only thing that knows what actually ran, so the console
+      // The dashboard renders these VERBATIM in the cable strip that sits above
+      // every study tab. They are composed HERE, in the harness, on purpose: the
+      // harness is the only thing that knows what actually ran, so the dashboard
       // stays a renderer and can never drift into asserting a cable that the
       // evidence does not support. A column with no cable emits none of this
       // and the strip does not render at all.
@@ -1172,7 +1172,7 @@ const v1Manifest = {
     },
     worker_cost_usd: workerCost,
     worker_cost_basis: anySidecars
-      ? `computed here from real SDK token counts via @study-console/pricing ` +
+      ? `computed here from real SDK token counts via @harness/pricing ` +
         `getVertexRates(model, "${workerRegion}") — the region comes from each sidecar, and a ` +
         `non-global Vertex endpoint carries a +10% surcharge`
       : "n/a (non-delegated cell)",
@@ -1401,7 +1401,7 @@ if (existingIdx >= 0) {
  * The task brief(s) this CARD covers — the literal specification handed to the
  * models, collected across every column, not just the batch being exported.
  *
- * WHY THIS IS HERE AT ALL (Sriram, 2026-07-26). A console SDLC card's brief IS
+ * WHY THIS IS HERE AT ALL. An orchestrator SDLC card's brief IS
  * the project spec: open uptime-ping and you read the endpoint it had to build,
  * its scope and its out-of-scope, and only then look at what four policies made
  * of it. The harness SDLC card shipped a generated *study* brief instead, so
@@ -1468,7 +1468,7 @@ function quoteTaskBrief(markdown) {
  */
 // The BENCHMARK brief is no longer written here (Sriram, 2026-07-25). It was
 // ~110 lines of hand-maintained markdown that said the same things as the
-// console generators' brief, in a second voice, in a second file — so the two
+// orchestrator's own brief generator, in a second voice, in a second file — so the two
 // paths could describe one benchmark two different ways and neither would look
 // wrong on its own. Both now render from tools/lib/benchmark-brief.mjs, which
 // walks ONE section outline and accepts only fixed identity (dataset, cable,
@@ -1485,7 +1485,7 @@ function quoteTaskBrief(markdown) {
  * WHAT IT INHERITS, AND FROM WHERE (Sriram, 2026-07-26). This card has two
  * parents and the brief takes a different thing from each:
  *
- *   From a console SDLC card (uptime-ping, recipe-box, leave-requests-mini):
+ *   From an orchestrator SDLC card (uptime-ping, recipe-box, leave-requests-mini):
  *   the brief LEADS WITH THE PROJECT SPEC. That is what makes an SDLC card
  *   readable — you see what was asked before you see what it cost — and it is
  *   the whole reason `## The task` sits above the machinery here.
@@ -1498,7 +1498,7 @@ function quoteTaskBrief(markdown) {
  *   either leg.
  *
  * Two things come from NEITHER parent, because neither parent has them: slot
- * discipline (the console orchestrator writes a whole repo; here the worker may
+ * discipline (the SDLC orchestrator writes a whole repo; here the worker may
  * touch three paths inside a chassis that is hashed and proven green first) and
  * the four-dimension judge. They are what makes "a model built this" checkable
  * on this card, so they are sections, not footnotes.
@@ -1671,7 +1671,7 @@ function delegatedSdlcBrief() {
     "  seat is a flat subscription, so the figure is what those tokens would have cost on the metered",
     "  API. Every surface that shows it says so.",
     "- **Worker** — computed from the SDK's own token counts at the worker's Vertex region rates,",
-    "  including the non-global surcharge where it applies, through the console's single pricing",
+    "  including the non-global surcharge where it applies, through this repo's single pricing",
     "  package. No rate is ever typed into the exporter. (Vertex scopes that surcharge to \"Gemini 3",
     "  and later families\", so a 3.5-flash worker carries it and a 2.5 worker does not.)",
     "",
@@ -1758,7 +1758,7 @@ const briefMd = isPro
   "  seat is a flat subscription, so the figure is what those tokens would have cost on the metered",
   "  API. Every surface that shows it says so.",
   "- **Worker** — computed from the SDK's own token counts at the worker's Vertex region rates,",
-  "  including the non-global surcharge, through the console's single pricing package. No rate is",
+  "  including the non-global surcharge, through this repo's single pricing package. No rate is",
   "  ever typed into the exporter.",
   "",
   "A runtime that reports no token counts exports zeros with `driver_tokens_reported: false`, so a 0",

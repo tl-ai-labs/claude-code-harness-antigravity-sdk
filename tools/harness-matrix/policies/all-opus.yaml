@@ -68,7 +68,7 @@
 # NO PRICING BLOCKS IN THIS FILE — and the validator permits that, narrowly. A
 # models[] entry reachable ONLY as a composition member may omit `pricing`; one
 # a rule names directly may not. That exemption exists for this exact case:
-# claude-opus-4-6 has no row in @study-console/pricing, and the harness prices a
+# claude-opus-4-6 has no row in @harness/pricing, and the harness prices a
 # run from the driver's real cost receipts and the worker's real UsageMetadata
 # sidecars — never from the policy. Writing an invented price into a file to
 # satisfy a validator is precisely the failure the pricing-preflight rule exists

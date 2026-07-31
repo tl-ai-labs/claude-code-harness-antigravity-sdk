@@ -234,12 +234,13 @@ test("a policy file that cannot be found writes a stub AND says so out loud", (t
 test("the exported manifest names the agent runtime that drove the run", (t) => {
   // `harness.runtime` is what the dashboard's Compare view keys on to answer
   // "what drove this run end to end". It is the RIGHT test for harness-vs-
-  // console because a console-track manifest simply has no such field — the
-  // console orchestrator walks the template's stages itself and no agent CLI
-  // is involved anywhere in it.
+  // orchestrator because an orchestrator-track manifest simply has no such
+  // field — the SDLC orchestrator (a separate application that feeds the same
+  // dashboard) walks the template's stages itself and no agent CLI is involved
+  // anywhere in it.
   //
   // Pinned because the failure is silent and was real: that row used to render
-  // a hardcoded "Claude Code" in every column, so four console SDLC runs
+  // a hardcoded "Claude Code" in every column, so four orchestrator SDLC runs
   // claimed an agent CLI drove them. Nothing errored and nothing looked odd —
   // it just asserted the opposite of the finding the harness study exists to
   // show. If this field stops being written, the view now degrades the other
@@ -488,7 +489,7 @@ test("the SDLC card does not reuse the SWE-bench Pro card's colour", (t) => {
 
 test("a delegated SDLC column publishes the cable the harness variant routes on", (t) => {
   // `manifest.harness.cable` is the ONLY signal that separates the delegated
-  // SDLC card from the console orchestrator's own SDLC cards, and choosing
+  // SDLC card from the SDLC orchestrator's own cards, and choosing
   // wrong there renders a page about subagents and an MCP bridge that never
   // existed. If this field stops shipping, that page silently comes back.
   const ws = workspace(t);
@@ -504,7 +505,7 @@ test("a delegated SDLC column publishes the cable the harness variant routes on"
 //
 // WHAT THIS CARD INHERITS, AND WHY IT IS TESTED (Sriram, 2026-07-26). The
 // delegated SDLC card has two parents and takes a different thing from each:
-// the PROJECT SPEC from a console SDLC card (uptime-ping opens with the
+// the PROJECT SPEC from an orchestrator SDLC card (uptime-ping opens with the
 // endpoint it had to build), and the delegated-track framing from the
 // Claude Code × Antigravity SDK · SWE-bench Pro card. Both halves are silent
 // failures if they regress — a brief that drops the spec still renders as a
@@ -517,7 +518,7 @@ const readBrief = (out) => {
 };
 
 test("the delegated SDLC brief opens with the task spec, word for word", (t) => {
-  // The inheritance from the console SDLC cards. Without this the card answers
+  // The inheritance from the orchestrator's SDLC cards. Without this the card answers
   // "what did it cost" and "how was it wired" but never "what was it asked to
   // build" — which is the first question an SDLC reader arrives with, and the
   // only one the cost numbers are meaningless without.

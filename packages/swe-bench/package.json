@@ -1,5 +1,5 @@
 {
-  "name": "@study-console/swe-bench",
+  "name": "@harness/swe-bench",
   "version": "0.1.0",
   "private": true,
   "type": "module",

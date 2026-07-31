@@ -29,7 +29,7 @@
 #   gemini-2.5-pro   @ global       → LIVE   (global ONLY — not asia-south1)
 #
 # 3.5 Pro was not entitled to the Google Cloud project these probes ran on
-# (ai-studies-console — ours) in any region tried. Entitlement is per project,
+# (ours, not yours) in any region tried. Entitlement is per project,
 # so probe your own before assuming this axis is unavailable to you; on the day
 # this policy was written the intended cheap-vs-premium axis was not runnable
 # and that is what the choice below is reacting to. The two
