@@ -11,7 +11,8 @@ input.
   Claude Code CLI as driver, with its file-writing tools removed and
   Gemini as the worker reached through the Antigravity SDK).
 - **Policy** — a YAML file that names the driver model, the worker
-  model, thinking levels, retries, and cost caps. Four shipped; see
+  model, thinking levels, retries, and cost caps. Five shipped — three
+  current cells and two frozen historical columns; see
   [policies.md](policies.md).
 
 ## SDLC — start here
@@ -80,7 +81,7 @@ with the network blocked.
 | `--instance-dir <path>` | Selects the SWE-bench Pro kind |
 | `--task-dir <path>` | Selects the SDLC kind |
 | `--runtime claude-code` | The only runtime. Anything else fails preflight. |
-| `--policy <path>` | One of the four in `tools/harness-matrix/policies/` |
+| `--policy <path>` | One of the five in `tools/harness-matrix/policies/` |
 | `--dry-run` | Resolve the policy, print the full plan, exit `0`. No credentials, no Docker, no corpus. |
 | `--skip-grade` | Run without grading |
 | `--cleanup-images` | Remove Docker images afterwards (Pro only) |

@@ -421,6 +421,88 @@ export function watchingBlock({ driver, worker, cable } = {}) {
  * (the rule that caught the Opus 3× pin), so the log states the tokens and
  * names the pricing basis rather than inventing a total.
  */
+/**
+ * The "Claude edits" scoreboard row — who wrote the code that ships.
+ *
+ * WHY THIS IS A FUNCTION AND NOT TWO INLINE TERNARIES (2026-07-31). It used to
+ * be exactly that, duplicated byte-for-byte in the SDLC and Pro scoreboards of
+ * logrender.mjs, and it read `audit.editCount` — EVERY Edit/Write the driver
+ * made, wherever it landed — then announced any non-zero value as "NON-ZERO:
+ * the harness wrote code, investigate audit.json".
+ *
+ * That is right for a policy that delegates every stage, and wrong for a mixed
+ * one. The P4a live run (kudos-wall × opus48-plus-lite, the tokenomics cell
+ * this deliverable leads with) came back RESOLVED, 14/14 tests, judge 9/10,
+ * zero audit flags — and printed "the harness wrote code" beneath it, because
+ * its five SOLO stages had each written their own contract file into out/.
+ * Zero writes reached workdir/. The scoreboard accused the run of the exact
+ * failure the run was there to disprove.
+ *
+ * So the row now asks the question it always meant — and the SAME DAY, the
+ * first live tiered Pro run sharpened it once more: its solo repro phase
+ * legitimately wrote the repro test INTO the working tree (the grader strips
+ * test/repro paths from the diff — that is the enforcement), proving the rule
+ * is COMPOSITION first, destination second. treeEditCount therefore counts
+ * tree edits made during DELEGATED phases only; solo-phase writes are that
+ * phase's own contracted work and are reported as information (soloEditCount),
+ * never as a violation. The cases:
+ *
+ *   - treeEditCount === 0        → the integrity claim holds, say so.
+ *   - treeEditCount > 0          → a real violation; keep the loud wording.
+ *   - treeEditCount === undefined → audit.json predates this split. Do NOT
+ *     fall back to editCount and do NOT print 0. Both would state as measured
+ *     something this run never measured. Report the total, name it as a total,
+ *     and point at the re-derivation — same null-honesty rule as attemptTotals,
+ *     where a missing cost must surface as `n/a` and never as `$0.0000`.
+ *
+ * The third case exists because run directories are never rewritten in place
+ * (fixtures/delegation-corpus/README.md states that rule and the reason for
+ * it), so a run recorded before this fix keeps the audit.json it was recorded
+ * with. `auditRun` re-derives the split from the run's own trajectories at $0
+ * whenever a corrected figure is wanted.
+ */
+export function claudeEditsRow(audit = {}) {
+  // Checked before everything else: `missing: true` marks the reader-side
+  // fallback for a run directory with NO audit.json at all (a killed run —
+  // audit.json is written at the end). Its editCount of 0 is a placeholder,
+  // and the pre-split wording below would falsely claim the run "was audited".
+  // Nothing was; say so, and point at the same $0 remedy — the trajectories
+  // are on disk even when the finish block never ran.
+  if (audit.missing) {
+    return ["Claude edits", "no audit.json survives for this run — edit destinations were " +
+      "never established; re-derive with auditRun over out/phases/ at $0"];
+  }
+  // A fourth case, checked next: `auditable: false` is auditRun's no-trajectory
+  // early return (the antigravity runtime — agy print mode emits prose only, so
+  // no tool-call record exists at all). Its editCount of 0 is a placeholder,
+  // not a measurement, and the pre-split wording below would be wrong twice
+  // for it: this run was not "audited before the split" (it was never
+  // auditable), and "re-derive with auditRun over out/phases/" is impossible
+  // when out/phases/ holds no trajectories to re-derive from.
+  if (audit.auditable === false) {
+    return ["Claude edits", "not auditable — this runtime records no tool-call trajectory, " +
+      "so where its edits landed cannot be established (see the audit note in audit.json)"];
+  }
+  const tree = audit.treeEditCount;
+  const solo = audit.soloEditCount ?? 0;
+  const total = audit.editCount ?? 0;
+  if (tree === undefined) {
+    return ["Claude edits", `${total} total — this run was audited before edits were split ` +
+      "by phase composition and destination, so whether any landed in the working tree " +
+      "during a delegated phase is NOT established here; re-derive with auditRun over " +
+      "out/phases/ at $0"];
+  }
+  if (tree > 0) {
+    return ["Claude edits", `${tree} into the working tree during delegated phase(s) — ` +
+      "NON-ZERO: the driver wrote where the worker was contracted to write, " +
+      "investigate audit.json"];
+  }
+  return ["Claude edits", `0 into the working tree during delegated phases — where work ` +
+    `was handed off, the worker wrote it, as required${solo > 0
+      ? ` (${solo} write(s) during solo phases — their own contracted work; paths in audit.json)`
+      : ""}`];
+}
+
 export function costRows(totals, { delegated, workerModel, region } = {}) {
   const rows = [
     ["Claude harness", `${totals.usd != null ? fmtUsd(totals.usd) : "n/a"} — modeled by the CLI on a Max ` +

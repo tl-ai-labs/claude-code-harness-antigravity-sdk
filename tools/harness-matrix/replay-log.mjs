@@ -275,7 +275,16 @@ function replaySdlc({ runDir, manifest, audit, only, frames }, print) {
     failedAt: manifest.failed_at,
     records: manifest.stages,
     totals: manifest.totals,
-    audit: { editCount: audit.editCount, flags: audit.flags },
+    // treeEditCount + auditable ride along for claudeEditsRow: the scoreboard
+    // judges edits by DESTINATION (workdir/ vs the run's own out/), and must
+    // also tell a measured zero from a run that never measured (pre-split
+    // audit.json) or could never measure (auditable: false, no trajectory).
+    // Projecting them away here would silently force the row's "NOT
+    // established" fallback on every fresh run — the 2026-07-31 destination
+    // split would never fire on the live path it was built for.
+    audit: { editCount: audit.editCount, treeEditCount: audit.treeEditCount,
+      soloEditCount: audit.soloEditCount, auditable: audit.auditable,
+      missing: audit.missing, flags: audit.flags },
     delegated,
     deliveryCount: manifest.delivery?.files_changed?.length ?? 0,
     judgeScores: manifest.judge_scores ?? null,
@@ -370,7 +379,16 @@ function replaySwepro({ runDir, manifest, audit, only, frames }, print) {
     failedAt: manifest.failed_at,
     records: manifest.phases,
     totals: manifest.totals,
-    audit: { editCount: audit.editCount, flags: audit.flags },
+    // treeEditCount + auditable ride along for claudeEditsRow: the scoreboard
+    // judges edits by DESTINATION (workdir/ vs the run's own out/), and must
+    // also tell a measured zero from a run that never measured (pre-split
+    // audit.json) or could never measure (auditable: false, no trajectory).
+    // Projecting them away here would silently force the row's "NOT
+    // established" fallback on every fresh run — the 2026-07-31 destination
+    // split would never fire on the live path it was built for.
+    audit: { editCount: audit.editCount, treeEditCount: audit.treeEditCount,
+      soloEditCount: audit.soloEditCount, auditable: audit.auditable,
+      missing: audit.missing, flags: audit.flags },
     delegated,
     keptCount: manifest.patch?.files_kept?.length ?? 0,
     strippedCount: manifest.patch?.files_stripped?.length ?? 0,
@@ -402,10 +420,14 @@ export function replayRun({ runDir, stage = null, frames = false }, print = cons
   }
   const manifest = readJson(manifestPath);
   // audit.json is written at the end of a run; a killed run may not have one.
-  // Empty-but-shaped beats crashing: the footer's flag rows then read 0, which
-  // is what "no audit was produced" honestly renders as.
+  // Empty-but-shaped beats crashing — but the shape must SAY it is a fallback:
+  // `missing: true` routes claudeEditsRow to its "no audit.json survives"
+  // wording instead of letting the placeholder 0 read as a measured zero
+  // (the flag rows still read 0, which "no audit was produced" honestly is).
   const auditPath = join(dir, "audit.json");
-  const audit = existsSync(auditPath) ? readJson(auditPath) : { editCount: 0, flags: [] };
+  const audit = existsSync(auditPath)
+    ? readJson(auditPath)
+    : { editCount: 0, flags: [], missing: true };
 
   const kind = manifest.kind ?? (manifest.instance_id ? "swepro" : "sdlc");
   if (kind === "sdlc") replaySdlc({ runDir: dir, manifest, audit, only: stage, frames }, emit);

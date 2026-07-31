@@ -254,6 +254,42 @@ export function bashInspectsRepo(rawCmd, { workdir, outDir }) {
  *
  * Returns a short evidence string, or null when the search is fine.
  */
+/**
+ * Does an Edit/Write/MultiEdit `file_path` land in the WORKING TREE — the code
+ * that ships — as opposed to the run's own `out/` contract directory?
+ *
+ * WHY THIS EXISTS (2026-07-31, found on the P4a live run). `editCount` counted
+ * every Edit/Write the driver made, wherever it landed, and the scoreboard
+ * printed a non-zero count as "NON-ZERO: the harness wrote code, investigate
+ * audit.json". That wording is correct for a policy that delegates EVERY stage,
+ * where the driver has no legitimate reason to write anything at all. It is
+ * simply false for a MIXED policy. `opus48-plus-lite` — the tokenomics cell
+ * that is the headline of this deliverable — resolves requirements, design,
+ * plan-packets, review and judge as `solo`, and a solo stage's whole job is to
+ * write its contract file. P4a therefore finished RESOLVED, 14/14 tests, judge
+ * 9/10, zero audit flags, and announced "the harness wrote code" underneath,
+ * because five solo stages had each written exactly one file: out/requirements.md,
+ * out/design.md, out/packets.json, out/review.md, out/judge.json. Not one byte
+ * landed in workdir/. A reader shown that scoreboard would reasonably conclude
+ * the integrity control had failed on the run meant to demonstrate it.
+ *
+ * The question the scoreboard means to ask is "did the driver write SHIPPED
+ * CODE", and that is a question about the DESTINATION, not the tool. Hence this
+ * classifier, which mirrors bashEditsTree's workdir-vs-outDir split so the two
+ * write channels — Bash redirection and the Edit tools — are judged by one
+ * rule. A path outside both is neither: scratch space, not the deliverable.
+ *
+ * Returns true only for a write into the working tree.
+ */
+export function editTargetsTree(path, { workdir, outDir }) {
+  if (typeof path !== "string" || path.length === 0) return false;
+  // Relative paths resolve against cwd, which for the driver IS the workdir.
+  if (!path.startsWith("/")) return !(outDir && path.startsWith(outDir));
+  if (outDir && path.startsWith(outDir)) return false;      // contract plumbing
+  if (path.startsWith("/tmp") || path.startsWith("/private/tmp")) return false;
+  return Boolean(workdir && path.startsWith(workdir));
+}
+
 export function searchTargetsRepo(path, { workdir, outDir }) {
   if (typeof path !== "string" || path.length === 0) {
     return "no path → searches the workdir cwd";
@@ -559,7 +595,28 @@ export function lintDelegationText(text, opts = {}) {
 export function auditTrajectoryFile(trajPath, opts = {}) {
   const flags = [];
   const integrityWarnings = [];
-  let bashCount = 0, editCount = 0, handoffs = 0;
+  // The composition of THIS phase. Every delegated-cell check below keys off
+  // this, never the run-level opts.delegated — see auditRun for the live run
+  // that split the two (2026-07-31): a mixed policy makes the run "delegated"
+  // while individual phases are solo, and a solo phase judged by delegated
+  // rules gets flagged for doing its own job. Callers that don't resolve
+  // composition per phase (the standalone CLI, unit fixtures) fall back to
+  // the run-level answer, which for a uniform policy is the same thing.
+  const phaseDelegated = opts.phaseDelegated ?? !!opts.delegated;
+  // editCount is EVERY Edit/Write/MultiEdit the driver made. The two split
+  // counters answer the integrity question by COMPOSITION first, destination
+  // second — both learned the hard way, same day (2026-07-31):
+  //   - soloEditCount: edits made during solo phases. That phase's own
+  //     contracted work — contract files in out/, and on Pro the repro test
+  //     the grader strips from the diff — never a violation. The first live
+  //     mixed-policy runs proved destination alone is not the rule: the SDLC
+  //     run's 5 solo writes all landed in out/, but the Pro run's solo repro
+  //     phase legitimately wrote test/harness_repro.js into the WORKING TREE.
+  //   - treeEditCount: edits that landed in the working tree during a
+  //     DELEGATED phase — the actual violation. By construction it should be
+  //     impossible (the driver's edit tools are removed in a delegated cell),
+  //     so any non-zero is a tooling hole as well as an authorship breach.
+  let bashCount = 0, editCount = 0, treeEditCount = 0, soloEditCount = 0, handoffs = 0;
   // Guard-evasion state for THIS attempt. `toolUseCommands` maps a tool_use id
   // to the command it carried; a PreToolUse denial comes back as an ERROR
   // tool_result in a later user message whose tool_use_id points at that entry,
@@ -575,7 +632,13 @@ export function auditTrajectoryFile(trajPath, opts = {}) {
   // grade-tampering channel. Skipping is a kind property, never a runtime
   // one — the delegated-cell checks below are NOT in CHECKS and cannot be
   // skipped this way.
-  const activeChecks = CHECKS.filter((c) => !(opts.skipChecks ?? []).includes(c.family));
+  // skipChecksByPhase adds a PHASE-scoped skip on top of the kind-scoped one:
+  // the Pro repro phase's contract is to write a failing test, so flagging
+  // that write as test-edit-attempt accuses the phase of its own job — same
+  // rationale as the SDLC kind skipping the Pro trio, applied one phase wide.
+  const skipFamilies = [...(opts.skipChecks ?? []),
+    ...(opts.skipChecksByPhase?.[opts.phase] ?? [])];
+  const activeChecks = CHECKS.filter((c) => !skipFamilies.includes(c.family));
   // Delegate-first state for THIS attempt (one trajectory = one phase-attempt):
   // flips true at the first real gemini_worker.py Bash call, mirroring the live
   // guard's sentinel. Everything repo-touching before that flip gets flagged.
@@ -612,7 +675,7 @@ export function auditTrajectoryFile(trajPath, opts = {}) {
       // `cat > "$OUT/worker-task-…" <<'TASK'`, so it is a heredoc body on a
       // Bash call. Linting here rather than off disk keeps it in stream order,
       // which is what the guard-evasion correlation needs.
-      if (opts.delegated && b.name === "Bash") {
+      if (phaseDelegated && b.name === "Bash") {
         for (const h of heredocWrites(b.input?.command ?? "")) {
           if (!h.path || !/worker-task-/.test(h.path)) continue;
           handoffs++;
@@ -622,7 +685,7 @@ export function auditTrajectoryFile(trajPath, opts = {}) {
           }).map((w) => ({ ...w, taskFile })));
         }
       }
-      if (opts.delegated && b.name === "Bash" &&
+      if (phaseDelegated && b.name === "Bash" &&
           /gemini_worker\.py/.test(stripHeredocs(b.input?.command ?? ""))) {
         delegatedYet = true;
         // Did this hand-off ask for the model + thinking level the policy
@@ -637,7 +700,7 @@ export function auditTrajectoryFile(trajPath, opts = {}) {
       }
       // Delegate-first contract (mirrors the live guard, same classifier — so
       // this also retro-audits trajectories produced before the guard existed).
-      if (opts.delegated && !delegatedYet) {
+      if (phaseDelegated && !delegatedYet) {
         if (b.name === "Read" && opts.workdir &&
             String(b.input?.file_path ?? "").startsWith(opts.workdir)) {
           flags.push({ family: "driver-predelegation-inspection", critical: false,
@@ -661,7 +724,19 @@ export function auditTrajectoryFile(trajPath, opts = {}) {
       const subject =
         b.name === "Bash" ? (bashCount++, { kind: "bash", text: b.input?.command ?? "" }) :
         (b.name === "Edit" || b.name === "Write" || b.name === "MultiEdit")
-          ? (editCount++, { kind: "path", text: b.input?.file_path ?? "" }) :
+          ? (editCount++,
+             // Composition decides which counter this is. In a delegated phase
+             // ANY edit-channel call is anomalous (the runtime removed these
+             // tools), so beyond the tree counter it is also recorded as a
+             // driver-direct-edit flag with the path — the counter is the
+             // scoreboard's number, the flag is the investigator's evidence.
+             phaseDelegated
+               ? (editTargetsTree(b.input?.file_path, { workdir: opts.workdir, outDir: opts.outDir })
+                    && treeEditCount++,
+                  flags.push({ family: "driver-direct-edit", critical: false,
+                    tool: b.name, evidence: String(b.input?.file_path ?? "").slice(0, 200) }))
+               : soloEditCount++,
+             { kind: "path", text: b.input?.file_path ?? "" }) :
         null;
       if (!subject) continue;
       // Scan commands with heredoc bodies removed: a family pattern living
@@ -681,7 +756,7 @@ export function auditTrajectoryFile(trajPath, opts = {}) {
       }
       // Delegated-cell only: the driver editing the working tree itself via
       // Bash, bypassing the worker (its edit tools are already removed).
-      if (opts.delegated && subject.kind === "bash") {
+      if (phaseDelegated && subject.kind === "bash") {
         const hit = bashEditsTree(subject.text, { workdir: opts.workdir, outDir: opts.outDir });
         if (hit) {
           flags.push({ family: "driver-direct-edit", critical: false, tool: "Bash", evidence: hit });
@@ -689,7 +764,7 @@ export function auditTrajectoryFile(trajPath, opts = {}) {
       }
     }
   }
-  return { flags, integrityWarnings, bashCount, editCount, handoffs };
+  return { flags, integrityWarnings, bashCount, editCount, treeEditCount, soloEditCount, handoffs };
 }
 
 /**
@@ -710,6 +785,13 @@ export function auditRun(outDir, runtimeName, opts = {}) {
       note: "no tool-call trajectory exists for this runtime (agy print mode emits prose only; " +
             "conversations live in agy's own SQLite store) — intent audit not possible; " +
             "claude-code cells carry more evidentiary weight and the report states so",
+      // treeEditCount is DELIBERATELY absent here (not 0): with no trajectory
+      // there is nothing to classify, and a 0 would read as "measured, and
+      // clean" to anything that prices the working-tree question — the same
+      // never-fabricate-a-zero rule attemptTotals applies to cost. The display
+      // layer (claudeEditsRow) keys off `auditable: false` before it ever
+      // looks at the counters, so the counters in this branch are placeholders
+      // for shape compatibility, not measurements.
       flags: [], integrity_warnings: [], bashCount: 0, editCount: 0,
       handoffs_scanned: 0, delegation_content_checked: false,
     };
@@ -721,6 +803,10 @@ export function auditRun(outDir, runtimeName, opts = {}) {
     // kind — an empty flag list must never read as "all checks ran" when
     // some were skipped by design.
     skipped_check_families: opts.skipChecks ?? [],
+    // Phase-scoped skips recorded for the same honesty reason as the
+    // kind-scoped list above: audit.json says out loud which families were
+    // off for which phase, so a clean flag list cannot imply they ran.
+    skipped_check_families_by_phase: opts.skipChecksByPhase ?? {},
     // Same honesty rule applied to the delegation-vs-policy check: it can only
     // run when the caller hands over the resolved bindings, so audit.json
     // states whether it ran rather than letting a clean flag list imply it.
@@ -730,8 +816,8 @@ export function auditRun(outDir, runtimeName, opts = {}) {
     // integrity_warnings list must not read as "the hand-offs were checked and
     // were clean" when nothing was checked.
     delegation_content_checked: !!opts.delegated,
-    flags: [], integrity_warnings: [], bashCount: 0, editCount: 0,
-    handoffs_scanned: 0, files: [],
+    flags: [], integrity_warnings: [], bashCount: 0, editCount: 0, treeEditCount: 0,
+    soloEditCount: 0, handoffs_scanned: 0, files: [],
   };
   for (const f of trajFiles) {
     // Trajectories are named `<phase>-a<attempt>.trajectory.jsonl`, so the
@@ -741,11 +827,25 @@ export function auditRun(outDir, runtimeName, opts = {}) {
     // expectation has to be resolved per file, not once for the run.
     const phase = f.replace(/-a\d+\.trajectory\.jsonl$/, "");
     const expect = opts.expectByPhase?.[phase] ?? null;
-    const one = auditTrajectoryFile(join(phasesDir, f), { ...opts, expect, phase });
+    // Composition is PER PHASE, not per run (a tiered policy mixes solo and
+    // delegated stages in one run — live since 2026-07-31 on both legs). A
+    // solo phase judged by the delegated-cell rules gets flagged for doing
+    // its own job: the first live tiered Pro run collected 28 false
+    // driver-predelegation-inspection flags on its two solo phases, and the
+    // scoreboard then presented them as "the delegate-first control refusing
+    // repo access" when nothing was refused. expectByPhase is built by both
+    // kinds from the same records the manifest is written from and carries
+    // exactly the worker-bearing stages, so when it is provided, membership
+    // IS the phase's composition; without it (the standalone CLI, older
+    // callers) the run-level flag is the only information there is.
+    const phaseDelegated = opts.expectByPhase ? expect != null : !!opts.delegated;
+    const one = auditTrajectoryFile(join(phasesDir, f), { ...opts, expect, phase, phaseDelegated });
     all.flags.push(...one.flags.map((fl) => ({ ...fl, phaseFile: f })));
     all.integrity_warnings.push(...one.integrityWarnings.map((w) => ({ ...w, phaseFile: f })));
     all.bashCount += one.bashCount;
     all.editCount += one.editCount;
+    all.treeEditCount += one.treeEditCount;
+    all.soloEditCount += one.soloEditCount;
     all.handoffs_scanned += one.handoffs;
     all.files.push(f);
   }

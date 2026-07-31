@@ -617,12 +617,21 @@ export const swepro = {
     // whether the delegation asked for the model + thinking level the policy
     // ordered (2026-07-26; see audit.mjs delegationMismatches for the run that
     // motivated it). Built from phaseRecords, the same array the manifest is
-    // written from, so audit and manifest cannot disagree. Pro policies are
-    // untiered today — every phase resolves to the same binding — but the
-    // check is per phase anyway: a future tiered Pro column must not be able
-    // to ship with this silently un-covered.
+    // written from, so audit and manifest cannot disagree. Since 2026-07-31 the
+    // Pro leg IS tiered (opus48-plus-lite runs repro/localize solo and only
+    // patch delegated), so this per-phase map is also how the audit learns
+    // each phase's composition — see auditRun for what mis-scoping that to
+    // the run cost the first live tiered Pro run.
     const audit = auditRun(outDir, runtimeName, {
       delegated: delegatedRun, workdir, outDir,
+      // The repro phase's CONTRACT is a failing test — test/… files are its
+      // deliverable, and computeDiff strips them from the graded diff
+      // regardless (that is the enforcement). Flagging that write as
+      // test-edit-attempt accuses the phase of its own job, so the family is
+      // off for repro specifically — the same rationale as the SDLC kind
+      // skipping the Pro trio, applied one phase wide. Recorded in audit.json
+      // under skipped_check_families_by_phase.
+      skipChecksByPhase: { repro: ["test-edit-attempt"] },
       expectByPhase: Object.fromEntries(
         phaseRecords.filter((r) => r.binding?.worker).map((r) => [r.phase, r.binding])),
     });
@@ -676,7 +685,16 @@ export const swepro = {
       failedAt,
       records: phaseRecords,
       totals: manifest.totals,
-      audit: { editCount: audit.editCount, flags: audit.flags },
+      // treeEditCount + auditable ride along for claudeEditsRow: the scoreboard
+    // judges edits by DESTINATION (workdir/ vs the run's own out/), and must
+    // also tell a measured zero from a run that never measured (pre-split
+    // audit.json) or could never measure (auditable: false, no trajectory).
+    // Projecting them away here would silently force the row's "NOT
+    // established" fallback on every fresh run — the 2026-07-31 destination
+    // split would never fire on the live path it was built for.
+    audit: { editCount: audit.editCount, treeEditCount: audit.treeEditCount,
+      soloEditCount: audit.soloEditCount, auditable: audit.auditable,
+      missing: audit.missing, flags: audit.flags },
       delegated: delegatedRun,
       keptCount: finalDiff.kept.length,
       strippedCount: finalDiff.stripped.length,

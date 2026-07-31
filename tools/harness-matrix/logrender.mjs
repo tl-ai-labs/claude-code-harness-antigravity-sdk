@@ -33,7 +33,7 @@
 
 import {
   paint, heavyBox, kvBlock, table, attemptTotals, fmtDur, fmtUsd, fmtInt,
-  watchingBlock, costRows, tokenLedgerRows,
+  watchingBlock, costRows, tokenLedgerRows, claudeEditsRow,
 } from "./logfmt.mjs";
 
 /** A binding is the DELEGATED form when it is an object, not a model string. */
@@ -284,9 +284,7 @@ export function sdlcFooter(d) {
       ...(d.delegated ? tokenLedgerRows(runTotals.tokens, { indentLabel: "  " }) : []),
       ...(d.delegated ? [["delegations", `${runTotals.delegations} hand-off(s) to Gemini` +
         (runTotals.toolCalls ? ` · ${runTotals.toolCalls} worker tool call(s) inside them` : "")]] : []),
-      ...(d.delegated ? [["Claude edits", `${d.audit.editCount ?? 0} — ` +
-        (d.audit.editCount ? "NON-ZERO: the harness wrote code, investigate audit.json"
-          : "the harness wrote no code, as required")]] : []),
+      ...(d.delegated ? [claudeEditsRow(d.audit)] : []),
       ...(d.delegated ? [["lock held", `${lockFlags} time(s) — every one is the delegate-first ` +
         "control refusing the harness direct repo access"]] : []),
       ["delivery", d.failedAt ? "none — run failed before delivery"
@@ -423,9 +421,7 @@ export function sweproFooter(d) {
       ...(d.delegated ? tokenLedgerRows(runTotals.tokens, { indentLabel: "  " }) : []),
       ...(d.delegated ? [["delegations", `${runTotals.delegations} hand-off(s) to Gemini` +
         (runTotals.toolCalls ? ` · ${runTotals.toolCalls} worker tool call(s) inside them` : "")]] : []),
-      ...(d.delegated ? [["Claude edits", `${d.audit.editCount ?? 0} — ` +
-        (d.audit.editCount ? "NON-ZERO: the harness wrote code, investigate audit.json"
-          : "the harness wrote no code, as required")]] : []),
+      ...(d.delegated ? [claudeEditsRow(d.audit)] : []),
       ...(d.delegated ? [["lock held", `${lockFlags} time(s) — every one is the delegate-first ` +
         "control refusing the harness direct repo access"]] : []),
       ["patch", d.failedAt ? "none" : `${d.keptCount} file(s) kept` +

@@ -44,7 +44,7 @@ import { priceSidecars } from "./harness-matrix/price-sidecar.mjs";
 import { isDelegated } from "./harness-matrix/runtimes.mjs";
 import {
   paint, rule, table, kvBlock, heavyBox, attemptTotals, cachePct,
-  fmtDur, fmtUsd, fmtInt, fitLine, sayErr,
+  claudeEditsRow, fmtDur, fmtUsd, fmtInt, fitLine, sayErr,
 } from "./harness-matrix/logfmt.mjs";
 
 /** A value the manifest does not carry. Stated as absent, never guessed. */
@@ -531,10 +531,15 @@ function identityRows(f) {
   if (f.delegated) {
     rows.push(["delegations", `${f.totals.delegations} hand-off(s) to Gemini` +
       (f.totals.toolCalls ? ` · ${f.totals.toolCalls} worker tool call(s) inside them` : "")]);
-    rows.push(["driver edits", `${f.audit.editCount ?? 0} — ` +
-      (f.audit.editCount
-        ? "NON-ZERO: the driver wrote code itself; see audit.json"
-        : "the driver wrote no code, as the delegated cell requires")]);
+    // Same row, same rule, one implementation: claudeEditsRow judges edits by
+    // DESTINATION (workdir/ vs the run's own out/ contract dir). The inline
+    // wording this replaces keyed off raw editCount and accused any solo
+    // stage's own contract writes of being "the driver wrote code itself" —
+    // the exact P4a false alarm fixed in logfmt.mjs on 2026-07-31. The full
+    // audit.json is on hand here, so pre-split runs (no treeEditCount) and
+    // unauditable runtimes (auditable: false) get their honest wording too.
+    const [ek, ev] = claudeEditsRow(f.audit);
+    rows.push([ek === "Claude edits" ? "driver edits" : ek, ev]);
     rows.push(["lock held", `${f.lockFlags} time(s) — the delegate-first control refusing ` +
       "the driver direct repo access"]);
   }

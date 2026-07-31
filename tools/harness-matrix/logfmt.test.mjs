@@ -15,7 +15,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { fmtInt, fmtUsd, fmtDur, table, kvBlock, heavyBox, attemptTotals, tokenSplit,
-  cachePct, tokenLedgerRows, costRows, gutter, ACTOR, fitLine, rule }
+  cachePct, tokenLedgerRows, costRows, claudeEditsRow, gutter, ACTOR, fitLine, rule }
   from "./logfmt.mjs";
 
 // ANSI codes are emitted unconditionally by paint(); strip them so assertions
@@ -225,6 +225,97 @@ test("tokenLedgerRows separates cache reads from the fresh input to be priced", 
 test("tokenLedgerRows is empty when nothing was delegated", () => {
   assert.deepEqual(tokenLedgerRows({ total: 0 }), []);
   assert.deepEqual(tokenLedgerRows(null), []);
+});
+
+// ---- claudeEditsRow ---------------------------------------------------------
+// The regressions these guard are the two live 2026-07-31 runs of the
+// deliverable's headline policy, which taught the rule in two steps the same
+// day. SDLC (RESOLVED, 14/14, judge 9/10): five SOLO stages wrote their own
+// out/ contract files and the row said "the harness wrote code" — destination
+// matters. Pro (all gates PASS): the SOLO repro phase legitimately wrote the
+// repro test INTO the working tree (the grader strips test/repro paths — that
+// is the enforcement) — so COMPOSITION matters first, destination second. The
+// violation is a tree write during a DELEGATED phase; nothing else counts.
+
+test("claudeEditsRow does not call solo-stage contract writes a violation", () => {
+  // Exactly the SDLC live-run shape: 5 solo writes, all into out/.
+  const [, v] = claudeEditsRow({ editCount: 5, treeEditCount: 0, soloEditCount: 5 });
+  assert.match(v, /^0 into the working tree during delegated phases/);
+  assert.match(v, /as required/);
+  assert.doesNotMatch(v, /NON-ZERO/,
+    "a solo stage writing its own contract file is the policy working, not a breach");
+  assert.match(v, /5 write\(s\) during solo phases/,
+    "the 5 writes must still be surfaced — silence would hide real activity");
+});
+
+test("claudeEditsRow does not shout at a solo phase writing its own repro test", () => {
+  // Exactly the Pro live-run shape: 3 solo writes, one of which was the repro
+  // test into workdir/test/ — stripped from the graded diff by computeDiff.
+  // A destination-only rule would have called this "the harness wrote shipped
+  // code" on a file that was never shipped.
+  const [, v] = claudeEditsRow({ editCount: 3, treeEditCount: 0, soloEditCount: 3 });
+  assert.match(v, /^0 into the working tree during delegated phases/);
+  assert.match(v, /3 write\(s\) during solo phases/);
+  assert.doesNotMatch(v, /NON-ZERO/);
+});
+
+test("claudeEditsRow still shouts when a delegated phase writes the tree", () => {
+  const [, v] = claudeEditsRow({ editCount: 6, treeEditCount: 1, soloEditCount: 5 });
+  assert.match(v, /1 into the working tree during delegated phase\(s\)/);
+  assert.match(v, /NON-ZERO/);
+  assert.match(v, /investigate audit\.json/);
+});
+
+test("claudeEditsRow on a fully-delegated clean run has no solo parenthetical", () => {
+  const [, v] = claudeEditsRow({ editCount: 0, treeEditCount: 0, soloEditCount: 0 });
+  assert.match(v, /^0 into the working tree during delegated phases/);
+  assert.doesNotMatch(v, /solo phases —/,
+    "nothing was written anywhere — a parenthetical about 0 writes is noise");
+});
+
+test("claudeEditsRow refuses to invent a tree count for a pre-split audit.json", () => {
+  // Run directories are never rewritten in place, so runs recorded before the
+  // split keep their old audit.json. Reporting a clean verdict there would
+  // state as measured something that was never measured — the same lie
+  // attemptTotals refuses when it prints `n/a` instead of `$0.0000`.
+  const [, v] = claudeEditsRow({ editCount: 5 });          // no treeEditCount
+  assert.match(v, /5 total/);
+  assert.match(v, /NOT established here/);
+  assert.doesNotMatch(v, /NON-ZERO/);
+  assert.doesNotMatch(v, /as required/,
+    "an unmeasured run must not be reported as passing the integrity claim");
+  assert.match(v, /re-derive with auditRun/, "the reader needs the $0 remedy, not just a caveat");
+});
+
+test("claudeEditsRow says when no audit.json survives, instead of grading a placeholder", () => {
+  // The reader-side fallback (report.mjs, replay-log.mjs) for a killed run:
+  // audit.json is written at the end, so a killed run has none, and the
+  // fallback's editCount of 0 is shape-filler. Without the `missing` branch
+  // that object would claim "0 total" — a measured zero the run never
+  // produced — and say the run "was audited", which it never was.
+  const [k, v] = claudeEditsRow({ editCount: 0, flags: [], missing: true });
+  assert.equal(k, "Claude edits");
+  assert.match(v, /no audit\.json survives/);
+  assert.match(v, /never established/);
+  assert.match(v, /re-derive with auditRun/, "trajectories are on disk even for a killed run");
+  assert.doesNotMatch(v, /0 total/, "the placeholder zero must not surface as a measurement");
+  assert.doesNotMatch(v, /as required/);
+});
+
+test("claudeEditsRow names an unauditable runtime instead of judging its placeholder zeros", () => {
+  // auditRun's no-trajectory early return (the antigravity runtime — agy print
+  // mode records no tool calls) carries `auditable: false` and an editCount of
+  // 0 that is a placeholder, not a measurement. Without this branch that
+  // object would fall into the pre-split wording, which is wrong twice for it:
+  // the run was never auditable, and its out/phases/ holds no trajectories to
+  // re-derive from — the advertised $0 remedy would be impossible.
+  const [k, v] = claudeEditsRow({ auditable: false, editCount: 0 });
+  assert.equal(k, "Claude edits");
+  assert.match(v, /not auditable/);
+  assert.match(v, /no tool-call trajectory/);
+  assert.doesNotMatch(v, /as required/, "no measurement, so no verdict either way");
+  assert.doesNotMatch(v, /re-derive/, "must not advertise a re-derivation that cannot exist");
+  assert.doesNotMatch(v, /NON-ZERO/);
 });
 
 test("costRows says plainly that the Max seat issues no invoice", () => {

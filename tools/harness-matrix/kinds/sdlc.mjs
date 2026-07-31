@@ -901,7 +901,16 @@ export const sdlc = {
       failedAt,
       records: stageRecords,
       totals: manifest.totals,
-      audit: { editCount: audit.editCount, flags: audit.flags },
+      // treeEditCount + auditable ride along for claudeEditsRow: the scoreboard
+    // judges edits by DESTINATION (workdir/ vs the run's own out/), and must
+    // also tell a measured zero from a run that never measured (pre-split
+    // audit.json) or could never measure (auditable: false, no trajectory).
+    // Projecting them away here would silently force the row's "NOT
+    // established" fallback on every fresh run — the 2026-07-31 destination
+    // split would never fire on the live path it was built for.
+    audit: { editCount: audit.editCount, treeEditCount: audit.treeEditCount,
+      soloEditCount: audit.soloEditCount, auditable: audit.auditable,
+      missing: audit.missing, flags: audit.flags },
       delegated: delegatedRun,
       deliveryCount: finalDiff.kept.length,
       judgeScores: judgeContract?.scores ?? null,
