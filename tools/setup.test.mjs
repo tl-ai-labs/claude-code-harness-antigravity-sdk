@@ -27,13 +27,28 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { relative, isAbsolute } from "node:path";
+import { relative, isAbsolute, join } from "node:path";
+import { readFileSync } from "node:fs";
 
 import {
   checkNode, checkAnthropicAuth, checkGoogleProject, checkGoogleLocation,
   parseTestSummary, runChecks, OFFLINE_CHECKS, SDLC_CHECKS, SWE_PRO_CHECKS,
-  INSTALL_TARGETS, ROOT,
+  INSTALL_TARGETS, ROOT, EXAMPLE_INSTANCE,
 } from "./setup.mjs";
+
+/**
+ * Run the wizard's driver with no checks and capture everything it printed.
+ * Zero checks means zero failures, which is the branch that prints the closing
+ * "Next:" block — the only part of the wizard a reader acts on after a green
+ * run, and the part these tests care about. Nothing is spawned or installed.
+ */
+async function capturedClosingBlock(mode) {
+  const lines = [];
+  const real = console.log;
+  console.log = (...a) => lines.push(a.join(" "));
+  try { await runChecks(mode, []); } finally { console.log = real; }
+  return lines.join("\n");
+}
 
 // ─── helpers ───────────────────────────────────────────────────────────
 
@@ -299,4 +314,59 @@ test("checkNode accepts the Node this suite is running on", () => {
   const r = checkNode();
   assert.equal(r.ok, true, `checkNode rejected Node ${process.versions.node}`);
   assert.match(r.label, new RegExp(process.versions.node.replace(/\./g, "\\.")));
+});
+
+// ─── what the wizard tells a first-time reader to paste ────────────────
+
+test("every documented SWE-bench Pro instance id carries the `instance_` prefix", () => {
+  // fetch-instances-pro.mjs matches --ids against the dataset's own
+  // `instance_id` column by exact string, and every id in that column begins
+  // with `instance_`. The wizard, docs/swe-bench-pro.md and
+  // examples/swe-bench-pro/README.md all printed the bare `repo__repo-<sha>`
+  // form until 2026-07-31, so the FIRST command a new reader pasted exited 1
+  // with "unknown instance ids". Verified live against the 731-row public
+  // split that day: prefixed freezes the instance, bare is rejected.
+  //
+  // Asserted over the shipped prose, not a fixture, because the defect was in
+  // the prose. Offline: reads files, matches text, spawns nothing.
+  assert.ok(EXAMPLE_INSTANCE.startsWith("instance_"),
+    "the wizard's own example id would be rejected by the fetcher");
+
+  const sources = [
+    "tools/setup.mjs",
+    "docs/swe-bench-pro.md",
+    "examples/swe-bench-pro/README.md",
+  ];
+  for (const rel of sources) {
+    const text = readFileSync(join(ROOT, rel), "utf8");
+    for (const m of text.matchAll(/--ids\s+(\S+)/g)) {
+      // Skip the wizard's own template interpolation — the constant it
+      // interpolates is asserted directly above.
+      if (m[1].startsWith("${")) continue;
+      for (const id of m[1].split(",")) {
+        assert.ok(id.startsWith("instance_"),
+          `${rel} tells the reader to run --ids ${id}, which the fetcher rejects`);
+      }
+    }
+    for (const m of text.matchAll(/swe-pro-corpus\/([A-Za-z0-9_.-]+__\S+)/g)) {
+      if (m[1].startsWith("${")) continue;
+      assert.ok(m[1].startsWith("instance_"),
+        `${rel} points --instance-dir at ${m[1]}, a directory the fetcher never creates`);
+    }
+  }
+});
+
+test("the closing block points at report.mjs in every mode", async () => {
+  // A run's live scoreboard deliberately withholds the worker's dollar figure
+  // until the rate pin is checked against the published Vertex rate, and names
+  // tools/report.mjs as the downstream that prices it. A reader who follows the
+  // wizard and stops at the scoreboard therefore never learns what the run
+  // cost. Pinned per mode because the closing block branches three ways and a
+  // future edit could easily restore the pointer in only one of them.
+  for (const mode of ["offline", "sdlc", "swe-pro"]) {
+    const out = await capturedClosingBlock(mode);
+    assert.match(out, /All checks passed/, `${mode}: expected the green branch`);
+    assert.match(out, /tools\/report\.mjs/,
+      `${mode}: the reader is never told how to price the run`);
+  }
 });

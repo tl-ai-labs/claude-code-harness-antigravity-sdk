@@ -22,7 +22,7 @@ import { join } from "node:path";
 
 import {
   ARTIFACT_PATH, HARNESS_DIR, bindingLabel, classifyChanges, cleanArtifacts, computeDiff,
-  costTotals, isDelegatedBinding, makeGit, makePromptRenderer, makeRunDir,
+  costTotals, isDelegatedBinding, makeGit, makePromptRenderer, makeRunDir, parseYaml,
   saneRepoPath, statusEntries, sweproBaseTag, writeRunInEnv,
 } from "./lib.mjs";
 
@@ -433,4 +433,69 @@ test("truncates at 128 chars the way upstream does, rather than hashing", () => 
   const tag = sweproBaseTag(`instance_${"a".repeat(200)}`, "owner/repo");
   assert.equal(tag.length, 128);
   assert.ok(tag.startsWith("owner.repo-aaa"));
+});
+
+// ── the five shipped policies: what each one pins ───────────────────────────
+// These read the YAML directly rather than going through loadPolicy, on
+// purpose: the assertion is about what the FILES DECLARE, which is what a
+// reader — and Google — sees. A resolver-level test would still pass if the
+// resolver started substituting a default the file never stated.
+const policyDoc = (name) =>
+  parseYaml(readFileSync(join(HARNESS_DIR, "policies", `${name}.yaml`), "utf8"));
+const leavesOf = (doc) => doc.models.filter((m) => m.model_name);
+
+// B-DRIVER48 (2026-07-31). The three CURRENT cells were re-pinned together from
+// claude-opus-4-6 to claude-opus-4-8. Pinned as a test because the value of the
+// arrangement is that the three agree: the only thing separating these cells is
+// how much work is delegated, and a driver drifting on one of them silently
+// converts every delta between them into a two-variable comparison. That is the
+// exact state the re-pin corrected — opus48-plus-lite had arrived on 4.8 alone,
+// leaving the anchor a generation behind the cells it anchors.
+//
+// Verified against the CLI before this was written: `claude --model
+// claude-opus-4-8 --effort high -p …` answers on the Max OAuth seat. A pin no
+// runtime accepts is a broken policy, not a strict one.
+test("the three CURRENT cells share one driver pin, exactly", () => {
+  for (const name of ["all-opus", "all-gemini-flash-high", "opus48-plus-lite"]) {
+    const drivers = leavesOf(policyDoc(name)).filter((m) => m.api === "anthropic");
+    assert.ok(drivers.length > 0, `${name} declares no Anthropic driver leaf`);
+    for (const d of drivers) {
+      assert.equal(d.model_name, "claude-opus-4-8", `${name} driver drifted off the shared pin`);
+      assert.equal(d.reasoning?.effort, "high", `${name} driver drifted off --effort high`);
+    }
+  }
+});
+
+// The other half of that decision, and the more load-bearing one. Both
+// historical columns were DELIBERATELY left on 4.6 because their exemplar
+// passes — shipped in this repo under examples/kudos-wall/passes/reference/ —
+// ran on 4.6. Re-pinning a frozen study column to a driver it never ran on
+// would make the policy describe a run that did not happen, which is worse than
+// a column that is merely old. Same reasoning that kept them from being
+// deleted; asserted here so a future bulk re-pin cannot take them along.
+test("the two HISTORICAL columns stay on the driver they actually ran with", () => {
+  for (const name of ["all-gemini-25-flash-high", "gemini35-plus-25-flash-high"]) {
+    for (const d of leavesOf(policyDoc(name)).filter((m) => m.api === "anthropic"))
+      assert.equal(d.model_name, "claude-opus-4-6",
+        `${name} was re-pinned away from the driver its recorded pass used`);
+  }
+});
+
+// B-REGION, at the schema level. The loader already rejects a vertex leaf with
+// no region, so this does not test the validator — it tests the FILES, and it is
+// the assertion that would have caught the Flash-Lite defect at authoring time
+// rather than on the first paid call: gemini-3.5-flash-lite is served on
+// `global` ONLY, so a leaf naming that model beside any other region is a policy
+// that cannot run, however well-formed it looks.
+test("every vertex worker leaf declares a region its model is actually served in", () => {
+  const GLOBAL_ONLY = new Set(["gemini-3.5-flash-lite"]);
+  for (const name of ["all-opus", "all-gemini-flash-high", "opus48-plus-lite",
+                      "all-gemini-25-flash-high", "gemini35-plus-25-flash-high"]) {
+    for (const w of leavesOf(policyDoc(name)).filter((m) => m.api === "vertex")) {
+      assert.ok(w.region, `${name}: vertex leaf ${w.id} declares no region`);
+      if (GLOBAL_ONLY.has(w.model_name))
+        assert.equal(w.region, "global",
+          `${name}: ${w.model_name} is served only on the global endpoint`);
+    }
+  }
 });

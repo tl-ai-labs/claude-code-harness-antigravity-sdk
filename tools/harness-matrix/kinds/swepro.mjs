@@ -42,7 +42,7 @@ import { auditRun, manifestAuditBlock } from "../audit.mjs";
 import { gradeRun } from "../grade.mjs";
 import { DELEGATION_VOCAB } from "../runtimes.mjs";
 import {
-  HARNESS_DIR, bindingLabel, isDelegatedBinding, loadPolicy, makePromptRenderer,
+  HARNESS_DIR, bindingLabel, isDelegatedBinding, preflightBinding, loadPolicy, makePromptRenderer,
   writeRunInEnv, makeExecInEnv, makeGit, classifyChanges, cleanArtifacts,
   saneRepoPath, computeDiff, runStageAttempts, costTotals, makeRunDir, sweproBaseTag,
 } from "./lib.mjs";
@@ -147,7 +147,13 @@ export const swepro = {
 
     // ---- preflight (all $0, all before any build or spend) -----------------
     try {
-      runtime.preflight({ binding: policy.resolved.repro.binding });
+      // The first DELEGATED phase, not hardcoded `repro`. Today every shipped
+      // policy routes all three Pro phases the same way, so this resolves to
+      // repro's binding either way — but the v2 grammar has always allowed a
+      // per-phase mix, and a policy that ran repro solo would otherwise skip
+      // the worker checks and pay for repro before dying at the first
+      // delegated phase. Same helper the SDLC kind uses; see preflightBinding.
+      runtime.preflight({ binding: preflightBinding(policy.resolved, PHASES) });
       execFileSync("docker", ["version", "--format", "{{.Server.Version}}"], { stdio: "pipe" });
     } catch (err) {
       sayErr(`preflight failed: ${err.message ?? err}`);
@@ -191,7 +197,9 @@ export const swepro = {
     // watching this scroll past needs to know who writes the code before any of
     // the numbers mean anything.
     const delegatedRun = PHASES.some((p) => isDelegatedBinding(policy.resolved[p].binding));
-    const headDelegate = delegatedRun ? policy.resolved[PHASES[0]].binding : null;
+    // First DELEGATED phase, matching the preflight above — a mixed policy
+    // would otherwise print "Claude Code (undefined)" over a correct table.
+    const headDelegate = delegatedRun ? preflightBinding(policy.resolved, PHASES) : null;
     say(sweproHeader({
       instanceId: instance.instance_id,
       repo: instance.repo, repoLanguage: instance.repo_language,
@@ -207,6 +215,9 @@ export const swepro = {
         // effort above — a delegated stage has two, and one bare "thinking"
         // label for both is the ambiguity this row exists to remove.
         workerThinking: policy.resolved[p].binding?.worker_thinking,
+        // See the same field in kinds/sdlc.mjs: the cost-regime row names
+        // the region the worker leaf declared, never a hardcoded default.
+        workerRegion: policy.resolved[p].binding?.worker_region,
       })),
       delegated: delegatedRun,
       driver: headDelegate?.driver, worker: headDelegate?.worker,
@@ -557,7 +568,7 @@ export const swepro = {
           : "authoring the fix",
         // Pro passes back the exact wording the Skill used to hard-code, so the
         // rendered prompt bytes are unchanged by the parameterization — asserted
-        // in guard.test.mjs, not assumed (Sriram, 2026-07-25).
+        // in guard.test.mjs, not assumed (2026-07-25).
         delegationVocab: DELEGATION_VOCAB.swepro,
       });
 

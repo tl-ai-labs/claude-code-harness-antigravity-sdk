@@ -101,12 +101,72 @@ test("--dry-run reports the policy's own models, not the previous column's", () 
   assert.doesNotMatch(gen25, /worker thinking HIGH/);
   assert.match(gen35, /worker thinking HIGH/);
 
+  // THE DRIVER NOW DIFFERS TOO, DELIBERATELY (2026-07-31) — asserted rather
+  // than normalised away, because it is the third variable this test exists to
+  // catch and it is here on purpose. The three CURRENT cells were re-pinned
+  // together to claude-opus-4-8; the two HISTORICAL columns were deliberately
+  // left on claude-opus-4-6, which is the driver their shipped exemplar passes
+  // under examples/kudos-wall/passes/reference/ actually ran on. Re-pinning a
+  // frozen column to a driver it never ran with would make the policy describe
+  // a run that did not happen.
+  //
+  // What this costs is stated plainly in both policy headers and is worth
+  // repeating where a reader of this test will see it: "held constant with its
+  // siblings" is now a statement about the files AS THEY STOOD IN JULY 2026,
+  // not about the files on disk. The 2.5-vs-3.5 comparison is against the
+  // RECORDED passes of the other columns, not against a fresh run of them.
+  assert.match(gen35, /claude-opus-4-8/);
+  assert.match(gen25, /claude-opus-4-6/);
+
+  // AND THE WORKER REGION DIFFERS, ALSO DELIBERATELY (2026-07-31) — the fourth
+  // variable, and the one that had been hiding. The cost-regime row used to
+  // print a hardcoded "Vertex asia-south1" for every delegated cell, so this
+  // assertion could not have been written and the strip() below could not have
+  // caught the drift: both columns rendered the same literal whatever their
+  // policies actually pinned. The row now derives from binding.worker_region
+  // (see logrender.workerRegionText), which immediately turned this test red —
+  // correctly. gemini-3.5-flash-lite is served on the `global` endpoint ONLY
+  // and 404s in asia-south1, so re-pinning the 3.5 column's worker forced its
+  // region to move; this frozen 2.5 column stays on asia-south1 because that is
+  // where its recorded pass actually billed.
+  //
+  // This is not cosmetic. `global` takes no Vertex non-global surcharge and
+  // asia-south1 takes +10% on every token class, so the two columns bill on
+  // different meters — a generation A/B read as single-variable would attribute
+  // that 10% to the model. Asserted here, and stated in both policy headers.
+  assert.match(gen35, /Vertex global/);
+  assert.doesNotMatch(gen35, /asia-south1/);
+  assert.match(gen25, /Vertex asia-south1/);
+  assert.doesNotMatch(gen25, /Vertex global/);
+
   // Identical everywhere ELSE: same task, template, scaffold, stage walk, caps
-  // and guard. Normalising the worker AND its thinking level leaves exactly
-  // the study-invariant frame, so any third difference still fails here.
-  const strip = (s) => s.replace(/gemini-[23]\.5-flash/g, "<worker>")
+  // and guard. Normalising the worker, its thinking level, the driver pin AND
+  // the worker region leaves exactly the study-invariant frame, so any FIFTH
+  // difference still fails here — the four known ones are each pinned by an
+  // assertion above, so normalising them here hides nothing. (It was three
+  // until 2026-07-31; region became the fourth the moment the cost-regime row
+  // stopped printing a hardcoded literal and started reading the binding.)
+  // `-lite` is part of the model id, not a suffix on it: the worker pin moved
+  // to gemini-3.5-flash-lite on 2026-07-31 (the instruction for the
+  // Google-facing runs), and a pattern that stopped at `flash` normalised it to
+  // the literal "<worker>-lite" — a difference the comparison below would then
+  // report as a third variable that does not exist.
+  //
+  // The whitespace collapse is the second half of the same fix and is load-
+  // bearing. These banners are wrapped to the 80-column grid, so two model ids
+  // of different lengths (gemini-2.5-flash is 16 characters, its Flash-Lite
+  // counterpart is 21) push the same prose onto different lines. Normalising
+  // the NAME after the text has already been wrapped cannot undo that, so the
+  // strings still differ — by layout, never by content. Collapsing runs of
+  // whitespace compares the frames as text rather than as typography, which is
+  // what this assertion was always about. Layout is not lost from the suite:
+  // the next test walks every line of a dry run against the 80-column grid.
+  const strip = (s) => s.replace(/gemini-[23]\.5-flash(-lite)?/g, "<worker>")
     .replace(/all-gemini(-25)?-flash-high/g, "<policy>")
-    .replace(/worker thinking (HIGH|NONE)/g, "worker thinking <level>");
+    .replace(/worker thinking (HIGH|NONE)/g, "worker thinking <level>")
+    .replace(/claude-opus-4-[68]/g, "<driver>")
+    .replace(/Vertex (global|asia-south1)/g, "Vertex <region>")
+    .replace(/\s+/g, " ").trim();
   assert.equal(strip(gen25), strip(gen35));
 });
 

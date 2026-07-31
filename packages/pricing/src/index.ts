@@ -154,7 +154,7 @@ export const PRICES: Record<string, ModelPrice> = {
       "at the global rate (see vertexSurchargeApplies).",
   },
   // Added 2026-07-20 for the Pathfinder payload-logging runs: policies switched
-  // from Gemini 3.x to 2.5 models (Teja's ask), and opus-plus-pro's gemini-2.5-pro
+  // from Gemini 3.x to 2.5 models (a platform-side ask), and opus-plus-pro's gemini-2.5-pro
   // leg had no entry here — cost math would silently fall back to policy-inline
   // pricing only. Values are the ≤200k-token prompt tier; cache_read is 25% of input.
   "gemini-2.5-pro": {
@@ -185,6 +185,61 @@ export const PRICES: Record<string, ModelPrice> = {
       "Re-verified 2026-07-23 against AI Studio + Vertex: global Standard = 1.5/9/0.15 (confirmed, thinking tokens bill at output rate). " +
       "Vertex non-global (regional) endpoints add +10% effective 2026-07-01 per the Vertex pricing page; " +
       "our asia-south1 worker therefore bills 1.65/9.90/0.165 — apply via getVertexRates(model, location), do not inline.",
+  },
+  // Added 2026-07-31. Flash-Lite becomes the repo's ONLY economical worker on
+  // this date: Flash 3.6 shipped publicly, and the standing instruction is to
+  // drop 3.5 Flash and 2.5 Flash from the models config and run the cheap tier
+  // on 3.5 Flash-Lite, keeping 3.6 Flash in reserve for the case where
+  // Flash-Lite cannot produce runnable code.
+  //
+  // Base numbers are the GLOBAL rate, exactly as the 3.5-flash entry below
+  // documents. Flash-Lite is a Gemini 3 family model, so vertexSurchargeApplies()
+  // returns true for it (it parses the leading `3` out of "3.5-flash-lite") and
+  // our asia-south1 worker really bills 0.33 / 2.75 / 0.033. Those three
+  // surcharged figures are printed on Google's own Vertex pricing page, which is
+  // what confirms the parser reaches the right answer here rather than merely a
+  // plausible one — do NOT hand-inline the x1.10, call getVertexRates().
+  "gemini-3.5-flash-lite": {
+    model_id: "gemini-3.5-flash-lite",
+    family: "gemini",
+    input: 0.3,
+    cache_read: 0.03,
+    output: 2.5,
+    source: "https://cloud.google.com/vertex-ai/generative-ai/pricing",
+    as_of: "2026-07-31",
+    notes:
+      "Verified 2026-07-31 against BOTH Google surfaces before any paid run: the Vertex " +
+      "pricing page (global 0.30/2.50/0.03, non-global 0.33/2.75/0.033) and the Gemini API " +
+      "pricing page (0.30/2.50/0.03). Output covers response AND reasoning tokens, as on " +
+      "every other Gemini entry here. The rate card is numerically identical to " +
+      "gemini-2.5-flash, which is a coincidence of price points and NOT a reason to reuse " +
+      "that entry: 2.5 Flash is a Gemini 2 model and takes no regional surcharge, so pricing " +
+      "a Flash-Lite call through it would understate an asia-south1 run by 10%.",
+  },
+  // Added 2026-07-31 as the DESIGNATED FALLBACK, not a default. Flash 3.6 is
+  // reached for only if Flash-Lite proves unable to produce economical, fully
+  // runnable code. Entered now, ahead of that decision, so the fallback is a
+  // one-line policy edit rather than a rate lookup performed under time
+  // pressure — an unpriced model silently reports $0 through priceSidecar().
+  //
+  // Note it is CHEAPER on output than gemini-3.5-flash (7.50 vs 9.00) at the
+  // same input rate, so falling back to it is not a straightforward price rise
+  // over the model it replaces; it is ~5x the input and ~3x the output of
+  // Flash-Lite, which is the comparison that matters for the fallback call.
+  "gemini-3.6-flash": {
+    model_id: "gemini-3.6-flash",
+    family: "gemini",
+    input: 1.5,
+    cache_read: 0.15,
+    output: 7.5,
+    source: "https://cloud.google.com/vertex-ai/generative-ai/pricing",
+    as_of: "2026-07-31",
+    notes:
+      "Verified 2026-07-31 against the Vertex and Gemini API pricing pages (1.50/7.50/0.15). " +
+      "Gemini 3 family, so the non-global surcharge applies via getVertexRates() like its " +
+      "siblings. Independently corroborated by the studies-console policy " +
+      "flash-3-6-escalate-fable-5.yaml, which pinned the same 1.50/0.15/7.50 block against " +
+      "the public launch rates on 2026-07-22.",
   },
   "gemini-3.1-pro": {
     model_id: "gemini-3.1-pro",

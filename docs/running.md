@@ -174,16 +174,64 @@ remembering to copy an edit across — `logrender.test.mjs` asserts that
 against every run present on the machine. Use it to review demo copy,
 or to re-read a run you have already paid for, without paying again.
 
+### Pricing a run at $0
+
+The scoreboard prints the worker's token counts and deliberately stops
+short of a dollar figure — the rate pin is verified downstream, not
+mid-run. `tools/report.mjs` is that downstream:
+
+```bash
+node tools/report.mjs tools/harness-matrix/runs/<task>/<cell>/<stamp>
+```
+
+It prices each usage sidecar against the model and region that sidecar
+records, names the rate-table version it used, and states which of the
+two dollar figures is a real invoice and which is a list-price estimate.
+`--markdown` emits the same report for pasting into a doc. Offline and
+read-only, like the replay above.
+
+### After editing a scaffold — re-stamp its manifest
+
+The SDLC verify stage hashes every chassis file against
+`scaffolds/<id>/scaffold.manifest.json`. **Change anything in a scaffold
+outside the slots — including a comment — and that manifest must be
+re-stamped in the same commit**, or every subsequent run fails verify with
+`content changed` and appears to blame the model:
+
+```bash
+node tools/harness-matrix/scaffold-manifest.mjs --write
+```
+
+The manifest is derived from the scaffold plus the slot list in
+`scaffold.json`, so this is a regeneration, not an edit. `--check` (the
+default) reports drift and exits 1, and `pnpm test` runs that same check —
+forgetting costs a red test, not a paid run.
+
+**`run-harness.mjs` runs that check itself, before anything is spent.** A
+stale manifest exits `2` naming the file whose hash moved and the `--write`
+remedy, for both kinds and for `--dry-run` too. That is deliberate belt and
+braces: the test suite only catches this if someone runs it, and on
+2026-07-31 nobody had between the commit that broke the manifest and the
+run that paid for it. The gate is a sha256 comparison over files already on
+disk — no credentials, no network, milliseconds — so there is no reason for
+it to be optional.
+
 ## Choosing between the policies
 
 See [policies.md](policies.md). Short version:
 
 - **Prove the cable works, cheaply**: `all-gemini-flash-high` on
-  `examples/kudos-wall`.
+  `examples/kudos-wall`. Every stage delegates, so a green run exercises
+  the SDK end to end.
 - **The Gemini Enterprise tokenomics story** (Opus for judgment,
-  Gemini for volume): `gemini35-plus-25-flash-high` on
-  `examples/kudos-wall`.
+  Gemini for volume): `opus48-plus-lite` on `examples/kudos-wall`. Its
+  premium tier is the driver seat, which is the shape a team would
+  actually deploy. `gemini35-plus-25-flash-high` encodes the same split
+  with both tiers as *workers* — the cleaner experiment, and historical:
+  it stays on the Opus 4.6 driver its recorded passes ran with.
 - **Baseline for comparison** (no delegation, Opus does it all, no
   Antigravity SDK on the path): `all-opus` on any workload.
-- **Generation comparison**: `all-gemini-25-flash-high` vs
-  `all-gemini-flash-high` on the same workload.
+- **Generation comparison**: `all-gemini-25-flash-high` vs the **July
+  2026 recorded pass** of `all-gemini-flash-high` — not a fresh run of
+  it. That policy now pins Flash-Lite on an Opus 4.8 driver, so a
+  same-day pairing would vary generation, tier and driver at once.

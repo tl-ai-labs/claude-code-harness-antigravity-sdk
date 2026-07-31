@@ -24,9 +24,11 @@ Everything in [setup.md](setup.md)'s **SDLC live** profile, plus:
 clone. Build it:
 
 ```bash
-# by explicit instance id
+# by explicit instance id — note the `instance_` prefix, which is part of the
+# dataset's own instance_id and is matched exactly; without it the fetcher
+# exits 1 with "unknown instance ids"
 node tools/swe/fetch-instances-pro.mjs \
-  --ids navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a
+  --ids instance_NodeBB__NodeBB-05f2236193f407cf8e2072757fbd6bb170bc13f0-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e
 
 # or a language-stratified sample over the 731 public instances
 node tools/swe/fetch-instances-pro.mjs --seed 20260716 --count 12

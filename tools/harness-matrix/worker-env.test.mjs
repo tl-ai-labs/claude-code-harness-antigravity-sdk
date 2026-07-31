@@ -98,6 +98,40 @@ test("the region keeps its pinned default, which the environment can override", 
   }
 });
 
+// ---- --region: the policy's declaration outranks the ambient environment ----
+// B-REGION regression guards (2026-07-31). The test above pins the DEFAULT; this
+// one pins that the default can be beaten by the caller. Both matter, and they
+// fail in opposite directions: lose the default and the sdk-probe scripts and
+// one-off `export`-driven runs break; lose the override and a policy declaring
+// `region: global` silently bills every token in asia-south1 — the state this
+// worker shipped in until today, and the state in which the Flash-Lite pin
+// (served on `global` only) would have 404'd on its first delegation.
+test("gemini_worker accepts a --region that outranks GOOGLE_CLOUD_LOCATION", () => {
+  const src = source("gemini_worker.py");
+  // Declared, and declared OPTIONAL. A required flag here would break every
+  // legacy (v1) policy replay, whose bindings carry no region at all.
+  assert.match(src, /add_argument\(\s*["']--region["']\s*,\s*default=None/,
+    "gemini_worker no longer accepts --region");
+  // The precedence itself, in the one line that encodes it. `args.region or
+  // LOCATION` is the whole contract: flag wins, env is the fallback.
+  assert.match(src, /location\s*=\s*args\.region\s+or\s+LOCATION/,
+    "the --region flag no longer takes precedence over the environment");
+});
+
+test("the worker's sidecar records the region it USED, not the one it inherited", () => {
+  // The exact bug that made the defect invisible. The sidecar wrote the
+  // module-level constant — the ambient GOOGLE_CLOUD_LOCATION — so the receipt
+  // agreed with the environment no matter where the call actually went. A
+  // provenance artifact that cannot contradict the environment cannot be
+  // evidence of anything, which is why this is asserted as ABSENCE of the
+  // constant rather than presence of the variable.
+  const src = source("gemini_worker.py");
+  assert.match(src, /"vertex_location":\s*location\b/,
+    "the sidecar stopped recording the resolved location");
+  assert.doesNotMatch(src, /"vertex_location":\s*LOCATION\b/,
+    "the sidecar records the ambient env again, not the location actually used");
+});
+
 test("the offline probe never names a real project, and never overwrites one", () => {
   // probe_offline.py authenticates against nothing — it only checks that
   // VertexEndpoint reads its config from the environment. A real project id in

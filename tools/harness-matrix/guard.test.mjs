@@ -18,6 +18,10 @@ import { fileURLToPath } from "node:url";
 import { bashInspectsRepo, searchTargetsRepo } from "./audit.mjs";
 import { renderTreeWriteHook, makePhaseNarrator, renderWorkerSkill, DELEGATION_VOCAB,
   workerTimeoutMin, isDelegated } from "./runtimes.mjs";
+// Loads a real policy file end-to-end for the region chain test at the bottom of
+// this file — the only assertion here that starts from shipped YAML rather than
+// from a hand-built binding.
+import { loadPolicy } from "./kinds/lib.mjs";
 import { createHash } from "node:crypto";
 
 const CTX = { workdir: "/fake/run/workdir", outDir: "/fake/run/out" };
@@ -554,4 +558,63 @@ test("every kind's mandate keeps the structural delegation rules", () => {
                         "zero delegations", "Hand the worker the PROBLEM, not the SOLUTION"])
       assert.ok(r.includes(rule), `missing structural rule: ${rule}`);
   }
+});
+
+// ---- the declared region reaches the worker's argv ---------------------------
+// B-REGION regression guards (2026-07-31). The defect: a policy could declare
+// `region: global` and every token still bill in asia-south1, with no artifact
+// disagreeing. The region was recorded on the CABLE (descriptive — it reached
+// the manifest and getVertexRates) but nothing on the executable path read it,
+// so the worker resolved its endpoint from GOOGLE_CLOUD_LOCATION and the sidecar
+// wrote that same ambient value down as if it were the policy's.
+//
+// That was survivable while every policy pinned asia-south1 and the env agreed.
+// It stopped being survivable on the Flash-Lite pin: gemini-3.5-flash-lite is
+// served ONLY on `global`, so the first delegation of the first paid run would
+// have 404'd against an asia-south1 endpoint while the policy file plainly read
+// `region: global`.
+//
+// Asserted at BOTH ends of the chain, because each end fails differently: the
+// render test catches a renderer that stops emitting the flag, and the chain
+// test catches a resolver that stops putting the key on the binding — a break
+// the render test cannot see, since it is handed the argument directly.
+test("a binding's region is emitted as --region on the worker command", () => {
+  const rendered = renderWorkerSkill({ ...SKILL_ARGS, workerRegion: "global",
+    vocab: DELEGATION_VOCAB.swepro });
+  assert.ok(rendered.includes('--region "global"'),
+    "the declared region never reached the worker's argv");
+});
+
+// The other half of the omitted-not-nulled discipline, and the reason emission
+// is conditional rather than defaulted. Legacy (v1) policies resolve through
+// resolveLegacyHarnessStages, whose bindings are the raw YAML objects and carry
+// no worker_region key at all; frozen policy_snapshot.yaml files inside evidence
+// bundles ALREADY handed to Google are that shape. Replaying one must resolve
+// the endpoint exactly as it did on the day — from the environment — so a
+// binding that declares nothing must produce a command that says nothing.
+// Defaulting the flag to asia-south1 here would look harmless and would silently
+// rewrite what those recorded runs replay as.
+test("a binding with no region emits no --region flag at all", () => {
+  const rendered = renderWorkerSkill({ ...SKILL_ARGS, vocab: DELEGATION_VOCAB.swepro });
+  assert.ok(!rendered.includes("--region"),
+    "an undeclared region was defaulted onto the worker command");
+});
+
+// End-to-end over a REAL shipped policy file, not a hand-built binding: policy
+// YAML → loadPolicy → resolved binding → renderWorkerSkill → argv. Every link
+// in that chain existed before this fix except the binding key, which is exactly
+// why a unit test on the renderer alone would have stayed green through the
+// entire defect. Uses all-gemini-flash-high because it is the Flash-Lite cell
+// whose `global` pin the defect would have broken first.
+test("a shipped policy's declared region survives the whole chain to argv", () => {
+  const policy = loadPolicy(join(HARNESS_DIR, "policies", "all-gemini-flash-high.yaml"),
+    "claude-code", ["repro", "localize", "patch"]);
+  const binding = policy.resolved.repro.binding;
+  assert.equal(binding.worker_region, "global",
+    "the resolver dropped the policy's declared region");
+  const rendered = renderWorkerSkill({ ...SKILL_ARGS, worker: binding.worker,
+    workerThinking: binding.worker_thinking, workerRegion: binding.worker_region,
+    vocab: DELEGATION_VOCAB.swepro });
+  assert.ok(rendered.includes('--region "global"'),
+    "the policy's region did not reach the worker's argv");
 });

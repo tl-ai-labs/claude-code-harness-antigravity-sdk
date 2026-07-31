@@ -272,6 +272,19 @@ function checkPython() {
 }
 
 const WORKER_VENV = join(ROOT, "tools/harness-matrix/sdk-probe/sdkprobe");
+
+// Shown under either "venv creation failed". `python3 -m venv` delegates to
+// ensurepip, which loads C extensions from the interpreter's own install — so a
+// Python whose linked libraries have moved fails HERE, at bootstrap, with a
+// traceback about ensurepip rather than about the missing library. Hit for real
+// on 2026-07-31: a Homebrew Python 3.14 on macOS whose libexpat had been
+// upgraded out from under it exited non-zero from ensurepip, and the same
+// command succeeded unchanged once DYLD_LIBRARY_PATH pointed at the current
+// expat. Naming the remedy costs one line; leaving the reader with a bare
+// "venv creation failed" and an ensurepip stack costs them an afternoon.
+const VENV_FIX = "if the traceback above mentions ensurepip, the interpreter's "
+  + "own libraries are the usual cause — on macOS/Homebrew retry with "
+  + "DYLD_LIBRARY_PATH=/opt/homebrew/opt/expat/lib, or use a system python3";
 const WORKER_PY = process.env.GEMINI_WORKER_PYTHON || join(WORKER_VENV, "bin/python");
 
 function checkWorkerVenvExists() {
@@ -348,6 +361,25 @@ const SWE_HARNESS = join(ROOT, "studies/swe-pro-corpus/.harness/SWE-bench_Pro-os
 const SWE_PIN = "ca10a60a5fcae51e6948ffe1485d4153d421e6c5";
 const SWE_VENV = join(ROOT, ".venv-swe-pro");
 const SWE_VENV_PY = join(SWE_VENV, "bin/python");
+
+// The instance this wizard tells a first-time reader to fetch. It MUST carry
+// the `instance_` prefix: fetch-instances-pro.mjs matches `--ids` against the
+// dataset's own `instance_id` column by exact string (see its `unknown instance
+// ids` guard), and every SWE-bench Pro id in that column begins with
+// `instance_`. Printing the bare `repo__repo-<sha>` form — which this wizard,
+// docs/swe-bench-pro.md and examples/swe-bench-pro/README.md all did until
+// 2026-07-31 — makes the very first command a new reader pastes exit 1 with
+// "unknown instance ids", before anything else in the deliverable is reached.
+// Verified live against the 731-row public split on 2026-07-31: the prefixed
+// form freezes the instance, the bare form is rejected.
+//
+// This one is also the easiest instance in the set on every difficulty proxy
+// the dataset carries (gold patch 2,831 B against a 7,846 B median, one file
+// touched, one fail_to_pass test, one test file to run) — the right thing to
+// hand someone whose goal is to see the pipeline work end to end.
+const EXAMPLE_INSTANCE =
+  "instance_NodeBB__NodeBB-05f2236193f407cf8e2072757fbd6bb170bc13f0" +
+  "-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e";
 
 function checkSweEvaluator() {
   if (!existsSync(SWE_HARNESS)) {
@@ -451,7 +483,7 @@ function ensureWorkerVenv() {
   console.log(`    ${c.dim}Creating the Gemini worker venv…${c.reset}`);
   const create = run(py.endsWith("python") ? "python" : "python3",
     ["-m", "venv", WORKER_VENV], { stdio: "inherit" });
-  if (create.status !== 0) { fail("venv creation failed"); return false; }
+  if (create.status !== 0) { fail("venv creation failed"); hint(VENV_FIX); return false; }
   console.log(`    ${c.dim}Installing google-antigravity…${c.reset}`);
   const pip = run(join(WORKER_VENV, "bin/pip"), ["install", "google-antigravity"],
     { stdio: "inherit" });
@@ -481,7 +513,7 @@ function ensureSweGradingVenv() {
   console.log(`    ${c.dim}Creating the SWE-bench Pro grading venv…${c.reset}`);
   const create = run(py.endsWith("python") ? "python" : "python3",
     ["-m", "venv", SWE_VENV], { stdio: "inherit" });
-  if (create.status !== 0) { fail("venv creation failed"); return false; }
+  if (create.status !== 0) { fail("venv creation failed"); hint(VENV_FIX); return false; }
   console.log(`    ${c.dim}Installing pandas tqdm docker requests…${c.reset}`);
   const pip = run(join(SWE_VENV, "bin/pip"),
     ["install", "pandas", "tqdm", "docker", "requests"],
@@ -562,12 +594,22 @@ async function runChecks(mode, checks) {
     } else {
       console.log(`  Fetch a SWE-bench Pro instance and run it (~$2, 15–40 min):`);
       console.log(`    node tools/swe/fetch-instances-pro.mjs \\`);
-      console.log(`      --ids navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a`);
+      console.log(`      --ids ${EXAMPLE_INSTANCE}`);
       console.log(`    node tools/harness-matrix/run-harness.mjs \\`);
-      console.log(`      --instance-dir studies/swe-pro-corpus/navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a \\`);
+      console.log(`      --instance-dir studies/swe-pro-corpus/${EXAMPLE_INSTANCE} \\`);
       console.log(`      --runtime claude-code \\`);
       console.log(`      --policy tools/harness-matrix/policies/all-gemini-flash-high.yaml`);
     }
+    // The run prints a scoreboard as it finishes, but deliberately withholds the
+    // worker's DOLLAR figure until the rate pin is checked against the published
+    // Vertex rate (see logfmt.costRows and the manifest's `cost_basis`).
+    // tools/report.mjs is the downstream that prices it, so a first-time reader
+    // who stops at the scoreboard never sees what the run actually cost. Point
+    // at it here, where they are already looking, rather than only in the docs.
+    // Offline included: a --dry-run writes a real run directory, and the report
+    // is read-only and free, so it is the cheapest way to see the output shape.
+    console.log(`\n  Then read what it cost and what it proves (free, offline):`);
+    console.log(`    node tools/report.mjs <the run directory printed above>`);
     console.log("");
     return 0;
   }
@@ -636,5 +678,5 @@ const INSTALL_TARGETS = [
 export {
   checkNode, checkAnthropicAuth, checkGoogleProject, checkGoogleLocation,
   parseTestSummary, runChecks, OFFLINE_CHECKS, SDLC_CHECKS, SWE_PRO_CHECKS,
-  INSTALL_TARGETS, ROOT,
+  INSTALL_TARGETS, ROOT, EXAMPLE_INSTANCE,
 };

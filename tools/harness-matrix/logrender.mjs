@@ -40,16 +40,42 @@ import {
 const isDelegated = (b) => typeof b === "object" && b !== null;
 
 /**
+ * The Vertex region(s) the delegated stages will actually call, for the cost
+ * regime row.
+ *
+ * WHY THIS IS DERIVED AND NOT A CONSTANT (2026-07-31). That row used to end
+ * `worker: Vertex asia-south1`, hardcoded — true of every policy that existed
+ * when it was written, and false the moment `opus48-plus-lite` pinned its
+ * Flash-Lite worker to `global` (Flash-Lite 404s in asia-south1; see that
+ * policy's region section). The region is not decoration in this repo: Vertex
+ * charges +10% on every token class outside `global`, `getVertexRates()` prices
+ * from it, and the usage sidecars record it as evidence. A header that names
+ * the wrong region contradicts the run's own receipts in the one row a viewer
+ * reads to learn where the money went — and this log is shipped as a demo.
+ *
+ * Region is per WORKER LEAF, so a tiered policy may legitimately have more than
+ * one; every distinct region is named rather than the first one asserted for
+ * all. A delegated stage whose binding carries no region prints as `region
+ * unrecorded`, which is honest about a pre-2026-07-31 manifest replayed today,
+ * rather than defaulting to a plausible guess — the exact failure this replaces.
+ */
+function workerRegionText(stages = []) {
+  const regions = [...new Set(stages.map((s) => s.workerRegion).filter(Boolean))].sort();
+  return regions.length ? regions.join(" + ") : "(region unrecorded)";
+}
+
+/**
  * Who pays for what, and what the lock enforces. Sits directly under the
  * per-stage bindings in both kinds, above the image rows. Shared so a wording
  * fix lands on both demos at once — the whole point of the kinds split was
  * that a viewer comparing SWE-bench Pro to SDLC compares the RUNS, not two
  * logging styles.
  */
-function moneyAndLockRows({ delegated }) {
+function moneyAndLockRows({ delegated, stages }) {
   return [
     ["cost regime", delegated
-      ? "driver: Claude Code seat (Max OAuth; CLI-modeled $) · worker: Vertex asia-south1 (ADC; real token counts, priced downstream)"
+      ? `driver: Claude Code seat (Max OAuth; CLI-modeled $) · worker: ` +
+        `Vertex ${workerRegionText(stages)} (ADC; real token counts, priced downstream)`
       : "Claude Code seat (Max OAuth; CLI-modeled $, not wallet-real)"],
     ...(delegated ? [["delegation", "driver has NO edit tools · PreToolUse guard locks the repo " +
       "until the first worker call · zero-delegation attempts FAIL the gate"]] : []),

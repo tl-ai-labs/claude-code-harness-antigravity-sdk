@@ -108,6 +108,41 @@ export const isDelegatedBinding = (b) => typeof b === "object" && b !== null;
 export const bindingLabel = (b) =>
   isDelegatedBinding(b) ? `${b.driver} → ${b.worker} (delegated via Antigravity SDK)` : b;
 
+/**
+ * Pick the ONE binding a kind should hand `runtime.preflight()` and render its
+ * orientation paragraph from: the first DELEGATED stage if the policy has one,
+ * otherwise the first stage.
+ *
+ * WHY THIS EXISTS (2026-07-31). Both kinds used to pass `resolved[stages[0]]`,
+ * on the unexamined assumption that a policy is delegated everywhere or nowhere
+ * — true of the four uniform policies, and false of `opus48-plus-lite`, the
+ * tiered cell that is the whole tokenomics story. Its SDLC stage walk resolves
+ * requirements/design/plan-packets SOLO and only `execute` DELEGATED, so
+ * `stages[0]` is a plain model string and:
+ *
+ *   - preflight took the non-delegated path and SKIPPED all three worker
+ *     checks (venv exists, `import google.antigravity`, Vertex ADC present).
+ *     A machine with no ADC therefore sailed past a preflight whose own
+ *     comment promises "all $0, before any build or spend", paid for three
+ *     Opus stages, and only then died at `execute` — and because a dead
+ *     `execute` trips the zero-delegation gate, `max_attempts: 3` bought that
+ *     same failure two more times. A $0 misconfiguration cost several dollars.
+ *   - the header's orientation paragraph read the driver off that string as
+ *     `undefined`, so the run announced "Claude Code (undefined)" over a table
+ *     that named the driver correctly on every row beneath it.
+ *
+ * Both are the same mistake — treating stage 0 as a proxy for the run — so both
+ * are fixed here rather than twice, and Pro shares the helper even though its
+ * own three phases happen to delegate together today: the policy grammar has
+ * allowed a per-phase mix since v2, and the next tiered Pro policy should not
+ * have to rediscover this. On a uniform policy the answer is stage 0's binding,
+ * exactly as before.
+ */
+export const preflightBinding = (resolved, stages) => {
+  const delegated = stages.find((s) => isDelegatedBinding(resolved[s]?.binding));
+  return resolved[delegated ?? stages[0]]?.binding;
+};
+
 // ---- policy load + validation ----------------------------------------------
 // Every check fails BEFORE any docker build or model spend, with a message
 // naming exactly what is wrong — a policy typo must never surface mid-run as a
@@ -440,7 +475,7 @@ export async function runStageAttempts({
       budgetUsd: policy.limits.phase_budget_usd,
       // Sibling of delegationWhat: that one words the GATE FAILURE, this one
       // words the delegated Skill's own examples. Both are kind knowledge and
-      // both belong to the kind, not to the runtime (Sriram, 2026-07-25).
+      // both belong to the kind, not to the runtime (2026-07-25).
       delegationVocab,
     });
 
@@ -614,7 +649,7 @@ export function makeRunDir(taskId, runtimeName, policyName) {
  * This is a PORT, not a design — the tags were minted by Scale's upload script
  * and we do not control them, so the only correct implementation is whatever
  * `helper_code/image_uri.py::get_dockerhub_image_uri` does. Two of its rules
- * were missing here and cost a run (Sriram, 2026-07-26):
+ * were missing here and cost a run (2026-07-26):
  *
  *  1. `-vnan` IS STRIPPED. It is the placeholder these instances carry when
  *     there is no environment-setup commit, and the uploader drops it before

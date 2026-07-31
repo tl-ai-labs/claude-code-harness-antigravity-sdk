@@ -392,7 +392,8 @@ export const gutter = (tag, delegated = true) =>
  */
 export function watchingBlock({ driver, worker, cable } = {}) {
   // Wrapped at render time, not hand-broken: the model ids are interpolated and
-  // vary in length (claude-opus-4-6 / gemini-3.5-flash vs gemini-2.5-flash), so
+  // vary in length (claude-opus-4-8 / gemini-3.5-flash-lite on the current
+  // cells vs claude-opus-4-6 / gemini-2.5-flash on the historical ones), so
   // fixed line breaks put this paragraph past 80 columns on some runs and not
   // others. Indent 4, so the wrap width is the shared grid minus that.
   const paras = [

@@ -139,18 +139,36 @@ bill an account that is not yours.
 
 ```bash
 export GOOGLE_CLOUD_PROJECT=your-gcp-project-id
+```
+
+That project needs the **Vertex AI API enabled** and quota **in the region
+the policy's worker leaf declares**, for the model that leaf names —
+`gemini-3.5-flash-lite` at `global` for the two current delegated
+policies, `gemini-2.5-flash` at `asia-south1` for the older-generation
+column, and both 3.5 Flash and 2.5 Flash at `asia-south1` for the tiered
+historical one. See [policies.md](policies.md) for the mapping.
+
+**The region comes from the policy, not from this export.** Each worker
+leaf carries its own `region:`, the runner passes it to the worker as
+`--region`, and that beats `GOOGLE_CLOUD_LOCATION` for that call. The
+export below is only the fallback — it is what a leaf that declares no
+region gets, and what the `sdk-probe/` scripts use, since they read the
+environment directly and never see a policy.
+
+That distinction is load-bearing rather than pedantic: Flash-Lite is
+served on the **global** endpoint only and returns `404` in
+`asia-south1`, so a current policy run whose region came from this export
+would not merely bill the wrong meter — it would not run at all.
+
+```bash
 export GOOGLE_CLOUD_LOCATION=asia-south1
 ```
 
-That project needs the **Vertex AI API enabled** and quota in the region
-you pin, for the model your policy's worker leaf names —
-`gemini-3.5-flash` for the three headline policies, `gemini-2.5-flash` for
-the older-generation column, both for the tiered one. See
-[policies.md](policies.md) for the mapping.
-
-`asia-south1` is the region the recorded runs pinned; the global endpoint
-was quota-starved on 2026-07-16 and cost this project 3 hours. Never leave
-a Vertex call unregioned.
+`asia-south1` is the fallback because it is what the recorded 2.5/3.5
+Flash runs pinned: the global endpoint was quota-starved on 2026-07-16
+and cost this project 3 hours, which is why nothing here leaves a Vertex
+call unregioned. Flash-Lite's `global` pin is not a reversal of that — it
+is the one model with no regional endpoint to choose.
 
 ### 3. Docker
 
@@ -173,7 +191,7 @@ Docker holds several gigabytes of RAM while running. On a machine with
 | `CLAUDE_CODE_OAUTH_TOKEN` | — | Driver auth (subscription seat). This or the next, not both. |
 | `ANTHROPIC_API_KEY` | — | Driver auth (metered API). |
 | `GOOGLE_CLOUD_PROJECT` | — (no default, by design) | **Always set.** The worker exits with an explanation rather than guessing a project. |
-| `GOOGLE_CLOUD_LOCATION` | `asia-south1` | Override only if your quota lives elsewhere. |
+| `GOOGLE_CLOUD_LOCATION` | `asia-south1` | **Fallback only.** A policy's worker leaf declares its own `region:`, which the runner passes as `--region` and which wins. This is what a leaf with no declared region gets, and what the `sdk-probe/` scripts use. Override if your quota lives elsewhere. |
 | `GOOGLE_APPLICATION_CREDENTIALS` | — | Alternative to `gcloud auth application-default login`. |
 | `GEMINI_WORKER_PYTHON` | `tools/harness-matrix/sdk-probe/sdkprobe/bin/python` | If your venv lives elsewhere. |
 | `GEMINI_WORKER_DYLD` | `/opt/homebrew/opt/expat/lib` | The Homebrew `pyexpat` workaround. |

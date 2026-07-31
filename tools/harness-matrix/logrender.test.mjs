@@ -291,3 +291,49 @@ test("a delegated stage with NO worker thinking still renders as delegated", () 
   // header shows the split rather than flattening it.
   assert.match(head, /gemini-3\.5-flash \(delegated via Antigravity SDK\) · driver effort high · worker thinking HIGH/);
 });
+
+// ---------------------------------------------------------------------------
+// The cost-regime row names the region the policy actually pinned.
+//
+// WHY (2026-07-31). That row ended `worker: Vertex asia-south1` as a literal,
+// which was true of every policy in the repo until `opus48-plus-lite` pinned
+// its Flash-Lite worker to `global` — Flash-Lite 404s in asia-south1. The
+// header then told a demo viewer the tokens were billed in a region the run's
+// own usage sidecars contradict, in the one row about where the money goes.
+// Vertex charges +10% outside `global`, so that row is a dollars claim, not a
+// label, and it is rendered into a log this repository ships as a deliverable.
+// ---------------------------------------------------------------------------
+
+// kvBlock soft-wraps a long value across several lines, so the row is the
+// "cost regime" line PLUS its continuations — reading only the first line would
+// make every assertion below pass vacuously against a truncated string.
+const costRegimeRow = (stages) => {
+  const all = lines(sdlcHeader({ ...SDLC, stages }));
+  const start = all.findIndex((l) => l.includes("cost regime"));
+  assert.notEqual(start, -1, "no cost regime row rendered");
+  const out = [all[start]];
+  for (let i = start + 1; i < all.length && /^\s{4,}\S/.test(all[i]) && !/^\s+\w[\w ]{0,14}\s{2,}\S/.test(all[i]); i++) {
+    out.push(all[i]);
+  }
+  return out.join(" ");
+};
+
+test("the cost-regime row reports the worker region from the binding, not a constant", () => {
+  const global1 = costRegimeRow([{ id: "execute", label: "x", workerRegion: "global" }]);
+  assert.match(global1, /Vertex global/);
+  assert.doesNotMatch(global1, /asia-south1/,
+    "the region must come from the binding — a hardcoded default is the bug this replaces");
+
+  assert.match(costRegimeRow([{ id: "execute", label: "x", workerRegion: "asia-south1" }]),
+    /Vertex asia-south1/);
+
+  // A tiered policy may pin two worker leaves in different regions. Naming the
+  // first and implying it covers both is the same class of error, slower.
+  assert.match(costRegimeRow([
+    { id: "execute", label: "x", workerRegion: "global" },
+    { id: "review", label: "y", workerRegion: "asia-south1" },
+  ]), /asia-south1 \+ global/);
+
+  // A manifest written before the field existed must say so rather than guess.
+  assert.match(costRegimeRow([{ id: "execute", label: "x" }]), /region unrecorded/);
+});

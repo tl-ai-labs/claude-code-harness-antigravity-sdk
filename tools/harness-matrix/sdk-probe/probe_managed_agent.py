@@ -5,12 +5,12 @@ reachable from OUR project, and can it host a harness?
 
 WHY THIS EXISTS
 ---------------
-On 2026-07-20 Sanjit Mehta (Google) told Kiran and Teja that the CLI is a
-non-starter for enterprise InfoSec, and floated a third option beyond
-"MCP tool / router proxy" and "Antigravity SDK": the *Interactions API* with
-*Managed Agents* — Google deploying a containerised agent on your behalf, with
-an Antigravity container among the ones they ship. Teja then asked us to read
-those docs and say what, if anything, we can use.
+On 2026-07-20 a Google engineer told this team that the CLI is a non-starter
+for enterprise InfoSec, and floated a third option beyond "MCP tool / router
+proxy" and "Antigravity SDK": the *Interactions API* with *Managed Agents* —
+Google deploying a containerised agent on your behalf, with an Antigravity
+container among the ones they ship. We were then asked to read those docs and
+say what, if anything, we can use.
 
 Documentation answers "what is it". Only a request answers "can WE call it, on
 OUR project, today". That second question is what this script settles, and it
@@ -50,8 +50,8 @@ WHAT WE LEARNED RUNNING IT (2026-07-21, on our own Google Cloud project)
 
   Net: no seat, no CLI, no entitlement ticket, no allowlist. Plain ADC on our
   own paid project. That is a materially lower InfoSec footprint than either
-  the agy CLI (parked) or the pip SDK, which is precisely the axis Google and
-  Kiran said was blocking adoption.
+  the agy CLI (parked) or the pip SDK, which is precisely the axis both Google
+  and our own reviewers named as blocking adoption.
 
 WHAT --smoke RETURNED (2026-07-21, one metered interaction)
 -----------------------------------------------------------
@@ -66,8 +66,8 @@ HTTP 200 with a handle; one GET later the interaction was `completed`.
      a second unmeasurable surface would have closed this route outright.
   2. The task was ~8 tokens; we were billed 6,544 input. So ~6,536 tokens is
      the agent's own system prompt + tool definitions, charged EVERY
-     interaction. (The Antigravity CLI turn measured in DESIGN carried 11,554 —
-     lighter here, same disease.) This number is why MANAGED-AGENTS §5 scopes
+     interaction. (The Antigravity CLI turn we measured earlier carried 11,554 —
+     lighter here, same disease.) This number is why our assessment scopes
      the useful application down to one orchestrator phase: it exceeds a whole
      TaskPacket, which is capped at maxInputTokens 4000.
   3. `steps[]` exposes the internal tool calls — here `provision_sandbox`, then
@@ -84,10 +84,10 @@ HTTP 200 with a handle; one GET later the interaction was `completed`.
      agent's own internal context re-reads across its internal loop turns
      automatically, at no cost to us. EXPLICIT content-addressed caching is NOT
      yet on the Interactions API beta (it is in the limitations list). The
-     earlier "points the unhelpful way" read was wrong; see MANAGED-AGENTS
-     §3b/§5c. Residual for Sanjit: does implicit caching also discount the
-     ~6,536-token wrapper on the agent's internal turn 2+, or only the task
-     history — NOT a multi-turn `previous_interaction_id` chain we would drive.
+     earlier "points the unhelpful way" read was wrong. Residual question back
+     to Google: does implicit caching also discount the ~6,536-token wrapper on
+     the agent's internal turn 2+, or only the task history — NOT a multi-turn
+     `previous_interaction_id` chain we would drive.
   5. `environment_id` comes back, so a sandbox can be reused for a next turn.
 
   NOT settled: `agent_config.max_total_tokens` was never exercised (we do not
@@ -99,7 +99,7 @@ HTTP 200 with a handle; one GET later the interaction was `completed`.
 WHAT IT DOES NOT PROVE
 ----------------------
 That it is USABLE as our harness. It is not, today, and the reasons are
-structural rather than fixable by us — see MANAGED-AGENTS.md. Briefly:
+structural rather than fixable by us. Briefly:
 the agent is Gemini-3.5-Flash-only (so it does not reach the Claude cell), and
 `environment` has no local option, so it cannot see the sealed SWE-bench Pro
 workdir on this machine. Do not read a green probe as a green harness.
@@ -144,7 +144,7 @@ BASE = f"https://aiplatform.googleapis.com/v1beta1/projects/{PROJECT}/locations/
 
 # The only base agent Google exposes today. Their own docs are explicit:
 # "Only antigravity-preview-05-2026 is supported as base_agent." It runs on
-# Gemini 3.5 Flash. There is no model parameter — see MANAGED-AGENTS.md §3.
+# Gemini 3.5 Flash. There is no model parameter at all.
 AGENT = "antigravity-preview-05-2026"
 
 

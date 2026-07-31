@@ -94,6 +94,13 @@ grading venv, the Scale evaluator clone, and `sealed.json`. `--dry-run`
 stops here, after printing the byte-identical opening frame a live run
 would print (only `runtime` and `started` differ).
 
+How deep the runtime preflight goes depends on the policy: a delegated
+binding additionally checks the worker venv, `import google.antigravity`,
+and Vertex ADC. Both kinds pick that binding with `preflightBinding()` —
+the **first delegated stage**, not the first stage — so a tiered policy
+whose early stages are solo still has its worker leg checked at `$0`
+rather than at the first delegated stage, after spend.
+
 **5. Kind: provision the workspace.** Pro builds the sealed instance
 image and extracts the repository from it; SDLC copies the scaffold,
 `git init`s it, installs dependencies, and proves the pristine tree
@@ -130,8 +137,10 @@ code. Exit codes are for the *harness's* health, not the agent's.
 Exactly one place: the delegated branch of `runPhase` in
 [runtimes.mjs](../tools/harness-matrix/runtimes.mjs).
 
-A binding in a policy is either a plain string (`claude-opus-4-6`) or an
-object (`{driver, worker}`). `isDelegatedBinding` is that one-line test,
+A binding in a policy is either a plain string (`claude-opus-4-8`) or an
+object (`{driver, worker, worker_thinking?, worker_region?}`). The two
+optional worker keys are omitted rather than nulled when the policy does
+not declare them. `isDelegatedBinding` is that one-line test,
 and everything downstream keys off it. On the `all-opus` policy the
 binding is a string, so **no SDK code runs at all** — worth remembering
 when someone reports that the anchor policy "proves the connector
@@ -292,6 +301,25 @@ The verify stage hashes the chassis files and refuses to treat a chassis
 change as repairable — if the pristine scaffold does not build and test
 green before the agent starts, that is an infrastructure bug being
 reported as one, not an agent result.
+
+The hashes come from `scaffolds/<id>/scaffold.manifest.json`, and that
+file is **derived, never hand-typed** — `scaffold-manifest.mjs` builds it
+from the scaffold plus the slot list in `scaffold.json`. It has to be,
+because the gate compares whole-file sha256s and therefore cannot tell a
+model rewriting the build config from a human rewording a comment in it.
+Both surface at the last stage of a paid run, as `content changed`, worded
+as an accusation against the model. That is not hypothetical: on
+2026-07-31 a comment-only edit to `pnpm-workspace.yaml` failed every SDLC
+run for a day. **If you edit anything in a scaffold outside the slots,
+re-stamp the manifest in the same commit:**
+
+```bash
+node tools/harness-matrix/scaffold-manifest.mjs --write
+```
+
+`--check` (the default) reports drift and exits 1; `scaffold-manifest.test.mjs`
+runs that check on every `pnpm test`, so forgetting costs a red test in
+milliseconds instead of a run.
 
 **Repair rounds are part of the recipe.** Where Pro retries a whole
 phase, SDLC's verify stage feeds the real failing build or test output

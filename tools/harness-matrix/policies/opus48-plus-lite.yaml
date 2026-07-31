@@ -1,0 +1,269 @@
+# opus48-plus-lite — the TIERED policy: Opus 4.8 does the judgment work, Gemini
+# 3.5 Flash-Lite does the production work, on both kinds.
+#
+# WHY THIS POLICY EXISTS. The instruction it was commissioned under
+# (2026-07-31): validate the live paths with Opus 4.8 doing the hard work and
+# 3.5 Flash-Lite doing the easy work, on SDLC *and* SWE-bench Pro. The three policies that existed before this
+# one answer a different question each — all-opus is the single-model control,
+# all-gemini-flash-high asks "how far does Gemini get if it does everything",
+# and neither shows the shape an economical production harness would actually
+# take. This one does: expensive judgment, cheap execution, one driver.
+#
+# ---------------------------------------------------------------------------
+# WHERE THE HARD/EASY SPLIT COMES FROM — IT WAS NOT INVENTED HERE
+# ---------------------------------------------------------------------------
+# The split below is lifted from the two production template policies in the
+# studies console, `opus-plus-sonnet.yaml` (its SWE-verified path) and
+# `opus-plus-flash.yaml` (its SDLC path). Those two files carry BYTE-IDENTICAL
+# rules blocks, which is the useful part: the console shipped one canonical
+# opinion about which SDLC phases are worth premium tokens, and it held that
+# opinion across two different cheap tiers. Reproducing it here means this
+# policy inherits a split that has already been run in production, rather than
+# one argued into existence for a demo.
+#
+#   console premium tier          -> our stage
+#     requirements_analysis          requirements
+#     architecture_design            design
+#     plan_task_packets              plan-packets
+#     senior_code_review             review
+#     security_review                (no analog in sdlc-mini)
+#     debug @ retry_count >= 2       (see the verify note below)
+#     default                        default
+#
+#   console cheap tier            -> our stage
+#     codegen                        execute
+#     tests                          (harness-executed, never a model call)
+#     docs                           (no analog in sdlc-mini)
+#     debug, first two attempts      (see the verify note below)
+#
+# `judge` has no console analog because the console has no judge stage. It sits
+# on the premium tier here for a reason that is about honesty rather than
+# difficulty: the judge is the thing that decides whether the run passed, and a
+# grader running on the same cheap model that produced the work is the single
+# easiest way to make a study's headline number worthless. Opus judges.
+#
+# `verify` and `report` take no binding of their own — `verify`'s executor is
+# the harness's build-and-test runner and `report` is emitted by the finish
+# block. What matters for cost is that verify's REPAIR ROUNDS inherit the
+# EXECUTE stage's binding automatically (kinds/sdlc.mjs), so the fix-the-build
+# loop runs on Flash-Lite. That is exactly the console's `debug`-on-the-cheap-
+# tier-for-the-first-two-attempts behaviour, arrived at through a different
+# mechanism, and it is why no `debug` rule appears below.
+#
+# ---------------------------------------------------------------------------
+# WHY SWE-BENCH PRO IS TIERED ON A DIFFERENT AXIS
+# ---------------------------------------------------------------------------
+# Pro's phases are `repro`, `localize`, `patch` (kinds/swepro.mjs). All three
+# are judgment: reproduce a reported failure, find the responsible code, decide
+# what change fixes it. The mechanical half of Pro — running the tests in the
+# container, classifying the diff, the gate arithmetic — was never a model call
+# at all; it is harness code (`execInEnv`, `classifyChanges`). So Pro cannot be
+# tiered the way SDLC is, by handing a cheap model the mechanical stages: there
+# are none. `gemini35-plus-25-flash-high.yaml` read that as a reason not to tier
+# Pro at all, and left all three phases delegated.
+#
+# THIS FILE TIERS PRO ON THE ONE AXIS THAT IS REAL — who holds the repository.
+# REVISED 2026-07-31, second correction, against runtimes.mjs, which is the
+# authority here because it is what actually runs.
+#
+# The delegated cell does not mean "Opus reasons, Flash-Lite types". It cannot:
+# on a delegated cell the driver has no file-editing tool, cannot write into the
+# tree through Bash either, and before its FIRST delegation of a phase-attempt
+# cannot even Read/Grep/Glob the repo — the delegate-first lock, with a
+# zero-delegation phase failed outright. Whatever the prompt says, the repo
+# exploration and the localization analysis on a delegated phase belong to the
+# WORKER; on `localize` swepro.mjs says so out loud, labelling the delegated
+# work "analysing where the bug lives". Routing `repro` and `localize` to the
+# delegated cell therefore gave Flash-Lite the judgment, and left Opus framing
+# requests and accepting answers about a repository it was not allowed to open.
+# That is the opposite of this policy's stated claim.
+#
+# So the two judgment phases now route to the SOLO cell, where Opus 4.8 holds
+# the repository directly: it reads the code, authors the failing reproduction,
+# finds the responsible files and picks the surrounding suite, and its own
+# `repro.json` and `localize.json` are what the gates check. `patch` stays
+# delegated, and it is the phase best suited to it — the fix is bulk authoring,
+# and prompts/patch.md inlines {{REPRO_JSON}} and {{LOCALIZE_JSON}}, so
+# Flash-Lite receives Opus's reproduction and localization as given and writes
+# the code. On Pro, "Opus reasons, Flash-Lite types" is now literally what runs.
+#
+# WHAT THIS COSTS, STATED PLAINLY. Two of Pro's three phases now make ZERO
+# Antigravity SDK calls, on a deliverable whose subject is that SDK. That is a
+# real loss and it is accepted deliberately: `all-gemini-flash-high` is the
+# policy that proves the cable end to end, every phase delegated, and it remains
+# the run to point at for connector coverage. This policy answers the other
+# question — what the economical production shape looks like — and answering it
+# honestly is worth more than a third delegation that misrepresents who did the
+# thinking. The SDK is still exercised on `patch`, which is where the tokens are.
+#
+# ---------------------------------------------------------------------------
+# MIXING `solo` AND `delegated` IN ONE POLICY IS SAFE — VERIFIED, NOT ASSUMED
+# ---------------------------------------------------------------------------
+# This is the first policy to do it, so it was checked before it was written:
+#   1. The schema allows it. policy-core.mjs validates `composition` per entry
+#      and accepts both kinds in one flat `models[]`; compositions may not nest,
+#      and none here do.
+#   2. The runtime honours it PER STAGE, not per run. runtimes.mjs decides
+#      `isDelegated(binding)` from the binding's shape at each phase, so a solo
+#      stage takes the non-delegated path entirely — no worker Skill scaffold,
+#      no worker venv preflight, and critically no zero-delegation gate. A run
+#      where `requirements` makes no SDK call and `execute` makes several is
+#      therefore a correct run, not a gate violation.
+# Had either been false this policy would have had to be two files.
+#
+# ---------------------------------------------------------------------------
+# THE REGION IS `global` HERE, AND THAT IS A DELIBERATE EXCEPTION
+# ---------------------------------------------------------------------------
+# Every other Vertex leaf in this repo pins `asia-south1`, because the shared
+# global endpoint starved this project's quota for 3+ hours on 2026-07-16 and
+# killed two Pro runs mid-patch. Flash-Lite does not leave that choice open:
+# probed 2026-07-31, `gemini-3.5-flash-lite` returns 404 "Publisher model ...
+# was not found or your project does not have access to it" in BOTH
+# `asia-south1` and `us-central1`, and resolves normally on `global`. The same
+# probe confirmed `gemini-3.5-flash` still works in `asia-south1`, so this is a
+# property of the model, not of the project or the region config.
+#
+# Two consequences worth knowing before a run:
+#   COST — the Vertex non-global surcharge is +10% on every token class for
+#   Gemini 3+ models, and `global` does not take it. Flash-Lite therefore bills
+#   at a flat 0.30 / 2.50 / 0.03 per 1M here, not the 0.33 / 2.75 / 0.033 an
+#   asia-south1 leaf would. getVertexRates() already derives this from the
+#   region string; nothing needs to be told twice.
+#   RISK — this run is exposed to the same global-endpoint contention that
+#   burned 2026-07-16. There is no mitigation available while the model is
+#   global-only; the run either gets served or fails fast on quota.
+version: 2
+name: opus48-plus-lite
+models:
+  # ---- the premium cell ---------------------------------------------------
+  # `solo` is the one-seat form: Claude Code's own driver seat and nothing
+  # else. No worker is named, and naming one would be rejected at load. This
+  # cell makes ZERO Antigravity SDK calls by design, which is correct for the
+  # stages that route to it and is why the per-stage gate finding above had to
+  # be established first.
+  - id: opus48
+    composition: solo
+    runtime: claude-code
+    driver: opus48-anthropic
+
+  # ---- the delegated cell -------------------------------------------------
+  # The two-seat form: the SAME Opus 4.8 driver leaf as above, conducting a
+  # Flash-Lite worker reached through the provisioned Skill. Sharing one driver
+  # leaf between both cells is deliberate — if the tiers named separate driver
+  # entries, a later edit could drift them apart and the policy would silently
+  # stop being "one driver, two tiers", which is the entire claim it makes.
+  - id: opus48-lite
+    composition: delegated
+    runtime: claude-code
+    driver: opus48-anthropic
+    worker: flash-lite-35-agsdk-vertex
+
+  # ---- driver leaf --------------------------------------------------------
+  - id: opus48-anthropic
+    adapter: builtin-anthropic        # the `claude` CLI talks to Anthropic itself
+    api: anthropic
+    model_name: claude-opus-4-8       # the pin for the hard work — and, since
+                                      # 2026-07-31, the SAME pin as all-opus and
+                                      # all-gemini-flash-high. It used to be the
+                                      # odd one out: this file said 4.8 while
+                                      # those two stayed on 4.6 to protect their
+                                      # existing comparison, which left the
+                                      # anchor a generation behind the cell it
+                                      # anchors and made every delta between
+                                      # this policy and all-gemini-flash-high
+                                      # carry a driver change as well as the
+                                      # tiering change it is supposed to isolate.
+                                      # All three moved together instead. Full
+                                      # rationale at the driver leaf in
+                                      # all-opus.yaml; the two historical
+                                      # columns stay on 4.6 on purpose.
+    reasoning:
+      effort: high                    # --effort high, the same setting the
+                                      # control policy uses, so what differs
+                                      # between this policy and all-opus is the
+                                      # tiering and the driver model — not how
+                                      # hard the driver was told to think.
+    # No `pricing:` — composition member. Driver spend is CLI-reported against
+    # the Max seat (quota, not wallet dollars) and is never summed with the
+    # worker's metered Vertex spend.
+
+  # ---- worker leaf --------------------------------------------------------
+  - id: flash-lite-35-agsdk-vertex
+    adapter: antigravity-sdk          # gemini_worker.py → pip google-antigravity
+    api: vertex                       # the SDK's only doorway; validated at load
+    model_name: gemini-3.5-flash-lite # 2026-07-31: "Only 3.5 Flash-Lite."
+                                      # `gemini-3.6-flash` is the fallback and
+                                      # is used ONLY if Flash-Lite cannot
+                                      # produce economical, fully runnable code.
+                                      # Its rate card is already pinned in
+                                      # @harness/pricing so that fallback is a
+                                      # one-line edit here, not a rate lookup
+                                      # under time pressure.
+    region: global                    # NOT a copy-paste slip — see the region
+                                      # section in the header. Flash-Lite 404s
+                                      # in asia-south1 and us-central1.
+    reasoning:
+      tier: high                      # PROBE-VERIFIED 2026-07-31 before this
+                                      # file was written. Vertex hard-rejects
+                                      # thinking_level on 2.5 Flash with a 400,
+                                      # and discovering that cost a full paid
+                                      # run, so Flash-Lite was probed first:
+                                      # ThinkingLevel.HIGH resolved OK and
+                                      # returned thoughts_token_count 36, and
+                                      # tool use under allow_all() worked
+                                      # headlessly. The resolver upper-cases
+                                      # this back to ThinkingLevel.HIGH.
+    # No `pricing:` — the worker's spend comes from the real UsageMetadata in
+    # its worker_usage sidecars, never from a number typed here.
+rules:
+  # ---- SWE-bench Pro premium tier -----------------------------------------
+  # Named explicitly rather than left to `default` so that a reader can see Pro
+  # is handled on purpose, and so a future stage id added to the SDLC kind
+  # cannot silently change how Pro routes.
+  - when: { phase: [repro, localize] }
+    use: opus48
+    reason: reproducing the reported failure and locating the responsible code are the judgment half of Pro — and only the solo cell lets the driver read the repository to do them
+  - when: { phase: [patch] }
+    use: opus48-lite
+    reason: authoring the fix is the bulk work, and it arrives with Opus's own repro.json and localize.json already inlined in the prompt
+
+  # ---- SDLC premium tier --------------------------------------------------
+  - when: { phase: [requirements, design, plan-packets] }
+    use: opus48
+    reason: console premium tier (requirements_analysis, architecture_design, plan_task_packets) — the decisions the rest of the run is built on
+  - when: { phase: [review] }
+    use: opus48
+    reason: console premium tier (senior_code_review) — a cheap reviewer approving cheap code is not a review
+  - when: { phase: [judge] }
+    use: opus48
+    reason: the grader decides whether the run passed; running it on the model under test would make the headline number worthless
+
+  # ---- SDLC cheap tier ----------------------------------------------------
+  # `execute` only. verify's repair rounds inherit this binding automatically,
+  # which is where the console's cheap-tier `debug` behaviour comes from.
+  - when: { phase: [execute] }
+    use: opus48-lite
+    reason: console cheap tier (codegen) — bulk authoring under Opus direction, and the stage that carries verify's repair rounds with it
+
+  # ---- fail-safe ----------------------------------------------------------
+  # Consulted only after every `when` above fails. Premium on purpose: an
+  # unrecognised stage is one nobody has reasoned about yet, and the safe
+  # default for an unexamined stage is the model that is good at everything,
+  # not the one that is cheap. This mirrors the console's own `default`, which
+  # is likewise its premium tier.
+  - default: opus48
+    reason: unrecognised stage — premium tier is the fail-safe, matching the console templates
+retry:
+  type: flat
+  max_attempts: 3
+# LIMITS — identical to all-opus and all-gemini-flash-high, deliberately.
+# DESIGN §2.4 forbids changing a limit mid-matrix because a limit is part of the
+# study definition: a cell that got 45 minutes and a cell that got 20 are not
+# comparable, whatever their model pins say. The delegated stages here inherit
+# the same 60/40 worker/driver split of the phase clock that the other
+# delegated policy documents, so 45 minutes leaves the worker 27 — comfortably
+# above the observed 2026-07-24 hand-offs.
+limits:
+  phase_timeout_min: 45
+  cmd_timeout_min: 15
+  phase_budget_usd: 8.00

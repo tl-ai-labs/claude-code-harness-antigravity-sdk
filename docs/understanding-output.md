@@ -69,9 +69,9 @@ The Antigravity SDK's own `UsageMetadata` for that delegation:
 
 ```json
 {
-  "model": "gemini-3.5-flash",
+  "model": "gemini-3.5-flash-lite",
   "sdk_version": "0.1.7",
-  "vertex": { "project": "…", "location": "asia-south1" },
+  "vertex": { "project": "…", "location": "global" },
   "prompt_token_count": 4213,
   "candidates_token_count": 812,
   "total_token_count": 5025
@@ -81,6 +81,16 @@ The Antigravity SDK's own `UsageMetadata` for that delegation:
 These are the token counts the Gemini spend was computed from. They
 come from the SDK, not from us — a run's dollar total can be
 re-derived from them plus the current Vertex price sheet.
+
+`location` is the region the worker **resolved and called**, not the
+ambient `GOOGLE_CLOUD_LOCATION`: a policy's worker leaf declares its own
+region and the runner passes it as `--region`, which wins. That is what
+makes this line evidence — a receipt that could not disagree with the
+environment would prove nothing about where the tokens were billed. The
+exemplar receipts shipped under `examples/*/passes/reference/` show
+`gemini-3.5-flash` at `asia-south1`, which is what those July 2026
+passes ran with; the current delegated policies pin
+`gemini-3.5-flash-lite`, which Vertex serves on `global` only.
 
 ### `lint.json` — the delegation content lint's verdict
 
@@ -139,6 +149,25 @@ The run's own log — opening header, per-stage narration, closing
 scoreboard — is reproducible from `manifest.json` at `$0` with
 `replay-log.mjs`. See
 [running.md → Replaying the terminal log](running.md#replaying-the-terminal-log-at-0).
+
+## Pricing the run
+
+The scoreboard prints the worker's token counts and stops short of a
+dollar figure, because the rate pin is verified downstream rather than
+mid-run. `tools/report.mjs` is that downstream — it prices the worker's
+usage sidecars per model and per region through the pricing package,
+states the rate-table version it used, and adds the reading a scoreboard
+cannot: which of the two dollar figures is a real invoice, that one run
+is n = 1, and what to run next.
+
+```bash
+node tools/report.mjs tools/harness-matrix/runs/<task>/<cell>/<stamp>
+```
+
+Add `--markdown` to paste it into a doc. Like `replay-log.mjs` it takes
+every number from `manifest.json`, `audit.json` and the usage sidecars —
+never from the printed log — so re-wording the log cannot move a figure
+here. Read-only, offline, and safe to run against a run still in flight.
 
 ## Exporting for a dashboard
 

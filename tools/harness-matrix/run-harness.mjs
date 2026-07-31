@@ -116,11 +116,48 @@ if (!existsSync(join(resolve(KIND_DESCRIPTOR.dir), KIND_DESCRIPTOR.file))) {
     `so this is not a ${KIND_DESCRIPTOR.kind} workload directory.\n  ${KIND_DESCRIPTOR.hint}`);
 }
 
+// SCAFFOLD-MANIFEST DRIFT IS A PREFLIGHT ERROR, NOT A MID-RUN FAILURE.
+//
+// Added 2026-07-31, the same day it cost a paid run. The SDLC VERIFY stage
+// hashes every chassis file against scaffolds/<id>/scaffold.manifest.json and
+// treats a mismatch as a NON-REPAIRABLE hard failure. That gate is right, but
+// it fires at stage 5 of 8 — after requirements, design, plan-packets and
+// execute have all been paid for. A doc-hygiene commit earlier that day
+// reworded ONE COMMENT in scaffolds/service-web/pnpm-workspace.yaml without
+// re-stamping the manifest, and the run died at VERIFY with `content changed`,
+// which reads as an accusation against the model. Nothing the model did was
+// wrong; the repository was inconsistent before the first token was spent.
+//
+// The check below is the same one `pnpm test` runs and the same one
+// `scaffold-manifest.mjs --check` runs — a pure sha256 comparison over files
+// already on disk. It is milliseconds, needs no credentials and no network, so
+// it runs on EVERY invocation including --dry-run: a preview that would not
+// have caught this is not a preflight. Exits 2 ("usage or preflight error —
+// nothing was spent") rather than 1, because nothing has been.
+//
+// It runs for BOTH kinds even though only SDLC consumes a scaffold. A Pro run
+// cannot be broken by manifest drift, but it also costs nothing to learn that
+// the tree is inconsistent, and a gate that only fires on the kind that has
+// already been bitten is a gate that has to be remembered.
+const { allScaffoldDirs, checkManifest } = await import("./scaffold-manifest.mjs");
+for (const scaffoldDir of allScaffoldDirs()) {
+  const { ok, drift } = checkManifest(scaffoldDir);
+  if (ok) continue;
+  usageExit(
+    `scaffold manifest is stale: ${scaffoldDir}\n` +
+    drift.map((d) => `    ${d}`).join("\n") +
+    `\n  The SDLC verify stage would fail on this AFTER the model stages are paid` +
+    `\n  for, and its message would appear to blame the model. Re-stamp first:` +
+    `\n    node tools/harness-matrix/scaffold-manifest.mjs --write` +
+    `\n  Then review the diff — a hash that moves for a file you did not edit on` +
+    `\n  purpose is a real finding, not a formality.`);
+}
+
 const runtime = RUNTIMES[runtimeName];
 
 // Dynamic per-kind import, deliberately not a pair of static imports: only
 // the SELECTED kind's module loads. swepro.mjs statically depends on
-// packages/swe-bench/dist (Teja's integrity build) — an SDLC-only machine
+// packages/swe-bench/dist (the vendored integrity build) — an SDLC-only machine
 // without that dist built must still be able to run the SDLC kind, and a
 // Pro run must not depend on the SDLC kind's files existing either.
 const kind = instanceDir

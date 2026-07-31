@@ -45,7 +45,7 @@ import { auditRun, manifestAuditBlock } from "../audit.mjs";
 import { gradeSdlcRun } from "../grade-sdlc.mjs";
 import { DELEGATION_VOCAB } from "../runtimes.mjs";
 import {
-  HARNESS_DIR, ROOT, parseYaml, bindingLabel, isDelegatedBinding, loadPolicy,
+  HARNESS_DIR, ROOT, parseYaml, bindingLabel, isDelegatedBinding, preflightBinding, loadPolicy,
   makePromptRenderer, writeRunInEnv, makeExecInEnv, makeGit, classifyChanges,
   cleanArtifacts, saneRepoPath, computeDiff, runStageAttempts, costTotals, makeRunDir,
 } from "./lib.mjs";
@@ -221,8 +221,11 @@ export const sdlc = {
     // that therefore drifted from it silently. Only the two provenance values
     // (runtime build, wall-clock start) differ, because only those two are
     // genuinely unknown until the run actually starts.
+    // The first DELEGATED stage's binding, not the first stage's — on the
+    // tiered cell those are different stages and the first stage carries no
+    // driver/worker pair at all. See preflightBinding for what that cost.
     const delegatedRun = agentStages.some((s) => isDelegatedBinding(policy.resolved[s].binding));
-    const headDelegate = delegatedRun ? policy.resolved[agentStages[0]].binding : null;
+    const headDelegate = delegatedRun ? preflightBinding(policy.resolved, agentStages) : null;
     const headerFrame = ({ runtimeVersion, startedAt }) => sdlcHeader({
       taskId: task.task_id,
       templateId: template.template_id, templateVersion: template.version,
@@ -250,6 +253,11 @@ export const sdlc = {
         // Named per stage so a TIERED policy's orientation paragraph can list
         // every worker actually in play instead of asserting the first one.
         worker: policy.resolved[s].binding?.worker,
+        // The Vertex region this stage will actually call, carried so the
+        // cost-regime row can name it instead of asserting a constant — a
+        // tiered policy may pin different regions per worker leaf, and the
+        // +10% non-global surcharge rides on which one it is.
+        workerRegion: policy.resolved[s].binding?.worker_region,
       })),
       delegated: delegatedRun,
       driver: headDelegate?.driver, worker: headDelegate?.worker,
@@ -289,7 +297,10 @@ export const sdlc = {
 
     // ---- preflight (all $0, before any build or spend) ---------------------
     try {
-      runtime.preflight({ binding: policy.resolved[agentStages[0]].binding });
+      // preflightBinding, not agentStages[0]: on a tiered policy the worker
+      // checks must run even though the FIRST stage is solo, or the $0 gate
+      // passes and the missing venv/ADC surfaces mid-run, after spend.
+      runtime.preflight({ binding: preflightBinding(policy.resolved, agentStages) });
       execFileSync("docker", ["version", "--format", "{{.Server.Version}}"], { stdio: "pipe" });
     } catch (err) {
       sayErr(`preflight failed: ${err.message ?? err}`);
@@ -796,7 +807,7 @@ export const sdlc = {
         // The delegated Skill's examples now speak this template's stage names
         // and contract files instead of SWE-bench Pro's repro/localize/patch —
         // a driver was previously told it was in a "patch phase" of a task that
-        // has no patch phase (Sriram, 2026-07-25).
+        // has no patch phase (2026-07-25).
         delegationVocab: DELEGATION_VOCAB.sdlc,
       });
 

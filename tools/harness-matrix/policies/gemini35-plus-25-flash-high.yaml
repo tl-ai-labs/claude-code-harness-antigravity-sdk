@@ -1,6 +1,36 @@
 # gemini35-plus-25-flash-high — the TIERED column of the cc×agSDK SDLC card:
 # premium worker on judgment, cost-efficient worker on volume.
 #
+# ---------------------------------------------------------------------------
+# STATUS 2026-07-31: HISTORICAL COLUMN — NOT A CURRENT PIN
+# ---------------------------------------------------------------------------
+# The Google-facing live runs pin `gemini-3.5-flash-lite` and route through
+# `opus48-plus-lite.yaml`. Deletion of this column was proposed and rejected on
+# 2026-07-31 — the full reasoning is in the sibling STATUS block in
+# all-gemini-25-flash-high.yaml and is not repeated here.
+#
+# WHAT THIS COLUMN ACTUALLY RAN WITH — the whole reason it is kept unedited.
+# Every value below is the value its recorded pass used, not a value chosen for
+# today, and the entries further down this file still hold exactly these:
+#
+#   driver          claude-opus-4-6, --effort high   (builtin-anthropic → anthropic)
+#   premium worker  gemini-3.5-flash, thinking HIGH  (antigravity-sdk → vertex, asia-south1)
+#   volume worker   gemini-2.5-flash, thinking NONE  (antigravity-sdk → vertex, asia-south1)
+#   evidence        examples/kudos-wall/passes/reference/ — 12 hand-offs + SDK receipts
+#
+# The driver line is the one most likely to look stale to a reader who arrives
+# from the current policies: they were all re-pinned to claude-opus-4-8 on
+# 2026-07-31 and this file was deliberately not, because its exemplar pass ran
+# on 4.6. See the note at the driver leaf below.
+#
+# One thing this file specifically is worth keeping for: it is the ONLY tiered
+# column whose two tiers are both WORKERS. `opus48-plus-lite.yaml` tiers across
+# the driver/worker boundary — premium stages take the driver seat alone, cheap
+# stages delegate. This one keeps every stage delegated and swaps the worker
+# underneath, so the driver is held constant by construction. Those two
+# arrangements answer different questions, and the newer file does not
+# supersede this one.
+#
 # WHY THIS POLICY EXISTS (2026-07-26). all-gemini-flash-high and
 # all-gemini-25-flash-high are the two CLEAN columns — one generation each,
 # every stage. They answer "does a generation of model progress show up in an
@@ -89,7 +119,12 @@
 # passes, and the table above is the precedent to port.
 #
 # HELD CONSTANT vs both clean columns: driver pin, driver effort, region, retry
-# policy, limits.
+# policy, limits — AS ALL THREE FILES STOOD IN JULY 2026, which is when all
+# three ran. It was true on the day and it is what makes the recorded passes
+# comparable. It is no longer true of the files on disk: all-gemini-flash-high
+# was re-pinned to gemini-3.5-flash-lite @ global and its driver, along with
+# all-opus's, moved to claude-opus-4-8 on 2026-07-31. Compare this column
+# against those RECORDED PASSES, not against a fresh run of the current files.
 #
 # NOT held constant — worker thinking level, and NOT by choice (2026-07-26).
 # The premium tier runs gemini-3.5-flash at thinking HIGH; the cost-efficient
@@ -123,7 +158,18 @@ models:
   - id: opus-anthropic
     adapter: builtin-anthropic        # HELD CONSTANT with every sibling policy
     api: anthropic
-    model_name: claude-opus-4-6
+    # DELIBERATELY LEFT ON 4.6 (2026-07-31). On that date the three current
+    # cells — all-opus, all-gemini-flash-high, opus48-plus-lite — were re-pinned
+    # together to claude-opus-4-8 so they would share one driver generation.
+    # This file was NOT moved with them, and that is the point: it is a
+    # historical column whose exemplar pass under
+    # examples/kudos-wall/passes/reference/ ran on a 4.6 driver. Re-pinning it
+    # would make the policy describe a run that never happened. What it now
+    # costs is the sibling comparison — this column and the current ones no
+    # longer share a driver, so a delta against them carries a driver change
+    # too. That was already true of the worker axis and is recorded in the
+    # STATUS block at the top of this file.
+    model_name: claude-opus-4-6       # what this column RAN WITH — not a current pin
     reasoning:
       effort: high                    # driver effort pin (--effort high)
     # No `pricing:` — composition member, priced from real receipts (all-opus.yaml).

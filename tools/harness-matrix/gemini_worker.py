@@ -3,8 +3,8 @@
 WHAT: invoked by the Claude Code driver (via the `gemini-worker` Skill, one
 call per delegated task) to do the actual engineering work — read repo code,
 write the reproduction, author the fix — on Gemini through the Antigravity SDK
-(`google-antigravity`). It replaces the parked `agy` CLI worker (Teja parked
-the CLI 2026-07-21); the driver->worker delegation architecture is unchanged
+(`google-antigravity`). It replaces the parked `agy` CLI worker (the CLI was
+parked 2026-07-21); the driver->worker delegation architecture is unchanged
 (the driver still shells out once per task and reads the reply on stdout).
 
 WHY the SDK and not the CLI: the CLI printed prose only and reported no usage
@@ -27,7 +27,10 @@ returned real token counts — not guessed API.
 
 Contract (all args required unless noted):
   --task-file PATH   file holding the driver-composed task description
-  --model NAME       SDK model id, e.g. gemini-3.5-flash
+  --model NAME       SDK model id, e.g. gemini-3.5-flash-lite
+  --region NAME      OPTIONAL Vertex location, e.g. global or asia-south1. When
+                     given it WINS over GOOGLE_CLOUD_LOCATION — see the
+                     precedence note at the LOCATION assignment below.
   --workdir PATH     the instance workspace (repo checkout) — the worker's only
                      workspace; it edits repo files here. Contract files are the
                      DRIVER's job (written to --out-dir), so the worker never
@@ -73,7 +76,28 @@ import sys
 # performance/quota choice with a known-good value, not an identity. The pin
 # matters (the global Gemini endpoint was quota-starved on 2026-07-16, so the
 # policies pin a regional endpoint) and any region a reader picks is still
-# their own. Env wins in both cases so the harness can retarget without edits.
+# their own.
+#
+# PRECEDENCE, CORRECTED 2026-07-31: --region > GOOGLE_CLOUD_LOCATION > the
+# default below. It used to be env-only, and that was a silent correctness bug
+# rather than a preference. Every policy with a Vertex leaf is REQUIRED by the
+# loader to declare an explicit `region:`, and that declaration is what the
+# manifest records, what the dashboard shows, and what getVertexRates() prices
+# the run against — including the +10% non-global surcharge, which is derived
+# from the region string alone. With no way to pass it, the declaration steered
+# nothing: the call went wherever the ambient env said, and the sidecar wrote
+# down that ambient value, so a policy could say `global` while every token was
+# billed in asia-south1 and no artifact anywhere would disagree.
+#
+# It was found on 2026-07-31 the expensive way round: gemini-3.5-flash-lite is
+# served ONLY on `global` (404 "Publisher model ... not found" in asia-south1
+# and us-central1), so the Flash-Lite policies would have failed on their first
+# delegation, 45 minutes and one phase budget into a paid run, with a policy
+# file that plainly said `region: global` sitting right there.
+#
+# The env var is still honoured when --region is absent: the probes under
+# sdk-probe/ pass no region and must keep working, and a reader retargeting a
+# one-off run with an export should not have to edit a policy to do it.
 #
 # CHECKED BEFORE THE SDK IMPORT, deliberately breaking the usual import
 # ordering: a missing export is the likelier mistake and its message is the
@@ -160,13 +184,21 @@ async def run(args):
     thinking = _thinking_level(args.thinking)
     opts = types.GeminiModelOptions(thinking_level=thinking) if thinking else None
 
+    # The policy's declared region, when the caller passed one, else the env
+    # default resolved at import. Bound ONCE here and used for the endpoint, the
+    # agent config and the sidecar, so the region the call went to and the region
+    # the receipt claims cannot drift apart — that drift is what made the old
+    # env-only behaviour undetectable. See the precedence note above.
+    location = args.region or LOCATION
+    os.environ["GOOGLE_CLOUD_LOCATION"] = location
+
     cfg = ag.LocalAgentConfig(
         model=types.ModelTarget(
             name=args.model, types=[types.ModelType.TEXT],
             endpoint=types.VertexEndpoint(
-                project=PROJECT, location=LOCATION, options=opts),
+                project=PROJECT, location=location, options=opts),
         ),
-        vertex=True, project=PROJECT, location=LOCATION,
+        vertex=True, project=PROJECT, location=location,
         policies=[policy.allow_all()],
         # Single workspace = the repo. The worker edits repo files here; the
         # DRIVER writes the phase contract files into out-dir (the gate anchor
@@ -201,7 +233,7 @@ async def run(args):
             "sdk": SDK_NAME,
             "sdk_version": SDK_VERSION,
             "vertex_project": PROJECT,
-            "vertex_location": LOCATION,
+            "vertex_location": location,
             "usage": usage,
             "tool_call_count": len(tool_calls),
             "text": text,
@@ -214,6 +246,12 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--task-file", required=True)
     p.add_argument("--model", required=True)
+    # OPTIONAL, and the only knob here whose default is "defer to the env".
+    # The policy declares the region, the driver passes it through, and when it
+    # does it WINS over GOOGLE_CLOUD_LOCATION (see the precedence note at the
+    # LOCATION constant). Absent, the env/asia-south1 default applies, which is
+    # what the sdk-probe/ scripts and one-off `export`-driven runs rely on.
+    p.add_argument("--region", default=None)
     p.add_argument("--workdir", required=True)
     p.add_argument("--out-dir", required=True)
     p.add_argument("--usage-file", required=True)

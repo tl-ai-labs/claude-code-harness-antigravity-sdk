@@ -28,11 +28,13 @@ and the single-container-at-a-time rule.
 ## Reproducing a similar run
 
 ```bash
+# The `instance_` prefix is part of the dataset's instance_id and the fetcher
+# matches it exactly — the bare `repo__repo-<sha>` form exits 1.
 node tools/swe/fetch-instances-pro.mjs \
-  --ids navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a
+  --ids instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a
 
 node tools/harness-matrix/run-harness.mjs \
-  --instance-dir studies/swe-pro-corpus/navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a \
+  --instance-dir studies/swe-pro-corpus/instance_navidrome__navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a \
   --runtime claude-code \
   --policy tools/harness-matrix/policies/all-gemini-flash-high.yaml
 ```

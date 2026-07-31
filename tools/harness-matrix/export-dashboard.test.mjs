@@ -196,7 +196,7 @@ test("the run's own policy snapshot ships beside it, so limits are readable per 
   // each column carries the policy it actually ran under instead of inheriting
   // whatever the policy file says today.
   //
-  // ASSERTING CONTENT, NOT JUST EXISTENCE (Sriram, 2026-07-26). This case used
+  // ASSERTING CONTENT, NOT JUST EXISTENCE (2026-07-26). This case used
   // to check only that a file was written — and the file is ALWAYS written,
   // because a policy that cannot be found falls back to a two-line stub. So it
   // passed for months while every column shipped that stub: the manifest
@@ -503,7 +503,7 @@ test("a delegated SDLC column publishes the cable the harness variant routes on"
 
 // ---- the delegated SDLC study brief -----------------------------------------
 //
-// WHAT THIS CARD INHERITS, AND WHY IT IS TESTED (Sriram, 2026-07-26). The
+// WHAT THIS CARD INHERITS, AND WHY IT IS TESTED (2026-07-26). The
 // delegated SDLC card has two parents and takes a different thing from each:
 // the PROJECT SPEC from an orchestrator SDLC card (uptime-ping opens with the
 // endpoint it had to build), and the delegated-track framing from the
@@ -586,7 +586,7 @@ test("a second task adds its spec to the brief rather than replacing the first",
 
 // ---- the SWE-bench Pro study brief ------------------------------------------
 //
-// WHY THESE ARE HERE (Sriram, 2026-07-31). The Pro brief used to render from a
+// WHY THESE ARE HERE (2026-07-31). The Pro brief used to render from a
 // shared template, `tools/lib/benchmark-brief.mjs`, and was tested there over
 // every {Verified, Pro} × {orchestrator, harness} combination. Three of those
 // four are unreachable from this repository, so the template was inlined into

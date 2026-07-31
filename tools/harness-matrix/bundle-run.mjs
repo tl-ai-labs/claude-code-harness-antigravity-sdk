@@ -135,7 +135,7 @@ const OUT_FILE_PATTERNS = {
 /**
  * Resolve a run's identity and packaging rules from its own manifest.
  *
- * Why this is a function and not two inline `??`s (Sriram, 2026-07-28). The
+ * Why this is a function and not two inline `??`s (2026-07-28). The
  * bundler shipped SWE-bench-only: it read `manifest.instance_id`, and every
  * downstream use — the corpus instance.json lookup, the bundle title, the
  * re-verify recipe — assumed that value existed. SDLC runs carry no

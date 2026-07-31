@@ -48,7 +48,7 @@ procedural drift between two differently-run experiments.
 | `grade-sdlc.mjs` | (SDLC) Re-runs the scaffold's build and test in a fresh container invocation **after** the last model call and writes the same-named `grade-verdict.json` (`resolved` = builds + full suite green). The judge stage's scores ride alongside in the manifest: mechanical floor, qualitative ceiling. |
 | `Dockerfile` | (Pro) The sealed execution image: base instance image + bash/coreutils + git-history erase + a `sealed-base` tag, which is the diff anchor. No agent layer — the runtime lives on the host. |
 | `Dockerfile.sdlc` | (SDLC) One shared toolchain image (`node:22-bookworm`, corepack-pinned pnpm) that every SDLC run executes in. No per-instance seal: the scaffold enters as a host-side copy tagged `scaffold-base`. |
-| `policies/*.yaml` | The four shipped cells. Schema and rationale in [docs/policies.md](../../docs/policies.md); `policies/all-opus.yaml` carries the canonical in-file explanation of the v2 schema. |
+| `policies/*.yaml` | The five shipped cells — three current, two historical columns kept because their recorded passes ship in this repo. Schema and rationale in [docs/policies.md](../../docs/policies.md); `policies/all-opus.yaml` carries the canonical in-file explanation of the v2 schema. Each worker leaf declares its own `region:`, which the runner passes to `gemini_worker.py` as `--region` and which outranks `GOOGLE_CLOUD_LOCATION`. |
 | `prompts/*.md` | The `{{PLACEHOLDER}}` phase prompts — `repro/localize/patch.md` for Pro, `sdlc-*.md` for the SDLC stages. Context between stages travels via contract files (`repro.json`, `requirements.md`, `packets.json`, …) injected by the script, never via runtime conversation state. |
 | `logfmt.mjs` | Terminal primitives and the 80-column grid: boxes, rules, tables, `kvBlock`, the null-honest roll-ups (`attemptTotals`, `tokenSplit`), and `say()`/`sayErr()` — the harness's only writers. Both route through `fitLine`, which returns anything already inside the grid byte-identical and wraps anything past it with a hanging indent. |
 | `logrender.mjs` | The run's two big frames — opening header, closing scoreboard — as **pure functions of a plain descriptor**. Both kinds build that descriptor from live state; `replay-log.mjs` builds an identical one from `manifest.json`. |
@@ -245,8 +245,13 @@ changes it.
   Vertex region carries a +10% surcharge, and it applies to the Gemini 3 and
   later families only. So `gemini-3.5-flash` and `gemini-2.5-flash` in the
   same region are on **different surcharge regimes**, and applying one
-  multiplier to both overstates the cheaper tier by 10%. The tiered policy
-  uses both, which is exactly where this would go wrong unnoticed.
+  multiplier to both overstates the cheaper tier by 10%. The tiered
+  historical policy uses both in `asia-south1`, which is exactly where this
+  would go wrong unnoticed. The two **current** delegated policies pin
+  `gemini-3.5-flash-lite` at `global`, where no surcharge applies at all —
+  so the region a call actually went to is a pricing input, not a footnote,
+  which is why the sidecar records the region the worker *resolved* rather
+  than the one it inherited from the environment.
 - **A Pro row reading `0 passed / 0 failed` is a model failure, not a broken
   grader.** It is tempting to read "no tests ran" as the evaluation
   environment having failed, and to discount the instance. Every such row

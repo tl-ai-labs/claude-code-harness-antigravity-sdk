@@ -3,7 +3,7 @@
  * replay-log.mjs — re-render a FINISHED run's terminal log, offline, at $0.
  *
  * WHY (2026-07-26). The terminal log of a delegated cc×Gemini run is a demo
- * artifact: it gets screenshared to Ravi and to Google, paused on, screenshotted
+ * artifact: it gets screenshared internally and to Google, paused on, screenshotted
  * and quoted. That makes its wording, spacing and ordering a deliverable — and
  * before this tool the ONLY way to look at that deliverable was to pay for a
  * live run, watch it scroll past once, and hope the phrasing landed. Reviewing
@@ -214,6 +214,10 @@ function replaySdlc({ runDir, manifest, audit, only, frames }, print) {
       .map((s) => ({
         id: s.stage, label: labelBinding(s.binding, s.model_id),
         thinking: s.thinking, workerThinking: s.binding?.worker_thinking,
+        // Replayed from the manifest binding, so a replay names the region
+        // the run really called. Absent on manifests written before
+        // 2026-07-31, which the renderer prints as `region unrecorded`.
+        workerRegion: s.binding?.worker_region,
       })),
     delegated, driver: head?.driver, worker: head?.worker,
     envImage: manifest.env_image,
@@ -332,6 +336,8 @@ function replaySwepro({ runDir, manifest, audit, only, frames }, print) {
     stages: manifest.phases.map((p) => ({
       id: p.phase, label: labelBinding(p.binding, p.model_id),
       thinking: p.thinking, workerThinking: p.binding?.worker_thinking,
+      // Same as the SDLC header above: region from the manifest binding.
+      workerRegion: p.binding?.worker_region,
     })),
     delegated, driver: head?.driver, worker: head?.worker,
     baseImage: manifest.base_image, sealedImage: manifest.sealed_image,

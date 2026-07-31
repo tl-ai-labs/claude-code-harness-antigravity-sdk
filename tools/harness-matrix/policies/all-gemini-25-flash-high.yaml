@@ -1,11 +1,65 @@
 # all-gemini-25-flash-high — the CROSS-GENERATION column of the cc×agSDK SDLC
 # card: Gemini 2.5 Flash as the worker instead of 3.5 Flash.
 #
+# ---------------------------------------------------------------------------
+# STATUS 2026-07-31: HISTORICAL COLUMN — NOT A CURRENT PIN
+# ---------------------------------------------------------------------------
+# The Google-facing live runs pin `gemini-3.5-flash-lite` and route through
+# `opus48-plus-lite.yaml`. This file is NOT that, and a reader who lands here
+# first should not take `gemini-2.5-flash` for the model this repo currently
+# runs.
+#
+# WHAT THIS COLUMN ACTUALLY RAN WITH — the whole reason it is kept unedited.
+# Every value below is the value its recorded pass used, not a value chosen for
+# today, and the entries further down this file still hold exactly these:
+#
+#   driver   claude-opus-4-6, --effort high   (builtin-anthropic → anthropic)
+#   worker   gemini-2.5-flash, thinking NONE  (antigravity-sdk → vertex, asia-south1)
+#            NONE is not a preference — Vertex 400s on thinking_level for this
+#            model; the verbatim error is quoted at the worker leaf below.
+#   evidence examples/kudos-wall/passes/reference/ — worker-task/worker-usage
+#            sidecars naming this policy
+#
+# The driver line is the one most likely to look stale to a reader arriving from
+# the current policies: all three of those were re-pinned to claude-opus-4-8 on
+# 2026-07-31 and this file was deliberately not, because its exemplar pass ran
+# on 4.6. See the note at the driver leaf below.
+#
+# It was proposed for deletion on 2026-07-31, on the reasoning that once the
+# matrix stopped pinning 2.5 and 3.5 Flash these two cross-generation columns
+# had lost their subject. Deletion was REJECTED, for reasons that outlive the
+# proposal:
+#   1. Its evidence is SHIPPED. Eight worker-usage and worker-task sidecars
+#      under examples/kudos-wall/passes/reference/ record a real run of this
+#      exact policy and name it in their contents. Deleting the policy would
+#      leave shipped evidence pointing at a file that does not exist — and the
+#      sidecars are receipts from a run that happened, so rewriting them to
+#      cover the gap is not available either.
+#   2. It carries a platform finding the deliverable needs. The verbatim Vertex
+#      400 on `thinking_level` for 2.5 Flash, quoted at the worker leaf below,
+#      is the evidence for a real constraint in the SDK's surface — precisely
+#      the class of thing a repo handed to Google exists to report. It also
+#      cost a paid run to learn.
+#   3. It is load-bearing in the suite. kinds/sdlc.test.mjs uses this policy as
+#      the SECOND policy in the "the preview reports its own models, not the
+#      previous column's" assertion; without a second, differently-pinned
+#      policy that test cannot distinguish a working preview from a hardcoded
+#      one.
+# A retired study column and a wrong study column are different things. This is
+# the first.
+#
 # WHY THIS POLICY EXISTS (2026-07-26). The cc×agSDK study asks "a FIXED Claude
 # Code harness delegating to DIFFERENT worker models" — so the study's columns
 # are worker models and every other knob must be held constant, or the delta
 # measures the environment instead of the model. Same driver pin, same driver
-# effort, same region, same retry policy, same limits.
+# effort, same region, same retry policy, same limits — AS THAT STOOD IN JULY
+# 2026. Two of those have since moved in the 3.5 column and are called out at
+# their leaves below: the driver pin (Opus 4.6 here, Opus 4.8 there) and the
+# worker region (asia-south1 here, `global` there, because Flash-Lite is
+# global-only). This column is frozen against its recorded pass, so the
+# comparison is against the OTHER column's recorded July 2026 pass too, never
+# against a fresh run of it. kinds/sdlc.test.mjs asserts each of those
+# differences by name so a THIRD one cannot appear silently.
 #
 # THE ONE KNOB THAT COULD NOT BE HELD CONSTANT — worker thinking level. This
 # file was authored as a strict near-clone in which "exactly one token differs
@@ -71,13 +125,24 @@ models:
     worker: flash-25-agsdk-vertex
 
   # ---- driver leaf --------------------------------------------------------
-  # HELD CONSTANT with all-opus and all-gemini-flash-high, byte for byte. That
-  # is the study hygiene this column depends on: if the driver entry here ever
-  # diverges from its siblings, the column stops measuring the worker.
+  # HELD CONSTANT with all-opus and all-gemini-flash-high, byte for byte, AS
+  # THOSE FILES STOOD WHEN THIS COLUMN RAN. That was the study hygiene the
+  # column depended on: a driver entry diverging from its siblings' would have
+  # made it stop measuring the worker.
+  #
+  # THE SIBLINGS HAVE SINCE MOVED, AND THIS ENTRY DELIBERATELY HAS NOT
+  # (2026-07-31). all-opus, all-gemini-flash-high and opus48-plus-lite were
+  # re-pinned together to claude-opus-4-8 so the three CURRENT cells share one
+  # driver generation. This file stayed on 4.6 because its exemplar pass ran on
+  # 4.6 — re-pinning it would make the policy describe a run that never
+  # happened, which is the same reason the column was not deleted. The cost is
+  # that "held constant with its siblings" is now a statement about July 2026,
+  # not about the files on disk: compare this column against the RECORDED
+  # passes of the others, not against a fresh run of them.
   - id: opus-anthropic
     adapter: builtin-anthropic
     api: anthropic
-    model_name: claude-opus-4-6
+    model_name: claude-opus-4-6       # what this column RAN WITH — not a current pin
     reasoning:
       effort: high
     # No `pricing:` — composition member, priced from real receipts (all-opus.yaml).
@@ -87,7 +152,26 @@ models:
     adapter: antigravity-sdk          # same cable as the 3.5 column — held constant
     api: vertex
     model_name: gemini-2.5-flash      # the generation difference vs all-gemini-flash-high
-    region: asia-south1               # same region — held constant, and required for vertex
+    region: asia-south1               # REQUIRED for vertex, and NO LONGER "held
+                                      # constant" — corrected 2026-07-31. This
+                                      # said "same region — held constant" until
+                                      # the 3.5 column's worker moved to
+                                      # gemini-3.5-flash-lite, which Vertex
+                                      # serves on `global` ONLY (404 in
+                                      # asia-south1). That move silently un-held
+                                      # the region between the two columns and
+                                      # this comment kept asserting otherwise.
+                                      # Left on asia-south1 deliberately, for the
+                                      # same reason the driver stays on Opus 4.6:
+                                      # this is a FROZEN column and asia-south1
+                                      # is where its recorded pass actually
+                                      # billed. Re-pinning it to global would
+                                      # make the file describe a run nobody made.
+                                      # The cost is real and is now stated rather
+                                      # than hidden: global takes no Vertex
+                                      # non-global surcharge, asia-south1 takes
+                                      # +10% on every token class, so the two
+                                      # columns bill on different meters.
     # NO `reasoning:` BLOCK — DO NOT ADD ONE (2026-07-26, carried through the
     # 2026-07-29 migration). Under the legacy schema this was the absent
     # `worker_thinking` key; `reasoning.tier` is where that value now lives, so

@@ -70,6 +70,14 @@ Application Default Credentials — there is no free tier on this path. It
 refuses to start with the project unset rather than guess one. It is cheap but
 not free.
 
+The probes are the one place `GOOGLE_CLOUD_LOCATION` is still the last word:
+they read the environment directly and never load a policy. On a real run the
+region comes from the policy's worker leaf, which the runner passes to
+`gemini_worker.py` as `--region` and which outranks the environment. So export
+the region you actually want to probe — probing `asia-south1` proves nothing
+about a policy that pins `global`, and `gemini-3.5-flash-lite` is served on
+`global` only.
+
 `probe_managed_agent.py` needs **none** of the setup above — it is stdlib only
 and deliberately so, since its whole point is that anyone can re-run it in one
 command:

@@ -63,13 +63,17 @@ const AUDIT_MJS = join(HERE, "audit.mjs");
 
 /**
  * The DELEGATED binding form (cc×gemini cell, Google email ask 3b):
- * a claude-code binding may be `{ driver, worker, worker_thinking }` instead
- * of a model string. `driver` is the Anthropic model in Claude Code's seat
+ * a claude-code binding may be `{ driver, worker, worker_thinking,
+ * worker_region }` instead of a model string. Both `worker_*` keys are OMITTED
+ * rather than nulled when the policy does not declare them (v1 policies never
+ * carry `worker_region` at all), so an absent key means "the policy did not
+ * say" and the worker applies its own default.
+ * `driver` is the Anthropic model in Claude Code's seat
  * (not removable — `claude` has no non-Anthropic --model, so this cell is
  * inherently two-model and is REPORTED as such); `worker` is the Gemini SDK
- * model id (e.g. `gemini-3.5-flash`) the driver must delegate substantive work
+ * model id (e.g. `gemini-3.5-flash-lite`) the driver must delegate substantive work
  * to, reached through the Antigravity SDK (google-antigravity) — NOT the `agy`
- * CLI, which Teja parked 2026-07-21. The SDK serves Gemini on its
+ * CLI, which this team parked 2026-07-21. The SDK serves Gemini on its
  * verified-working path (probe_vertex.py) and returns real UsageMetadata, which
  * the prose-only CLI never did. Mechanics: a session Skill provisioned in a
  * per-run CLAUDE_CONFIG_DIR (never in the workdir — the workdir is the diff
@@ -82,7 +86,7 @@ export const isDelegated = (binding) =>
   typeof binding === "object" && binding !== null;
 
 /**
- * KIND VOCABULARY for the delegated Skill preamble (Sriram, 2026-07-25).
+ * KIND VOCABULARY for the delegated Skill preamble (2026-07-25).
  *
  * The Skill's *rules* are structural and kind-agnostic — delegate first, never
  * author, the scaffold fails a zero-delegation attempt. Its *examples* were
@@ -194,7 +198,7 @@ export function workerTimeoutMin(phaseTimeoutMin) {
  * worker) once per delegated task and read the reply on stdout — the same
  * one-call-per-task shape the parked `agy -p` cable had, minus the CLI.
  */
-export function renderWorkerSkill({ worker, workerThinking, workdir, outDir, timeoutMin, slot, vocab }) {
+export function renderWorkerSkill({ worker, workerThinking, workerRegion, workdir, outDir, timeoutMin, slot, vocab }) {
   const v = vocab ?? NEUTRAL_VOCAB;
   const py = workerPython();
   // `timeoutMin` is the PHASE budget; the worker gets a strict fraction of it
@@ -235,6 +239,21 @@ export function renderWorkerSkill({ worker, workerThinking, workdir, outDir, tim
     `DYLD_LIBRARY_PATH="${WORKER_DYLD}" "${py}" "${WORKER_SCRIPT}" \\`,
     `  --task-file "${outDir}/worker-task-${slot}-N.md" \\`,
     `  --model "${worker}" --thinking ${workerThinking || "NONE"} \\`,
+    // THE POLICY'S REGION, PASSED EXPLICITLY (2026-07-31). Until now the worker
+    // took its Vertex location from GOOGLE_CLOUD_LOCATION alone, so a policy
+    // declaring `region: global` steered nothing: the call went wherever the
+    // ambient env pointed (default asia-south1) and the usage sidecar recorded
+    // that same ambient value, leaving no artifact that could disagree with the
+    // policy. This line is the last link in the chain policy file →
+    // resolveHarnessStages (binding.worker_region) → runPhase → here → argv.
+    //
+    // EMITTED ONLY WHEN THE BINDING CARRIES ONE, deliberately. v1 policies
+    // resolve through resolveLegacyHarnessStages, whose bindings are the raw
+    // YAML objects and have no region key at all; those runs are replayed for
+    // comparison against published numbers, so they must keep resolving the
+    // region exactly the way they did when they ran — from the env. Omitting
+    // the flag is what preserves that, since the worker's default is the env.
+    ...(workerRegion ? [`  --region "${workerRegion}" \\`] : []),
     `  --workdir "${workdir}" --out-dir "${outDir}" \\`,
     `  --usage-file "${outDir}/worker-usage-${slot}-N.json" \\`,
     `  --timeout ${timeoutSec}`,
@@ -1007,6 +1026,10 @@ export const RUNTIMES = {
           renderWorkerSkill({
             worker: binding.worker,
             workerThinking: binding.worker_thinking,
+            // Undefined on legacy (v1) bindings and on non-Vertex workers; the
+            // Skill omits the --region flag in that case and the worker keeps
+            // its env default. See the note at the flag in renderWorkerSkill.
+            workerRegion: binding.worker_region,
             workdir, outDir, timeoutMin,
             slot: logPrefix,          // namespaces this attempt's worker files
             // Kind-specific examples in the mandate. Absent → NEUTRAL_VOCAB,

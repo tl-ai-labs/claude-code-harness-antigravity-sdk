@@ -101,7 +101,12 @@ import { fileURLToPath } from "node:url";
 // The single source of truth for prices. Relative into the built package
 // because tools/harness-matrix is a plain .mjs tree with no node_modules —
 // workspace resolution ("@harness/pricing") is not available here.
-import { getVertexRates, costMicroUsd, microToUsd, PRICING_VERSION } from "../../packages/pricing/dist/index.js";
+import { PRICING_VERSION } from "../../packages/pricing/dist/index.js";
+// The sidecar → billing-class mapping and the region/project readers are
+// shared with tools/report.mjs so one hand-off cannot be priced two ways.
+import {
+  priceSidecar, sidecarRegion, sidecarProject, WORKER_REGION_FALLBACK,
+} from "./price-sidecar.mjs";
 // The audit's own readers. Imported rather than re-derived here so the shape
 // the run kinds WRITE into manifest.json and the shape this exporter READS can
 // never disagree — and so the legacy-integer fallback lives in exactly one
@@ -123,7 +128,7 @@ const ROOT = resolve(HERE, "../..");
  * Resolve a manifest-recorded, harness-relative path (`policies/x.yaml`,
  * `examples/kudos-wall/brief.md`) to somewhere on disk.
  *
- * WHY THIS EXISTS AS A HELPER (Sriram, 2026-07-26). The policy snapshot used
+ * WHY THIS EXISTS AS A HELPER (2026-07-26). The policy snapshot used
  * to be resolved with a bare `join(ROOT, m.policy.file)`. The runner records
  * that path relative to the HARNESS directory, not to the repo root, so the
  * join always landed on a file that does not exist — and the miss was silent,
@@ -140,14 +145,13 @@ function resolveHarnessPath(rel) {
   return candidates.find((p) => existsSync(p)) ?? null;
 }
 
-// The Gemini worker DEFAULTS to asia-south1 (the global endpoint was
-// quota-starved 2026-07-16), and GOOGLE_CLOUD_LOCATION overrides it. Kept as a
-// named constant so the +10% regional surcharge is applied by getVertexRates()
-// rather than assumed anywhere in this file — but it is only ever a FALLBACK
-// here: every worker sidecar records the region it actually ran in
-// (`vertex_location`), and evidence outranks a constant. The constant is used
-// for sidecars written before that field existed.
-const WORKER_REGION_FALLBACK = "asia-south1";
+// The region fallback, the per-sidecar region/project readers and the sidecar
+// pricing function all now live in price-sidecar.mjs (imported above), because
+// tools/report.mjs prices the SAME sidecars at the end of a run and the two
+// surfaces must not be able to quote different dollars for one hand-off.
+// Every worker sidecar records the region it actually ran in
+// (`vertex_location`), and evidence outranks a constant; the constant is used
+// only for sidecars written before that field existed.
 
 // THE CABLE. The delegated cell's whole point is CROSS-RUNTIME: a Claude Code
 // driver reaching Gemini through Google's Antigravity SDK, not a bare Gemini
@@ -163,26 +167,12 @@ const WORKER_SDK = "google-antigravity";
 // has to have exactly one definition. WORKER_SDK and the region fallback stay
 // here: they are pricing and routing facts, not attribution ones.
 
-/**
- * Where the worker actually ran, per sidecar. Reads the run's own evidence and
- * falls back to the pinned region only for sidecars written before
- * gemini_worker.py started recording it. Used for BOTH pricing (the +10%
- * non-global Vertex surcharge is regional) and display, so a run executed in,
- * say, europe-west4 is never priced or described as asia-south1.
- */
-const sidecarRegion = (sc) => sc.vertex_location || WORKER_REGION_FALLBACK;
-
-/**
- * Which Google Cloud project paid for the worker side, per sidecar.
- *
- * This used to be a hardcoded string naming the project these runs were
- * originally developed against — which meant every exported dashboard, on any
- * machine, asserted that OUR project paid for the reader's run. It is a
- * billing claim, so it comes from the run's own receipt or it is not made at
- * all: null when the sidecar predates the field, and the callers word the
- * sentence without a project name in that case.
- */
-const sidecarProject = (sc) => sc.vertex_project || null;
+// sidecarRegion / sidecarProject are imported from price-sidecar.mjs. Both are
+// billing claims read from the run's OWN receipt: the project reader used to be
+// a hardcoded string naming the project these runs were originally developed
+// against, which meant every exported dashboard, on any machine, asserted that
+// OUR project paid for the reader's run. It is null when the sidecar predates
+// the field, and the callers word the sentence without a project name then.
 
 /** Join a set of evidence values for display; null when nothing was recorded. */
 const listOrNull = (vals) => (vals.length ? [...new Set(vals)].sort().join(", ") : null);
@@ -257,7 +247,7 @@ function stampOf(runDir) {
   const [, Y, M, D, h, min] = mm;
   return {
     key: `${D}${M}-${h}${min}`,                   // 2407-0932 — pass-id suffix
-    // Year is part of BOTH forms (Sriram, 2026-07-25). A column that reads
+    // Year is part of BOTH forms (2026-07-25). A column that reads
     // "24 Jul 09:32" is undated the moment this portfolio outlives the year it
     // was produced in — and these cards are the durable artifact, kept and
     // shown long after the run. dayPretty already carried the year; pretty did
@@ -758,38 +748,9 @@ function readRun(runDir) {
 const iso = (ms) => new Date(ms).toISOString();
 const r6 = (n) => Math.round(n * 1e6) / 1e6;
 
-/**
- * Price one worker usage sidecar. Vertex `UsageMetadata` counts are mapped to
- * the pricing package's DISJOINT TokenCounts:
- *   prompt_token_count INCLUDES cached, so fresh = prompt - cached;
- *   thoughts are billed at the output rate, so output = candidates + thoughts.
- * Verified against a real sidecar: prompt+candidates+thoughts === total.
- */
-function priceSidecar(sc) {
-  const u = sc.usage ?? {};
-  const prompt = u.prompt_token_count ?? 0;
-  const cached = u.cached_content_token_count ?? 0;
-  const candidates = u.candidates_token_count ?? 0;
-  const thoughts = u.thoughts_token_count ?? 0;
-  const tokens = {
-    input_fresh: Math.max(0, prompt - cached),
-    cache_read: cached,
-    output: candidates + thoughts,
-  };
-  let usd = 0;
-  let priced = false;
-  try {
-    // Priced in the region the sidecar says it ran in: the surcharge is a
-    // property of the endpoint that served the call, not of our policy pin.
-    usd = microToUsd(costMicroUsd(tokens, getVertexRates(sc.model, sidecarRegion(sc))).total);
-    priced = true;
-  } catch {
-    // Unknown model id in the price table → cost stays 0 and `priced:false`
-    // is surfaced in the export summary rather than silently guessed.
-    usd = 0;
-  }
-  return { tokens, reasoning: thoughts, usd, priced, model: sc.model };
-}
+// priceSidecar is imported from price-sidecar.mjs. An unknown model id there
+// leaves cost at 0 with `priced:false`, which this file surfaces in the export
+// summary rather than silently guessing a rate.
 
 /** Patch stats from the graded diff (Pro) or the delivery diff (SDLC). */
 function diffStats(p) {
@@ -946,7 +907,7 @@ const artifacts = isPro
       tests_passed: resolvedCount,
       tests_failed: runs.length - resolvedCount,
       build_ok: resolvedCount === runs.length,
-      // Separate from build_ok on purpose (Sriram, 2026-07-25): this says the
+      // Separate from build_ok on purpose (2026-07-25): this says the
       // verdict came from Scale's Docker evaluator rather than from us, which
       // is true whether or not the instance resolved. The card badge reads THIS;
       // build_ok above stays "everything in this column resolved" so the green
@@ -1289,7 +1250,7 @@ const passEntry = {
 // would change when tomorrow's runs land belongs on the column above or on the
 // Instances tab, not in this card.
 //
-// NAMING RULE (Sriram, 2026-07-25): model names are banned from the card —
+// NAMING RULE (2026-07-25): model names are banned from the card —
 // instances can be run under any worker binding, so "gemini-3.5-flash" on the
 // card would be stale the day a different model is delegated to. The SDK is
 // NOT banned: for a delegated track the cable (driver runtime × Antigravity
@@ -1377,7 +1338,7 @@ const existingPasses = existingIdx >= 0
       return false;
     })
   : [];
-// Per-column accent (Sriram, 2026-07-25). Every batch used to export as
+// Per-column accent (2026-07-25). Every batch used to export as
 // "coral", so a study holding two columns drew two identically-coloured series
 // in the Runs Result lane chart and the Compare matrix — the reader could only
 // tell them apart by bar position, and the delegated driver/worker stack made
@@ -1402,7 +1363,7 @@ if (existingIdx >= 0) {
  *
  * WHY THIS IS HERE AT ALL. An orchestrator SDLC card's brief IS
  * the project spec: open uptime-ping and you read the endpoint it had to build,
- * its scope and its out-of-scope, and only then look at what four policies made
+ * its scope and its out-of-scope, and only then look at what the policies made
  * of it. The harness SDLC card shipped a generated *study* brief instead, so
  * the one question an SDLC reader arrives with — "what was it asked to build?"
  * — had no answer anywhere on the card. The task brief is a study-level fact
@@ -1631,7 +1592,7 @@ function proBenchmarkBrief() {
 /**
  * The DELEGATED SDLC study brief.
  *
- * WHAT IT INHERITS, AND FROM WHERE (Sriram, 2026-07-26). This card has two
+ * WHAT IT INHERITS, AND FROM WHERE (2026-07-26). This card has two
  * parents and the brief takes a different thing from each:
  *
  *   From an orchestrator SDLC card (uptime-ping, recipe-box, leave-requests-mini):
@@ -1770,7 +1731,7 @@ function delegatedSdlcBrief() {
     "",
     `The driver runtime and the ${WORKER_SDK_LABEL} are this study's fixed identity. **Which worker`,
     "model** sits behind the SDK is a per-column choice — each column states its own binding in its",
-    // "the newest runs used" was wrong twice over (Sriram, 2026-07-26): the
+    // "the newest runs used" was wrong twice over (2026-07-26): the
     // strip took the FIRST column's cable, not the newest, and it now shows the
     // union across every column with each side marked when the columns
     // disagree. Describe what it actually does, so the brief and the strip

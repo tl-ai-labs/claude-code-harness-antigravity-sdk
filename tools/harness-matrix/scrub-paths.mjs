@@ -6,7 +6,8 @@
  * `runs/` are the evidence half of the study: `worker-task-*.md` is the verbatim
  * text the driver sent, `worker-usage-*.json` is Gemini's own token receipt.
  * They are what makes a published claim checkable rather than merely asserted,
- * so they ship with the extracted self-runnable repo (Ravi, 2026-07-28 17:08:
+ * so they ship with the extracted self-runnable repo (the deliverable owner,
+ * 2026-07-28 17:08:
  * "We need to share the specific self-runnable source code ... with Google").
  *
  * Those files were written by processes running on a laptop, so they carry that

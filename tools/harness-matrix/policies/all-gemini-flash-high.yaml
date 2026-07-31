@@ -1,5 +1,14 @@
-# all-gemini-flash-high — the SECOND policy (DESIGN §2.2): Gemini 3.5 Flash
+# all-gemini-flash-high — the SECOND policy (DESIGN §2.2): a Gemini Flash model
 # at High thinking on every phase.
+#
+# WHICH Flash changed on 2026-07-31 (gemini-3.5-flash → gemini-3.5-flash-lite);
+# the reasoning is on the worker leaf below. The POLICY NAME and the cell id
+# `flash-high` did not change, and deliberately so: both are recorded verbatim
+# in every manifest, audit record and dashboard export this matrix has ever
+# produced, so renaming them to match the new model would break the historical
+# series in exchange for cosmetics. Read "flash" here as the tier, not the pin —
+# the pin is always the `model_name` below, which is the only place that ever
+# decided what actually ran.
 #
 # High, not Low/Medium, because (a) SWE-bench Pro is hard and G4 already
 # showed Flash needing Opus rescues at low effort; (b) on the agy seat the
@@ -14,10 +23,10 @@
 # it should call Gemini + Antigravity together either using Skills or
 # CLI". Claude Code's driver seat is welded to Anthropic (`claude` has no
 # non-Anthropic --model), so this cell is inherently TWO-model: the pinned
-# Opus 4.6 driver orchestrates and a provisioned Skill delegates all
+# Opus driver orchestrates and a provisioned Skill delegates all
 # substantive work to Gemini through the Antigravity SDK (`gemini_worker.py`,
-# pip google-antigravity → Vertex). MECHANISM CHANGED 2026-07-23: Teja parked
-# the agy CLI (2026-07-21), so the worker now uses the SDK, not `agy -p`. The
+# pip google-antigravity → Vertex). MECHANISM CHANGED 2026-07-23: the team
+# parked the agy CLI (2026-07-21), so the worker now uses the SDK, not `agy -p`. The
 # SDK is the right tool here precisely because it is Gemini-only auth and
 # Gemini is the verified-working path — it returns real UsageMetadata (token
 # counts) that the CLI never printed, so this cell is no longer a $0/no-numbers
@@ -44,8 +53,10 @@
 # that reaches a second vendor, and it did it through the Antigravity SDK
 # against Vertex without a single character in the policy saying so. Reading the
 # entries below top to bottom now answers "what ran, through what, against
-# what": Opus 4.6 through the built-in Anthropic lane, Gemini 3.5 Flash through
-# the Antigravity SDK against Vertex in asia-south1.
+# what": Opus 4.8 through the built-in Anthropic lane, Gemini 3.5 Flash-Lite
+# through the Antigravity SDK against Vertex. (Both pins moved on 2026-07-31 —
+# the driver to 4.8 and the worker to Flash-Lite on `global`; the entries below
+# are the authority, this paragraph is only describing their shape.)
 #
 # The cell id `flash-high` is UNCHANGED, because it is the `modelId` every
 # recorded manifest, audit record and dashboard export already carries.
@@ -62,13 +73,21 @@ models:
     composition: delegated
     runtime: claude-code
     driver: opus-anthropic
-    worker: flash-35-agsdk-vertex
+    worker: flash-lite-35-agsdk-vertex
 
   # ---- driver leaf --------------------------------------------------------
   - id: opus-anthropic
     adapter: builtin-anthropic        # the `claude` CLI talks to Anthropic itself
     api: anthropic
-    model_name: claude-opus-4-6       # same pin as all-opus: agy's Claude ceiling
+    # DRIVER RE-PINNED 2026-07-31: claude-opus-4-6 → claude-opus-4-8, in the
+    # same commit as all-opus and opus48-plus-lite. The three CURRENT cells now
+    # share one driver generation so that the only thing differing between this
+    # policy and the anchor is the delegation, and the only thing differing
+    # between it and opus48-plus-lite is the tiering. The full rationale — and
+    # why the two historical columns deliberately stay on 4.6 — is at the driver
+    # leaf in all-opus.yaml. "Same pin as all-opus" was true before and is still
+    # true; only the value moved.
+    model_name: claude-opus-4-8       # same pin as all-opus (moves with it)
     reasoning:
       effort: high                    # was `thinking.claude-code`; --effort high
     # No `pricing:` — composition member, priced from real receipts (all-opus.yaml).
@@ -78,24 +97,54 @@ models:
   # worker was the bare string `gemini-3.5-flash` and everything else about how
   # it was reached lived in runtimes.mjs. All three facts below were true of
   # every recorded run and none of them were in the policy.
-  - id: flash-35-agsdk-vertex
+  - id: flash-lite-35-agsdk-vertex
     # Named model-adapter-api. Gemini is reachable through more than one
     # adapter and more than one API, and the same model over a different cable
     # is a different cell — so the id carries all three parts and each
     # combination gets its own entry rather than being implied by code.
     adapter: antigravity-sdk          # gemini_worker.py → pip google-antigravity
     api: vertex                       # the SDK's only doorway; validated at load
-    model_name: gemini-3.5-flash      # SDK model id passed to gemini_worker.py --model
-    region: asia-south1               # pinned, and the loader REQUIRES it for vertex:
-                                      # an unpinned region falls back to the shared
-                                      # `global` endpoint, which starved this project
-                                      # for 3+ hours on 2026-07-16 and killed two Pro
-                                      # runs at ~$1.78 each mid-patch.
+    # WORKER MODEL CHANGED 2026-07-31: gemini-3.5-flash → gemini-3.5-flash-lite.
+    # Not a tuning decision. The instruction for the Google-facing live runs
+    # was "Only 3.5 Flash-Lite", with gemini-3.6-flash held as a fallback used
+    # only if Flash-Lite cannot produce economical, fully runnable code. Leaving
+    # the old pin here would have meant shipping a policy that contradicts the
+    # instruction the runs were commissioned under, so this cell either changed
+    # or had to be deleted — and deleting it would cost the matrix its only
+    # fully-delegated column, the one that answers "how far does Gemini get if
+    # it does everything". It changed.
+    model_name: gemini-3.5-flash-lite # SDK model id passed to gemini_worker.py --model
+    # REGION CHANGED 2026-07-31: asia-south1 → global, and this one is forced.
+    # Probed before the edit: gemini-3.5-flash-lite returns 404 "Publisher model
+    # ... was not found or your project does not have access to it" in BOTH
+    # asia-south1 and us-central1, and resolves normally on global. The same
+    # probe confirmed gemini-3.5-flash still works in asia-south1, so this is a
+    # property of the model and not of the project or the region config.
+    #
+    # This gives back the protection the old pin bought. asia-south1 was pinned
+    # because the shared global endpoint starved this project for 3+ hours on
+    # 2026-07-16 and killed two Pro runs at ~$1.78 each mid-patch, and this cell
+    # is now exposed to exactly that again. There is no mitigation while the
+    # model is global-only: the run is either served or it fails fast on quota.
+    # The one compensation is arithmetic — the Vertex non-global surcharge is
+    # +10% on every token class for Gemini 3+ models and `global` does not take
+    # it, so this worker bills a flat 0.30 / 2.50 / 0.03 per 1M. getVertexRates()
+    # derives that from the region string below; nothing is told twice.
+    region: global                    # the loader still REQUIRES this field for
+                                      # vertex — `global` is an explicit pin, not
+                                      # the unpinned fallback it guards against.
     reasoning:
       tier: high                      # was `worker_thinking: HIGH`; the resolver
                                       # upper-cases it back to the SDK's
-                                      # ThinkingLevel.HIGH (the only probe-verified
-                                      # level) when it builds the binding.
+                                      # ThinkingLevel.HIGH when it builds the
+                                      # binding. RE-VERIFIED FOR FLASH-LITE
+                                      # 2026-07-31 rather than assumed to carry
+                                      # over: Vertex hard-rejects thinking_level
+                                      # on 2.5 Flash with a 400, and finding that
+                                      # out cost a full paid run. Flash-Lite
+                                      # accepts ThinkingLevel.HIGH — the probe
+                                      # returned thoughts_token_count 36 and
+                                      # headless tool use worked.
     # No `pricing:` — composition member. The worker's spend comes from the real
     # UsageMetadata in its worker_usage sidecars, never from a number typed here.
     #

@@ -13,7 +13,7 @@
  *                 `models[{id, adapter, api, model_name, pricing, …}]` +
  *                 `rules[]`. Says WHICH model AND how it is reached.
  *
- *   HARNESS       tools/harness-matrix/policies/*.yaml (4 files), loaded by
+ *   HARNESS       tools/harness-matrix/policies/*.yaml, loaded by
  *                 kinds/lib.mjs. `models[{id, bindings{}, thinking{}}]` +
  *                 `phases{}`. Says WHICH model. Says NOTHING about how it is
  *                 reached — the adapter and the API were hardcoded in
@@ -645,6 +645,28 @@ export function resolveHarnessStages(policy, { runtime, stages, overrides = {}, 
               // thinking_level outright on 2.5 Flash, so "no key" is a real and
               // load-bearing state rather than a missing value.
               ...(worker.reasoning?.tier ? { worker_thinking: String(worker.reasoning.tier).toUpperCase() } : {}),
+              // THE DECLARED REGION, CARRIED INTO THE BINDING (2026-07-31).
+              //
+              // It was already in `cable.worker.region` — but the cable is
+              // descriptive (it is what the manifest stamps and what
+              // getVertexRates() prices, including the +10% non-global
+              // surcharge) and nothing in runtimes.mjs reads it, so the worker
+              // process never learned where the policy said to call. It used
+              // GOOGLE_CLOUD_LOCATION and the sidecar wrote that same ambient
+              // value down, so a policy could declare `global` while every
+              // token was billed in asia-south1 with no artifact disagreeing.
+              // Putting it on the BINDING is what makes it executable: the
+              // binding is the object runPhase() hands to renderWorkerSkill(),
+              // which is the only path from a policy file to the worker's argv.
+              //
+              // Same omitted-not-nulled discipline as worker_thinking above,
+              // for the same reason: an absent key means "the policy did not
+              // say", which for an `api: anthropic` worker leaf is correct and
+              // must not be confused with a region of `null`. Vertex leaves
+              // always declare one — the loader rejects a vertex leaf without
+              // `region:` — see the `api === "vertex"` check in validateModel
+              // — so on the paths that matter this key is always present.
+              ...(worker.region ? { worker_region: worker.region } : {}),
             }
           : driver.model_name,
         thinking: driver.reasoning?.effort ?? null,

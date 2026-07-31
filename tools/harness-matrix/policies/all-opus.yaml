@@ -68,7 +68,7 @@
 # NO PRICING BLOCKS IN THIS FILE — and the validator permits that, narrowly. A
 # models[] entry reachable ONLY as a composition member may omit `pricing`; one
 # a rule names directly may not. That exemption exists for this exact case:
-# claude-opus-4-6 has no row in @harness/pricing, and the harness prices a
+# claude-opus-4-8 has no row in @harness/pricing, and the harness prices a
 # run from the driver's real cost receipts and the worker's real UsageMetadata
 # sidecars — never from the policy. Writing an invented price into a file to
 # satisfy a validator is precisely the failure the pricing-preflight rule exists
@@ -77,7 +77,7 @@
 # THE `antigravity:` BINDINGS ARE GONE, not converted. They read
 # `antigravity: "Claude Opus 4.6 (Thinking)"` with `thinking: product-internal`,
 # and had been inert since 2026-07-23, when the agy CLI runtime was removed from
-# runtimes.mjs (Teja parked the CLI 2026-07-21). Nothing reads them:
+# runtimes.mjs (the CLI was parked 2026-07-21). Nothing reads them:
 # run-harness.mjs validates --runtime against the RUNTIMES registry and exits
 # before a policy file is ever opened, and that registry has one entry. Carrying
 # a value no code path can reach is how a reader gets told something false about
@@ -129,7 +129,32 @@ models:
     # a replayed legacy run report the same cable rather than disagreeing.
     adapter: builtin-anthropic
     api: anthropic
-    model_name: claude-opus-4-6       # the pin — must not float (DESIGN §2.1)
+    # DRIVER RE-PINNED 2026-07-31: claude-opus-4-6 → claude-opus-4-8, together
+    # with all-gemini-flash-high and opus48-plus-lite in the same commit. The
+    # three CURRENT cells now share one driver generation; the two historical
+    # columns (all-gemini-25-flash-high, gemini35-plus-25-flash-high) stay on
+    # 4.6 because their shipped receipts and manifests record a 4.6 driver, and
+    # a frozen study column that disagrees with its own evidence is worse than
+    # one that is simply old.
+    #
+    # WHY ALL THREE HAD TO MOVE TOGETHER. opus48-plus-lite arrived pinned to 4.8
+    # (the pin for the hard work) while these two stayed on 4.6, which left
+    # the anchor a generation behind the cells it exists to anchor: every delta
+    # between all-gemini-flash-high and opus48-plus-lite carried a driver change
+    # as well as a tiering change, and all-opus could no longer baseline either
+    # of them. Moving one file would have fixed nothing — the property that
+    # matters is that the three are IDENTICAL on this axis, not which value they
+    # hold. The all-opus vs all-gemini-flash-high comparison the previous pin was
+    # protecting survives intact: both sides moved, so it is re-based, not
+    # confounded.
+    #
+    # No pricing consequence. The driver is priced from the CLI's own cost
+    # receipts, never from a rate row (see the NO PRICING BLOCKS note in the
+    # header), so this re-pin needs no @harness/pricing entry and does not
+    # trigger the pricing-preflight gate. It does re-base the historical
+    # "$3–4 per SDLC pass" figure, which is quoted as a ceiling for other
+    # reasons already.
+    model_name: claude-opus-4-8       # the pin — must not float (DESIGN §2.1)
     reasoning:
       effort: high                    # was `thinking.claude-code`; passed as --effort high
     # No `pricing:` — reachable only as a composition member. See header.
