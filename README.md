@@ -41,7 +41,7 @@ Flash handles volume stages (execute + repair rounds). See
 ## Quickstart
 
 ```bash
-git clone <this-repo>
+git clone https://github.com/tl-ai-labs/claude-code-harness-antigravity-sdk.git
 cd claude-code-harness-antigravity-sdk
 node tools/setup.mjs
 ```
@@ -176,6 +176,16 @@ reports that as unrecorded rather than filling in a guess.
 - [examples/kudos-wall/](examples/kudos-wall/) — the SDLC reference workload
 - [examples/uptime-ping/](examples/uptime-ping/) — a small SDLC smoke workload
 - [examples/swe-bench-pro/](examples/swe-bench-pro/) — the SWE-bench Pro workload
+
+Two more sit next to the code they describe, for when you are about to change
+a file rather than run one:
+
+- [tools/harness-matrix/README.md](tools/harness-matrix/README.md) — the
+  runner's file-by-file map, what each test defends, and the honesty rules
+  baked into the numbers
+- [tools/harness-matrix/sdk-probe/README.md](tools/harness-matrix/sdk-probe/README.md)
+  — the reproducible Antigravity SDK probes: what the SDK does, what it does
+  not, and the one defect that blocks a Claude worker
 
 ## For Google engineers, customer engineers, and everyone downstream
 

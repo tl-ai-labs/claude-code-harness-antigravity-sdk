@@ -81,7 +81,8 @@ brief file:
 When you edit the brief, re-compute the hash:
 
 ```bash
-sha256sum examples/<your-task-id>/brief.md
+sha256sum examples/<your-task-id>/brief.md      # Linux
+shasum -a 256 examples/<your-task-id>/brief.md  # macOS — ships no sha256sum
 ```
 
 The offline test suite (`tasks.test.mjs`) asserts the hash matches on

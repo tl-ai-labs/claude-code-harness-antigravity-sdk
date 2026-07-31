@@ -13,6 +13,14 @@ The setup wizard at [tools/setup.mjs](../tools/setup.mjs) automates most of
 this. Reading this file lets you set the same things up by hand, and
 troubleshoot when the wizard fails.
 
+**Platforms.** Developed and run on macOS (Apple silicon); the offline profile
+and both live profiles are plain Node, Python and Docker and are expected to
+work unchanged on Linux. Two places assume a Unix shell and are called out
+where they appear: `sha256sum` (macOS spells it `shasum -a 256`) and the
+Homebrew `pyexpat` workaround, which is macOS-only and harmless to skip
+elsewhere. Windows is untested — use WSL2, where the Linux instructions apply
+as written.
+
 ### What the wizard will and will not do to your machine
 
 **It builds inside this clone. It never changes your machine.** That is the
@@ -43,10 +51,18 @@ something you run yourself, once, before re-running the wizard.
 ## Offline profile
 
 ```bash
-git clone <this-repo>
+git clone https://github.com/tl-ai-labs/claude-code-harness-antigravity-sdk.git
 cd claude-code-harness-antigravity-sdk
+
+# pnpm, if you do not already have it — Node ships corepack, so no install:
+corepack enable && corepack prepare pnpm@11.8.0 --activate
+
 pnpm install && pnpm build && pnpm test
 ```
+
+The repository pins its package manager in `package.json`
+(`packageManager: pnpm@11.8.0`), so `corepack` fetches that exact version and
+you do not need a global pnpm. `npm install -g pnpm` works too.
 
 The suite takes under 10 seconds and touches no network. **Zero failures is
 the bar, not zero skips** — a handful of suites assert against recorded runs

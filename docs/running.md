@@ -126,7 +126,8 @@ Copy `examples/kudos-wall/` to `examples/<your-task-id>/`, replace
 then edit `task.json` — update `task_id` and re-pin `brief_sha256`:
 
 ```bash
-sha256sum examples/<your-task-id>/brief.md
+sha256sum examples/<your-task-id>/brief.md      # Linux
+shasum -a 256 examples/<your-task-id>/brief.md  # macOS — ships no sha256sum
 ```
 
 Then point `--task-dir` at the new directory:

@@ -39,4 +39,8 @@ The runner and its supporting scripts (`tools/harness-matrix/*.mjs`, `tools/setu
 
 The supporting packages (`packages/pricing/`, `packages/policy/`, `packages/swe-bench/`) are TypeScript with a `pnpm -r build` step. Follow the existing conventions in each package.
 
-The SDK worker (`tools/harness-matrix/gemini_worker.py`) and the probes (`tools/harness-matrix/sdk-probe/`) are Python. Keep them Python-3.11-compatible and dependency-light — the only pip dependency the worker needs is `google-antigravity`.
+The SDK worker (`tools/harness-matrix/gemini_worker.py`) and the probes (`tools/harness-matrix/sdk-probe/`) are Python. Keep them dependency-light: the only pip dependency the worker needs is `google-antigravity`. Keep them **Python-3.10-compatible** — 3.10 is the floor [docs/setup.md](docs/setup.md) states and the floor `google-antigravity` itself requires, so 3.11-only syntax or a 3.11-only stdlib call would break a reader who set up exactly what the docs asked for.
+
+## Documentation
+
+Every change ships with the documentation it invalidates, in the same commit — a stale sentence in a repository someone else has to set up from scratch costs more than a stale line of code, because they have no way to tell it is stale. If you move or rename a file, `tools/docs-links.test.mjs` fails the suite on any relative Markdown link left pointing at it, in any `.md` file in the tree. It is offline and free like everything else in `pnpm test`.

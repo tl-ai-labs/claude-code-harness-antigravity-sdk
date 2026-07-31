@@ -52,7 +52,8 @@ Its rule table names the split verbatim:
 - **Volume stages** — execute, plus verify's repair rounds → cost-
   efficient worker (Gemini 2.5 Flash).
 
-The rationale, borrowed from the console's `opus-plus-flash.yaml`:
+The rationale, stage by stage — the same split an SDLC orchestrator would
+make, expressed here as policy rules rather than as code:
 
 - `requirements_analysis` → premium ("Judgment-heavy, low volume")
 - `architecture_design` → premium ("Foundational, decision-bearing")
