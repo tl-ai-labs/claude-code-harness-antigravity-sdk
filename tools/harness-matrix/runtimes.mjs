@@ -86,6 +86,33 @@ export const isDelegated = (binding) =>
   typeof binding === "object" && binding !== null;
 
 /**
+ * The $0 project-id check for a delegated cell, extracted so it is testable
+ * without a venv or ADC on disk (2026-07-31).
+ *
+ * WHY THIS EXISTS: the worker (`gemini_worker.py`) refuses to start without
+ * GOOGLE_CLOUD_PROJECT — that fail-fast shipped with the de-hardcoding pass —
+ * but the JS preflight only checked venv, import, and the ADC file. So a
+ * launch that had ADC but no project export sailed through preflight, the run
+ * started, and the worker's own fail-fast fired MID-RUN on the first
+ * delegation: the driver then spent paid turns diagnosing the environment
+ * instead of doing the task. That is exactly what happened on the 2026-07-31
+ * SWE-bench Pro validation run (NodeBB): delegation 1 died on this, and the
+ * driver recovered by probing `gcloud config get-value project` itself. A
+ * preflight that enforces less than the process it launches is not a
+ * preflight — this closes the gap at $0, before anything is spent.
+ *
+ * Returns the error message to throw, or null when the env is fine. Pure
+ * function of the env object so the test can exercise both sides directly.
+ */
+export const workerProjectError = (env) =>
+  env.GOOGLE_CLOUD_PROJECT && env.GOOGLE_CLOUD_PROJECT.trim() !== ""
+    ? null
+    : "claude-code preflight (delegated cell): GOOGLE_CLOUD_PROJECT is not set — " +
+      "the Gemini worker refuses to start without it, and that failure would " +
+      "otherwise surface mid-run on the first delegation, at driver expense. " +
+      "Fix: export GOOGLE_CLOUD_PROJECT=your-gcp-project-id";
+
+/**
  * KIND VOCABULARY for the delegated Skill preamble (2026-07-25).
  *
  * The Skill's *rules* are structural and kind-agnostic — delegate first, never
@@ -939,7 +966,9 @@ export const RUNTIMES = {
      * probe to validate the driver string offline — a bad driver surfaces on
      * the first phase call, bounded by the phase budget.)
      * A DELEGATED binding additionally needs the Gemini worker: the SDK venv
-     * must exist and import, and Vertex ADC must be present. All three checks
+     * must exist and import, Vertex ADC must be present, and
+     * GOOGLE_CLOUD_PROJECT must be set (the worker's own fail-fast demands it;
+     * see workerProjectError for the run that proved the gap). All four checks
      * stay $0 — no model is called.
      */
     preflight({ binding }) {
@@ -971,6 +1000,8 @@ export const RUNTIMES = {
             "run `gcloud auth application-default login`, then set GOOGLE_CLOUD_PROJECT " +
             "to your own Google Cloud project");
         }
+        const projErr = workerProjectError(process.env);
+        if (projErr) throw new Error(projErr);
       }
     },
 

@@ -229,6 +229,7 @@ read that page before you clone.
 | `claude-code preflight: set CLAUDE_CODE_OAUTH_TOKEN (Max) or ANTHROPIC_API_KEY` | Neither driver credential is set | Export one; check both are not simultaneously set |
 | `worker preflight: cannot import google.antigravity` | Venv missing or on wrong Python | Rebuild the venv per §2.a, or set `GEMINI_WORKER_PYTHON` |
 | `worker preflight: no Application Default Credentials` | ADC never ran or expired | `gcloud auth application-default login` |
+| `preflight (delegated cell): GOOGLE_CLOUD_PROJECT is not set` | The project export is missing (ADC alone is not enough) | `export GOOGLE_CLOUD_PROJECT=your-gcp-project-id` |
 | `PERMISSION_DENIED: Vertex AI API has not been used in project X` | Project id is wrong, or the API is disabled | Set `GOOGLE_CLOUD_PROJECT` to a project where you have enabled Vertex AI |
 | `DEADLINE_EXCEEDED` or quota errors from Vertex | Region has no quota for the model | Pin `GOOGLE_CLOUD_LOCATION` to a region where you have quota |
 | `docker: Cannot connect to the Docker daemon` | Docker Desktop not running | Start Docker |

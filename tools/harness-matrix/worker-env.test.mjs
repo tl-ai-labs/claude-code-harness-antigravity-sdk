@@ -142,3 +142,42 @@ test("the offline probe never names a real project, and never overwrites one", (
   assert.doesNotMatch(src, /ai-studies-console/);
   assert.match(src, /setdefault\(\s*["']GOOGLE_CLOUD_PROJECT["']\s*,\s*["']example-project-id["']/);
 });
+
+// ---------------------------------------------------------------------------
+// The JS-side preflight holds the same contract (2026-07-31, post-P4b).
+//
+// The Python fail-fast above is necessary but arrives too late to be cheap:
+// it fires inside the run, on the first delegation, after the driver has
+// already spent paid turns. The 2026-07-31 SWE-bench Pro validation run
+// proved it — the launch environment omitted GOOGLE_CLOUD_PROJECT, preflight
+// passed (venv, import and ADC were all fine), and delegation 1 died on the
+// worker's own guard; the driver then burned turns diagnosing the environment
+// and exporting the variable itself. workerProjectError() is the $0 preflight
+// twin of that guard: same contract, enforced before anything is spent. These
+// tests import it directly — it is a pure function of the env object, which
+// is precisely why it was extracted from preflight() instead of inlined.
+// ---------------------------------------------------------------------------
+
+test("preflight refuses a delegated cell without GOOGLE_CLOUD_PROJECT", async () => {
+  const { workerProjectError } = await import("./runtimes.mjs");
+  const msg = workerProjectError({});
+  assert.ok(msg, "an unset project must produce an error, not null");
+  assert.match(msg, /GOOGLE_CLOUD_PROJECT/,
+    "the message must name the variable the reader has to set");
+  assert.match(msg, /export GOOGLE_CLOUD_PROJECT=/,
+    "the message must carry the literal fix, like every other preflight error");
+});
+
+test("preflight treats a whitespace-only project id as unset", async () => {
+  // `GOOGLE_CLOUD_PROJECT="" node run-harness.mjs …` is the same mistake in a
+  // costume: truthy enough to skip a naive `!env.X` check, still refused by
+  // Vertex. The trim is the difference between catching it at $0 and mid-run.
+  const { workerProjectError } = await import("./runtimes.mjs");
+  assert.ok(workerProjectError({ GOOGLE_CLOUD_PROJECT: "   " }));
+  assert.ok(workerProjectError({ GOOGLE_CLOUD_PROJECT: "" }));
+});
+
+test("preflight passes a delegated cell when the project id is set", async () => {
+  const { workerProjectError } = await import("./runtimes.mjs");
+  assert.equal(workerProjectError({ GOOGLE_CLOUD_PROJECT: "example-project-id" }), null);
+});

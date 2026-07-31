@@ -96,7 +96,10 @@ would print (only `runtime` and `started` differ).
 
 How deep the runtime preflight goes depends on the policy: a delegated
 binding additionally checks the worker venv, `import google.antigravity`,
-and Vertex ADC. Both kinds pick that binding with `preflightBinding()` —
+Vertex ADC, and that `GOOGLE_CLOUD_PROJECT` is set (the worker's own
+fail-fast demands it, so a preflight that skipped it would let the run
+start and die on the first delegation, at driver expense). Both kinds
+pick that binding with `preflightBinding()` —
 the **first delegated stage**, not the first stage — so a tiered policy
 whose early stages are solo still has its worker leg checked at `$0`
 rather than at the first delegated stage, after spend.
