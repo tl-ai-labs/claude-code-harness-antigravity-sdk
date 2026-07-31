@@ -7,14 +7,15 @@ OpenAI-compatible endpoint accepts Antigravity's request body verbatim -- 18
 tool definitions, tool_choice:auto, and a ~11.5k-token identity preamble
 written by Google for a different provider.
 
-THIS SPENDS REAL MONEY on the ANTHROPIC_API_KEY in ai-studies-console/.env.
+THIS SPENDS REAL MONEY, on whatever ANTHROPIC_API_KEY is in your environment --
+a METERED API key, not a Max seat (the OAuth token cannot reach this endpoint).
 The prompt floor is ~11.5k tokens per turn, so budget roughly $0.06/turn on
 Opus 4.6 input pricing. The breaker below is deliberately tight (SDK defect
 #5: 1,903 unbounded retries observed) -- raise it only while watching.
 
 Run:
   cd tools/harness-matrix/sdk-probe
-  export ANTHROPIC_API_KEY=$(grep -m1 '^ANTHROPIC_API_KEY=' ../../../.env | cut -d= -f2-)
+  export ANTHROPIC_API_KEY=sk-ant-...
   DYLD_LIBRARY_PATH=/opt/homebrew/opt/expat/lib <venv>/bin/python test_proxy_live.py
 """
 

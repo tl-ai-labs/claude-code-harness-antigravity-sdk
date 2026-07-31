@@ -28,8 +28,11 @@
 #   gemini-2.5-flash @ asia-south1  → LIVE
 #   gemini-2.5-pro   @ global       → LIVE   (global ONLY — not asia-south1)
 #
-# 3.5 Pro is not entitled to the ai-studies-console project in any region
-# tried, so the intended cheap-vs-premium axis is not runnable today. The two
+# 3.5 Pro was not entitled to the Google Cloud project these probes ran on
+# (ai-studies-console — ours) in any region tried. Entitlement is per project,
+# so probe your own before assuming this axis is unavailable to you; on the day
+# this policy was written the intended cheap-vs-premium axis was not runnable
+# and that is what the choice below is reacting to. The two
 # remaining candidates were 2.5 Flash @ asia-south1 and 2.5 Pro @ global.
 # 2.5 Flash wins on study hygiene: 2.5 Pro would change the model AND the
 # endpoint in the same column, making any delta un-attributable, and it would

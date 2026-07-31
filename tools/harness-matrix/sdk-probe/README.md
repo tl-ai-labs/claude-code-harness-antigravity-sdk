@@ -38,14 +38,16 @@ export DYLD_LIBRARY_PATH=/opt/homebrew/opt/expat/lib
   --python ./sdkprobe/bin/python install google-antigravity
 
 ./sdkprobe/bin/python probe_offline.py
-./sdkprobe/bin/python probe_vertex.py        # spends money (Vertex, our project)
+./sdkprobe/bin/python probe_vertex.py        # spends money (Vertex, YOUR project)
 ./sdkprobe/bin/python probe_openai_shape.py
 ./sdkprobe/bin/python test_proxy_offline.py   # $0, needs any ANTHROPIC_API_KEY value
 ./sdkprobe/bin/python test_proxy_live.py      # spends money (real Anthropic)
 ```
 
-`probe_vertex.py` runs on **our paid** `ai-studies-console` project in
-`asia-south1` via ADC — no agy seat, no free tier. It is cheap but not free.
+`probe_vertex.py` runs against **the paid Google Cloud project you name in**
+`GOOGLE_CLOUD_PROJECT`, in `GOOGLE_CLOUD_LOCATION` (default `asia-south1`), via
+ADC — no agy seat, no free tier. It refuses to start with the project unset
+rather than guess one. It is cheap but not free.
 
 `probe_managed_agent.py` needs **none** of the setup above — it is stdlib only
 and deliberately so, since its whole point is that anyone can re-run it in one

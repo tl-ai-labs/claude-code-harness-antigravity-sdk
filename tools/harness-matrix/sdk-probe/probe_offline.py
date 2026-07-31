@@ -87,7 +87,12 @@ print("  -> thinking knob on the OpenAI-compat path?",
       "YES" if any("think" in p for p in sig.parameters) else "NO")
 
 head("5. VertexEndpoint env pickup")
-os.environ.setdefault("GOOGLE_CLOUD_PROJECT", "ai-studies-console")
+# A placeholder, not a real project: this probe never authenticates or calls
+# out, it only checks that VertexEndpoint() reads its config from the
+# environment. Naming an actual Google Cloud project here would be a real
+# identifier sitting in a file that never talks to it — confusing at best, and
+# the sort of thing that gets copied into something that DOES talk to it.
+os.environ.setdefault("GOOGLE_CLOUD_PROJECT", "example-project-id")
 os.environ.setdefault("GOOGLE_CLOUD_LOCATION", "asia-south1")
 v = types.VertexEndpoint()
 print(f"  VertexEndpoint() -> project={v.project!r} location={v.location!r}")

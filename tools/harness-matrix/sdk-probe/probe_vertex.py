@@ -18,14 +18,31 @@ import pathlib
 import sys
 import tempfile
 
-import google.antigravity as ag
-from google.antigravity import types
-from google.antigravity.hooks import policy
+# This probe spends real money on Vertex, so it must spend YOURS. It used to
+# hardcode the Google Cloud project it was written against, which meant running
+# it unchanged either failed with a permission error that named a project the
+# reader had never heard of, or — with the wrong access — billed one. Read the
+# project from the environment and refuse to guess.
+#
+# Ahead of the SDK import on purpose (same reasoning as gemini_worker.py): a
+# forgotten export is the likelier mistake, and its message is the one worth
+# showing first.
+PROJECT = os.environ.get("GOOGLE_CLOUD_PROJECT")
+if not PROJECT:
+    sys.exit(
+        "probe_vertex: set GOOGLE_CLOUD_PROJECT to your own Google Cloud project.\n"
+        "  export GOOGLE_CLOUD_PROJECT=your-gcp-project-id\n"
+        "  gcloud auth application-default login\n"
+        "  This probe makes a real, billable Vertex call."
+    )
+LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION", "asia-south1")
 
-os.environ["GOOGLE_CLOUD_PROJECT"] = "ai-studies-console"
-os.environ["GOOGLE_CLOUD_LOCATION"] = "asia-south1"
+os.environ["GOOGLE_CLOUD_PROJECT"] = PROJECT
+os.environ["GOOGLE_CLOUD_LOCATION"] = LOCATION
 
-PROJECT, LOCATION = "ai-studies-console", "asia-south1"
+import google.antigravity as ag  # noqa: E402  (see the project check above)
+from google.antigravity import types  # noqa: E402
+from google.antigravity.hooks import policy  # noqa: E402
 
 
 async def maybe(v):

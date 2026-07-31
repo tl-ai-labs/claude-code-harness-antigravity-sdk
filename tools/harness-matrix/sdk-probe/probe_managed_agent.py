@@ -26,8 +26,8 @@ none of that: it is urllib + a gcloud token, so it runs on /usr/bin/python3
 at Google reading our report — can re-run it in one command without believing
 anything we say about our environment first.
 
-WHAT WE LEARNED RUNNING IT (2026-07-21, project ai-studies-console)
--------------------------------------------------------------------
+WHAT WE LEARNED RUNNING IT (2026-07-21, on our own Google Cloud project)
+------------------------------------------------------------------------
   1. First POST ever made:  400 "Resource setup has just started."
      -> the API provisions per-project resources on first touch. This is a
         transient state, not a permission failure. Re-run.
@@ -111,21 +111,34 @@ USAGE
 
 --smoke is gated behind an explicit flag and prints a cost warning, because
 unlike everything else in this file it actually schedules an agent in Google's
-sandbox and is billed to ai-studies-console.
+sandbox and is billed to whatever project GOOGLE_CLOUD_PROJECT names.
 """
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import urllib.error
 import urllib.request
 
+# No default project. This file is read and re-run by people outside the team —
+# that is its entire purpose — so a hardcoded project ID would give every one of
+# them a 403 naming a project they have no relationship with, and would tell any
+# reader who skimmed it that the probe is not really re-runnable.
+PROJECT = os.environ.get("GOOGLE_CLOUD_PROJECT")
+if not PROJECT:
+    sys.exit(
+        "probe_managed_agent: set GOOGLE_CLOUD_PROJECT to your own Google Cloud project.\n"
+        "  export GOOGLE_CLOUD_PROJECT=your-gcp-project-id\n"
+        "  gcloud auth application-default login\n"
+        "  Managed-agent sessions run in a Google-hosted sandbox billed to that project."
+    )
+
 # Only `global` is supported for interactions on the Vertex path — a regional
 # location (asia-south1, which is what our Gemini policy pins per the
 # vertex-gemini-region-quota rule) returns a routing error, not a quota error.
 # This is a different axis from the Gemini region pin; do not "fix" it to match.
-PROJECT = "ai-studies-console"
 LOCATION = "global"
 BASE = f"https://aiplatform.googleapis.com/v1beta1/projects/{PROJECT}/locations/{LOCATION}"
 

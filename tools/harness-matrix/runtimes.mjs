@@ -949,7 +949,8 @@ export const RUNTIMES = {
           join(homedir(), ".config", "gcloud", "application_default_credentials.json");
         if (!existsSync(adc)) {
           throw new Error("claude-code preflight (delegated cell): no ADC for Vertex — " +
-            "run `gcloud auth application-default login` (project ai-studies-console)");
+            "run `gcloud auth application-default login`, then set GOOGLE_CLOUD_PROJECT " +
+            "to your own Google Cloud project");
         }
       }
     },

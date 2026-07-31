@@ -43,8 +43,11 @@ downstream against verified Vertex rates (pricing-preflight discipline), never a
 rate hardcoded in the worker.
 
 Runtime env (see sdk-probe/README.md): the `google-antigravity` venv
-(Python >= 3.10) and, on this Mac, DYLD_LIBRARY_PATH=/opt/homebrew/opt/expat/lib.
-ADC on the paid ai-studies-console project, region asia-south1.
+(Python >= 3.10) and, on macOS with a Homebrew Python, sometimes
+DYLD_LIBRARY_PATH=/opt/homebrew/opt/expat/lib. Vertex needs Application Default
+Credentials on a paid Google Cloud project of YOUR OWN, named by
+GOOGLE_CLOUD_PROJECT — there is no default and the worker refuses to start
+without it. Region defaults to asia-south1 (see the note on the constants below).
 """
 from __future__ import annotations
 
@@ -55,9 +58,43 @@ import json
 import os
 import sys
 
-import google.antigravity as ag
-from google.antigravity import types
-from google.antigravity.hooks import policy
+# PROJECT HAS NO DEFAULT, ON PURPOSE.
+#
+# It used to fall back to the Google Cloud project these runs were originally
+# developed against. That is a defensible convenience in a private repository
+# and a bug in a published one: a reader who forgot the export would not get an
+# error, they would get somebody else's project ID sent to Vertex, and then a
+# permission failure whose message points nowhere near the actual mistake. Worse,
+# if they DID happen to hold access, the run would quietly bill an account that
+# is not theirs. An unset project is a configuration error and is reported as
+# one, here, before a single token is spent.
+#
+# LOCATION does keep a default, and the asymmetry is deliberate: a region is a
+# performance/quota choice with a known-good value, not an identity. The pin
+# matters (the global Gemini endpoint was quota-starved on 2026-07-16, so the
+# policies pin a regional endpoint) and any region a reader picks is still
+# their own. Env wins in both cases so the harness can retarget without edits.
+#
+# CHECKED BEFORE THE SDK IMPORT, deliberately breaking the usual import
+# ordering: a missing export is the likelier mistake and its message is the
+# more actionable one, so it should not be masked by an ImportError from a venv
+# the reader has not built yet. It also lets the check be unit-tested with any
+# stock Python, without the worker venv (see worker-env.test.mjs).
+PROJECT = os.environ.get("GOOGLE_CLOUD_PROJECT")
+if not PROJECT:
+    sys.exit(
+        "gemini_worker: GOOGLE_CLOUD_PROJECT is not set.\n"
+        "  This worker calls Gemini on Vertex AI and needs YOUR Google Cloud project.\n"
+        "  export GOOGLE_CLOUD_PROJECT=your-gcp-project-id\n"
+        "  (then: gcloud auth application-default login)"
+    )
+LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION", "asia-south1")
+os.environ["GOOGLE_CLOUD_PROJECT"] = PROJECT
+os.environ["GOOGLE_CLOUD_LOCATION"] = LOCATION
+
+import google.antigravity as ag  # noqa: E402  (see the project check above)
+from google.antigravity import types  # noqa: E402
+from google.antigravity.hooks import policy  # noqa: E402
 
 # SDK IDENTITY, recorded into every sidecar (added 2026-07-26).
 #
@@ -79,14 +116,6 @@ try:
 except Exception:  # not installed as a distribution — record it as unknown
     SDK_VERSION = "unknown"
 SDK_NAME = "google-antigravity"
-
-# Region/project default to the same paid target the probe verified. Env wins so
-# the harness can retarget without editing code; the region pin matters (the
-# global Gemini endpoint was quota-starved 2026-07-16 → policy pins asia-south1).
-PROJECT = os.environ.get("GOOGLE_CLOUD_PROJECT", "ai-studies-console")
-LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION", "asia-south1")
-os.environ["GOOGLE_CLOUD_PROJECT"] = PROJECT
-os.environ["GOOGLE_CLOUD_LOCATION"] = LOCATION
 
 
 async def _maybe(v):
