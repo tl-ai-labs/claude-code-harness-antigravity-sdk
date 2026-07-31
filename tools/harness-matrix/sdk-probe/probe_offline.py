@@ -12,6 +12,7 @@ Answers, against the INSTALLED 0.1.7 wheel (not the hand-extracted copy):
 import glob
 import os
 import pathlib
+import re
 import subprocess
 
 import google.antigravity as ag
@@ -41,9 +42,17 @@ print(f"  endpoint classes exported : {endpoints}")
 
 head("2. policy.allow_all() — headless autonomy")
 print(f"  policy exports : {[n for n in dir(policy) if not n.startswith('_')]}")
+# NOTE ON SHAPE, because the two helpers do not agree and an earlier version
+# of this probe assumed they did: allow_all() returns ONE Policy object, while
+# confirm_run_command() returns a LIST of them. Calling len() on the first
+# raises TypeError, which read as "allow_all is broken" when nothing was
+# broken. Print what each actually is instead of assuming a common shape —
+# the config accepts either (it coerces a bare Policy into a list), and
+# gemini_worker.py passes the list form.
 try:
     aa = policy.allow_all()
-    print(f"  allow_all() -> OK, {len(aa)} policy object(s)")
+    shape = f"{len(aa)} policy object(s)" if hasattr(aa, "__len__") else f"one {type(aa).__name__}"
+    print(f"  allow_all() -> OK, {shape}: tool={aa.tool!r} decision={aa.decision}")
 except Exception as e:
     print(f"  allow_all() -> FAILED: {e!r}")
 try:
@@ -57,13 +66,31 @@ try:
     cfg = ag.LocalOpenAIAgentConfig(
         model="claude-opus-4-6",
         base_url="https://api.anthropic.com/v1",
-        policies=policy.allow_all(),
+        # The list form, matching how gemini_worker.py grants the real worker.
+        policies=[policy.allow_all()],
         workspaces=["/tmp"],
     )
     print("  construction -> OK (config object accepts it)")
     print(f"    model     = {cfg.model!r}")
     print(f"    base_url  = {cfg.base_url!r}")
-    print(f"    caps      = command_execution={cfg.capabilities.command_execution}")
+    # CapabilitiesConfig fields are read off the model rather than named
+    # literally: an earlier version of this probe printed a hardcoded
+    # `command_execution`, which 0.1.7 does not have, so the AttributeError
+    # was caught by the outer handler and reported as "construction FAILED"
+    # directly under the line saying construction succeeded. Ask the object
+    # what it has, and this stays truthful across SDK versions.
+    caps = cfg.capabilities
+    fields = list(getattr(type(caps), "model_fields", {})) or [
+        a for a in dir(caps) if not a.startswith("_")]
+    print(f"    caps      = {', '.join(f'{f}={getattr(caps, f, None)!r}' for f in fields)}")
+    # THE FLOOR YOU DID NOT SET. Passing one allow_all() yields FOUR policies:
+    # the SDK prepends three `workspace_only` DENY rules covering view_file,
+    # create_file and edit_file. Note what is NOT among them — run_command is
+    # granted by allow_all() and is not confined by the workspace predicate.
+    print(f"  policies after construction ({len(cfg.policies)}, from the 1 passed in):")
+    for p in cfg.policies:
+        print(f"    {p.name:15s} tool={p.tool:12s} {p.decision}"
+              f"{'  when=' + p.when.__name__ if p.when else ''}")
     print("  NOTE: construction proving nothing about the wire. Live test needed.")
 except Exception as e:
     print(f"  construction -> FAILED: {type(e).__name__}: {e}")
@@ -114,10 +141,46 @@ for b in bins:
         print(f"    strings failed: {e}")
         continue
     terms = ["MODEL_PROVIDER_ANTHROPIC", "API_PROVIDER_ANTHROPIC",
-             "ANTHROPIC_VERTEX", "MODEL_CLAUDE", "anthropic.com"]
+             "ANTHROPIC_VERTEX", "USE_ANTHROPIC_TOKEN_EFFICIENT_TOOLS_BETA",
+             "anthropic.com"]
     for t in terms:
         found = sorted({l.strip() for l in out.splitlines() if t in l})
-        print(f"    {t:26s} : {len(found)} match(es)")
+        print(f"    {t:40s} : {len(found)} match(es)")
         for f in found[:6]:
             print(f"        {f[:100]}")
+    # MODEL_CLAUDE_* is reported as EXTRACTED NAMES, not as matching lines.
+    # A Go binary's string table is one concatenated blob with no separators
+    # between entries, which defeats both obvious approaches:
+    #
+    #   by line   — one `strings` line can hold a dozen enum names, while other
+    #               lines contain the substring inside unrelated text. The
+    #               earlier line-based print reported "24 matches" whose first
+    #               three entries were shell-error and DevTools strings.
+    #   greedy    — `MODEL_CLAUDE_[A-Z0-9_]+` runs straight past the end of the
+    #               name into whatever identifier was laid down next, yielding
+    #               MODEL_CLAUDE_4_5_HAIKUMODEL_PLACEHOLDER_M100MODEL_… .
+    #
+    # So the pattern is bounded to the shape these names actually have —
+    # generation, family, optional release date, optional THINKING, optional
+    # sourcing suffix — which terminates on its own at the seam.
+    #
+    # The print carries its own completeness check. Every occurrence of the
+    # bare prefix should be consumed by one match; if a future SDK ships a
+    # name outside this shape, `matched` drops below `prefix occurrences` and
+    # the miss is visible instead of silent. Distinct is lower than matched
+    # because eight of these names are laid down twice in the table, once
+    # standalone and once inside a concatenated run. This list is the evidence
+    # for the ladder docs/antigravity-sdk.md cites.
+    claude_re = re.compile(
+        r"MODEL_CLAUDE_[0-9](?:_[0-9])?_(?:OPUS|SONNET|HAIKU)"
+        r"(?:_[0-9]{8})?(?:_THINKING)?"
+        r"(?:_OPEN_ROUTER_BYOK|_BYOK|_DATABRICKS)?")
+    matched = claude_re.findall(out)
+    names = sorted(set(matched))
+    occurrences = out.count("MODEL_CLAUDE_")
+    complete = "" if len(matched) == occurrences else "  <-- PATTERN MISSED SOME"
+    print(f"    {'MODEL_CLAUDE_* names':40s} : {len(names)} distinct, "
+          f"{len(matched)} matched of {occurrences} prefix occurrences{complete}")
+    for n in names:
+        print(f"        {n}")
 print("\nDONE (offline, $0)")

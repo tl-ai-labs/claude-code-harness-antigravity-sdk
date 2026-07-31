@@ -173,6 +173,7 @@ reports that as unrecorded rather than filling in a guess.
 - [docs/understanding-output.md](docs/understanding-output.md) — reading a run: manifest, evidence bundle, SDK receipts, lint verdict
 - [docs/brief-template.md](docs/brief-template.md) — the section layout the SDLC kind expects in a brief
 - [docs/swe-bench-pro.md](docs/swe-bench-pro.md) — the Scale evaluator setup, the pinned SHA, the disk budget
+- [docs/antigravity-sdk.md](docs/antigravity-sdk.md) — what the Antigravity SDK does and does not do, including the defect that blocks a Claude worker and the prompt floor that shapes the cost model
 - [examples/kudos-wall/](examples/kudos-wall/) — the SDLC reference workload
 - [examples/uptime-ping/](examples/uptime-ping/) — a small SDLC smoke workload
 - [examples/swe-bench-pro/](examples/swe-bench-pro/) — the SWE-bench Pro workload
@@ -184,8 +185,9 @@ a file rather than run one:
   runner's file-by-file map, what each test defends, and the honesty rules
   baked into the numbers
 - [tools/harness-matrix/sdk-probe/README.md](tools/harness-matrix/sdk-probe/README.md)
-  — the reproducible Antigravity SDK probes: what the SDK does, what it does
-  not, and the one defect that blocks a Claude worker
+  — how to re-run the Antigravity SDK probes that produce every claim in
+  [docs/antigravity-sdk.md](docs/antigravity-sdk.md): which script answers
+  which question, what each costs, and the setup each needs
 
 ## For Google engineers, customer engineers, and everyone downstream
 
