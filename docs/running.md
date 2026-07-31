@@ -54,6 +54,16 @@ Swap the policy to switch the tokenomics story:
 # driver/worker line.
 --policy tools/harness-matrix/policies/opus-4.8-plus-gemini-3.5-flash-lite.yaml
 
+# The same cell, scoped to one workload. Identical models: block — same
+# pins, same region, same thinking level — so these cost and route
+# exactly as the combined file does; they simply name only their own
+# workload's stages, and carry no fall-through `default:`. Point one at
+# the wrong workload and it fails at load for $0 rather than quietly
+# sending every unrecognised stage to Opus. Use whichever matches the
+# run; the combined file above works for both.
+--policy tools/harness-matrix/policies/opus-4.8-plus-gemini-3.5-flash-lite-sdlc.yaml           # with --task-dir
+--policy tools/harness-matrix/policies/opus-4.8-plus-gemini-3.5-flash-lite-swe-bench-pro.yaml  # with --instance-dir
+
 # Historical column — the same tiering cut with the WORKER as the
 # variable: every stage delegates, 3.5 Flash on judgment, 2.5 Flash on
 # volume. Frozen on its Opus 4.6 driver; see policies.md.
@@ -88,7 +98,7 @@ with the network blocked.
 | `--instance-dir <path>` | Selects the SWE-bench Pro kind |
 | `--task-dir <path>` | Selects the SDLC kind |
 | `--runtime claude-code` | The only runtime. Anything else fails preflight. |
-| `--policy <path>` | One of the five in `tools/harness-matrix/policies/` |
+| `--policy <path>` | One of the seven files in `tools/harness-matrix/policies/` — five cells, the tokenomics one present three times (combined, `-sdlc`, `-swe-bench-pro`) |
 | `--dry-run` | Resolve the policy, print the full plan, exit `0`. No credentials, no Docker, no corpus. |
 | `--skip-grade` | Run without grading |
 | `--cleanup-images` | Remove Docker images afterwards (Pro only) |
