@@ -168,6 +168,7 @@ reports that as unrecorded rather than filling in a guess.
 
 - [docs/setup.md](docs/setup.md) — the three setup profiles (offline, SDLC live, SWE-bench Pro) end-to-end, plus a troubleshooting table
 - [docs/running.md](docs/running.md) — invocations, flags, exit codes, bringing your own workload
+- [docs/architecture.md](docs/architecture.md) — how the harness is built: the engine/kind/runtime/policy split, the life of one run, where the SDK cable is soldered, and a code walkthrough of both legs
 - [docs/policies.md](docs/policies.md) — the four shipped policies, the tokenomics framing, the v2 policy schema
 - [docs/methodology.md](docs/methodology.md) — the two claims (provenance vs attribution), the three enforcement layers, the delegation content lint
 - [docs/understanding-output.md](docs/understanding-output.md) — reading a run: manifest, evidence bundle, SDK receipts, lint verdict

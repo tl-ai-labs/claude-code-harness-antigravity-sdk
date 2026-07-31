@@ -2,7 +2,10 @@
 
 This directory is the harness itself. If you have read the top-level
 [README](../../README.md) and want to know what each file does before
-changing one, this is the map.
+changing one, this is the map. For how those files fit together — the
+life of one run, where the SDK cable is soldered, a walkthrough of each
+leg's gates — read [docs/architecture.md](../../docs/architecture.md)
+alongside it.
 
 One run is one **kind** × one **runtime** × one **policy** against one input:
 
@@ -25,6 +28,7 @@ procedural drift between two differently-run experiments.
 
 **New here?** Start with the user-facing docs, not this file:
 [setup](../../docs/setup.md) · [running](../../docs/running.md) ·
+[architecture](../../docs/architecture.md) ·
 [policies](../../docs/policies.md) · [methodology](../../docs/methodology.md) ·
 [understanding output](../../docs/understanding-output.md).
 
