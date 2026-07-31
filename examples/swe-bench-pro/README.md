@@ -31,7 +31,7 @@ and the single-container-at-a-time rule.
   provenance, which is why the pricing path has an explicit rule for it
   ([understanding-output.md](../../docs/understanding-output.md)).
 - [passes/nodebb/](passes/nodebb/) — the same evidence set from one real
-  run of the cost-tier policy (`opus48-plus-lite`: Claude Opus 4.8 driver,
+  run of the cost-tier policy (`opus-4.8-plus-gemini-3.5-flash-lite`: Claude Opus 4.8 driver,
   `gemini-3.5-flash-lite` worker, 2026-07-31) against the NodeBB
   `05f2236193f407cf8e2072757fbd6bb170bc13f0` instance. Not resolved on
   this attempt — all three phase gates passed and the patch applies, but

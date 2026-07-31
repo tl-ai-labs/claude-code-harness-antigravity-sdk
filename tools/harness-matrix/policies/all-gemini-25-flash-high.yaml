@@ -5,7 +5,7 @@
 # STATUS 2026-07-31: HISTORICAL COLUMN — NOT A CURRENT PIN
 # ---------------------------------------------------------------------------
 # The Google-facing live runs pin `gemini-3.5-flash-lite` and route through
-# `opus48-plus-lite.yaml`. This file is NOT that, and a reader who lands here
+# `opus-4.8-plus-gemini-3.5-flash-lite.yaml`. This file is NOT that, and a reader who lands here
 # first should not take `gemini-2.5-flash` for the model this repo currently
 # runs.
 #
@@ -144,7 +144,7 @@ models:
   # made it stop measuring the worker.
   #
   # THE SIBLINGS HAVE SINCE MOVED, AND THIS ENTRY DELIBERATELY HAS NOT
-  # (2026-07-31). all-opus, all-gemini-flash-high and opus48-plus-lite were
+  # (2026-07-31). all-opus, all-gemini-flash-high and opus-4.8-plus-gemini-3.5-flash-lite were
   # re-pinned together to claude-opus-4-8 so the three CURRENT cells share one
   # driver generation. This file stayed on 4.6 because 4.6 is what the July
   # 2026 matrix ran — re-pinning it would make a frozen column describe a

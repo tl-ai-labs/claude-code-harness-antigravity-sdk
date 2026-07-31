@@ -6,7 +6,7 @@
  * right binding if a policy is delegated everywhere or nowhere. `all-opus`,
  * `all-gemini-flash-high` and the two historical cells are uniform, so the
  * shortcut held for four of the five shipped policies and nothing ever caught
- * it. The fifth, `opus48-plus-lite`, is the tiered cell the whole tokenomics
+ * it. The fifth, `opus-4.8-plus-gemini-3.5-flash-lite`, is the tiered cell the whole tokenomics
  * story rests on: on SDLC it resolves requirements/design/plan-packets SOLO and
  * only `execute` DELEGATED. Its first stage is therefore a bare model string,
  * `isDelegated` said false, and preflight skipped the three worker checks —
@@ -74,7 +74,7 @@ test("preflightBinding skips leading SOLO stages to reach the delegated one", ()
 
 test("the tiered policy's SDLC walk preflights the worker leg, not its solo first stage", () => {
   const stages = sdlcStages();
-  const policy = loadPolicy(policyPath("opus48-plus-lite"), "claude-code", stages);
+  const policy = loadPolicy(policyPath("opus-4.8-plus-gemini-3.5-flash-lite"), "claude-code", stages);
 
   // The precondition that makes this a real test rather than a tautology: if
   // the policy is ever re-pinned so that stage 0 delegates too, the assertion
@@ -92,10 +92,15 @@ test("the tiered policy's SDLC walk preflights the worker leg, not its solo firs
   assert.ok(picked.worker, "orientation paragraph would name no worker");
 });
 
-test("every shipped policy yields a preflight binding for both kinds' stage lists", () => {
+// The five CELLS, one file each. The tokenomics cell's two kind-specific
+// siblings are deliberately absent: they name only their own workload's stages
+// and throw on the other kind's, which is the property `policy-family.test.mjs`
+// asserts. Listing them here would make this sweep fail for the correct reason,
+// which is not a useful test.
+test("every shipped cell yields a preflight binding for both kinds' stage lists", () => {
   const stages = sdlcStages();
   for (const name of [
-    "all-opus", "all-gemini-flash-high", "opus48-plus-lite",
+    "all-opus", "all-gemini-flash-high", "opus-4.8-plus-gemini-3.5-flash-lite",
     "all-gemini-25-flash-high", "gemini35-plus-25-flash-high",
   ]) {
     for (const [kind, list] of [["sdlc", stages], ["swe-bench-pro", PRO_PHASES]]) {

@@ -22,14 +22,14 @@ module registration, integration tests, and a passing build.
   `worker-task-*.md` files to see what the driver actually handed the
   worker; read the `worker-usage-*.json` files to see the token counts the
   Antigravity SDK reported back, and which of the two models each one billed.
-- [passes/opus48-plus-lite/](passes/opus48-plus-lite/) — the same evidence
-  set from a real run of the cost-tier policy (`opus48-plus-lite`: Claude
+- [passes/opus-4.8-plus-gemini-3.5-flash-lite/](passes/opus-4.8-plus-gemini-3.5-flash-lite/) — the same evidence
+  set from a real run of the cost-tier policy (`opus-4.8-plus-gemini-3.5-flash-lite`: Claude
   Opus 4.8 driver, `gemini-3.5-flash-lite` worker, 2026-07-31). RESOLVED —
   14/14 grade tests, judge 9/10. This cell delegates sparingly by design,
   so there is exactly one hand-off; `lint.json` is the content lint re-run
   over it (zero passages flagged). Host paths are scrubbed to `/harness`
   (`scrub-paths.mjs`); everything else is verbatim from the run. The
-  [evidence-bundle/](passes/opus48-plus-lite/evidence-bundle/) subdirectory
+  [evidence-bundle/](passes/opus-4.8-plus-gemini-3.5-flash-lite/evidence-bundle/) subdirectory
   is the run's **full** scrubbed evidence bundle — per-phase trajectories,
   gate logs, phase I/O, diffs, grade verdict, the recorded `audit.json`,
   and a regenerated `MANIFEST.sha256`. Read its `AUDIT-NOTE.md` first: the
@@ -50,7 +50,7 @@ The full run output (the workdir, the grade verdict, the trajectory,
 `tools/harness-matrix/runs/kudos-wall/claude-code--gemini35-plus-25-flash-high/<stamp>/`.
 That directory is gitignored. What is under version control is the two
 committed passes above: `passes/reference/` carries the
-`evidence-bundle/delegation/` subset only, and `passes/opus48-plus-lite/`
+`evidence-bundle/delegation/` subset only, and `passes/opus-4.8-plus-gemini-3.5-flash-lite/`
 carries that subset **plus** the full `evidence-bundle/` described above.
 Nothing a run writes ever lands in `passes/` — the committed passes were
 copied there deliberately, through `scrub-paths.mjs`.

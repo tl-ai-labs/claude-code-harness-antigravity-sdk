@@ -45,7 +45,7 @@ const isDelegated = (b) => typeof b === "object" && b !== null;
  *
  * WHY THIS IS DERIVED AND NOT A CONSTANT (2026-07-31). That row used to end
  * `worker: Vertex asia-south1`, hardcoded — true of every policy that existed
- * when it was written, and false the moment `opus48-plus-lite` pinned its
+ * when it was written, and false the moment `opus-4.8-plus-gemini-3.5-flash-lite` pinned its
  * Flash-Lite worker to `global` (Flash-Lite 404s in asia-south1; see that
  * policy's region section). The region is not decoration in this repo: Vertex
  * charges +10% on every token class outside `global`, `getVertexRates()` prices

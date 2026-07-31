@@ -5,7 +5,7 @@
 # STATUS 2026-07-31: HISTORICAL COLUMN — NOT A CURRENT PIN
 # ---------------------------------------------------------------------------
 # The Google-facing live runs pin `gemini-3.5-flash-lite` and route through
-# `opus48-plus-lite.yaml`. Deletion of this column was proposed and rejected on
+# `opus-4.8-plus-gemini-3.5-flash-lite.yaml`. Deletion of this column was proposed and rejected on
 # 2026-07-31 — the full reasoning is in the sibling STATUS block in
 # all-gemini-25-flash-high.yaml and is not repeated here.
 #
@@ -24,7 +24,7 @@
 # on 4.6. See the note at the driver leaf below.
 #
 # One thing this file specifically is worth keeping for: it is the ONLY tiered
-# column whose two tiers are both WORKERS. `opus48-plus-lite.yaml` tiers across
+# column whose two tiers are both WORKERS. `opus-4.8-plus-gemini-3.5-flash-lite.yaml` tiers across
 # the driver/worker boundary — premium stages take the driver seat alone, cheap
 # stages delegate. This one keeps every stage delegated and swaps the worker
 # underneath, so the driver is held constant by construction. Those two
@@ -159,7 +159,7 @@ models:
     adapter: builtin-anthropic        # HELD CONSTANT with every sibling policy
     api: anthropic
     # DELIBERATELY LEFT ON 4.6 (2026-07-31). On that date the three current
-    # cells — all-opus, all-gemini-flash-high, opus48-plus-lite — were re-pinned
+    # cells — all-opus, all-gemini-flash-high, opus-4.8-plus-gemini-3.5-flash-lite — were re-pinned
     # together to claude-opus-4-8 so they would share one driver generation.
     # This file was NOT moved with them, and that is the point: it is a
     # historical column whose exemplar pass under

@@ -449,14 +449,14 @@ const leavesOf = (doc) => doc.models.filter((m) => m.model_name);
 // arrangement is that the three agree: the only thing separating these cells is
 // how much work is delegated, and a driver drifting on one of them silently
 // converts every delta between them into a two-variable comparison. That is the
-// exact state the re-pin corrected — opus48-plus-lite had arrived on 4.8 alone,
+// exact state the re-pin corrected — opus-4.8-plus-gemini-3.5-flash-lite had arrived on 4.8 alone,
 // leaving the anchor a generation behind the cells it anchors.
 //
 // Verified against the CLI before this was written: `claude --model
 // claude-opus-4-8 --effort high -p …` answers on the Max OAuth seat. A pin no
 // runtime accepts is a broken policy, not a strict one.
 test("the three CURRENT cells share one driver pin, exactly", () => {
-  for (const name of ["all-opus", "all-gemini-flash-high", "opus48-plus-lite"]) {
+  for (const name of ["all-opus", "all-gemini-flash-high", "opus-4.8-plus-gemini-3.5-flash-lite"]) {
     const drivers = leavesOf(policyDoc(name)).filter((m) => m.api === "anthropic");
     assert.ok(drivers.length > 0, `${name} declares no Anthropic driver leaf`);
     for (const d of drivers) {
@@ -489,7 +489,7 @@ test("the two HISTORICAL columns stay on the driver they actually ran with", () 
 // that cannot run, however well-formed it looks.
 test("every vertex worker leaf declares a region its model is actually served in", () => {
   const GLOBAL_ONLY = new Set(["gemini-3.5-flash-lite"]);
-  for (const name of ["all-opus", "all-gemini-flash-high", "opus48-plus-lite",
+  for (const name of ["all-opus", "all-gemini-flash-high", "opus-4.8-plus-gemini-3.5-flash-lite",
                       "all-gemini-25-flash-high", "gemini35-plus-25-flash-high"]) {
     for (const w of leavesOf(policyDoc(name)).filter((m) => m.api === "vertex")) {
       assert.ok(w.region, `${name}: vertex leaf ${w.id} declares no region`);

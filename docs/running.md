@@ -52,7 +52,7 @@ Swap the policy to switch the tokenomics story:
 # The tokenomics pass — Opus 4.8 holds the judgment stages by itself,
 # Flash-Lite does execute and the repair rounds. Tiered across the
 # driver/worker line.
---policy tools/harness-matrix/policies/opus48-plus-lite.yaml
+--policy tools/harness-matrix/policies/opus-4.8-plus-gemini-3.5-flash-lite.yaml
 
 # Historical column — the same tiering cut with the WORKER as the
 # variable: every stage delegates, 3.5 Flash on judgment, 2.5 Flash on
@@ -232,7 +232,7 @@ See [policies.md](policies.md). Short version:
   `examples/kudos-wall`. Every stage delegates, so a green run exercises
   the SDK end to end.
 - **The Gemini Enterprise tokenomics story** (Opus for judgment,
-  Gemini for volume): `opus48-plus-lite` on `examples/kudos-wall`. Its
+  Gemini for volume): `opus-4.8-plus-gemini-3.5-flash-lite` on `examples/kudos-wall`. Its
   premium tier is the driver seat, which is the shape a team would
   actually deploy. `gemini35-plus-25-flash-high` encodes the same split
   with both tiers as *workers* — the cleaner experiment, and historical:

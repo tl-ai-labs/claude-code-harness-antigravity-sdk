@@ -130,17 +130,17 @@ models:
     adapter: builtin-anthropic
     api: anthropic
     # DRIVER RE-PINNED 2026-07-31: claude-opus-4-6 → claude-opus-4-8, together
-    # with all-gemini-flash-high and opus48-plus-lite in the same commit. The
+    # with all-gemini-flash-high and opus-4.8-plus-gemini-3.5-flash-lite in the same commit. The
     # three CURRENT cells now share one driver generation; the two historical
     # columns (all-gemini-25-flash-high, gemini35-plus-25-flash-high) stay on
     # 4.6 because their shipped receipts and manifests record a 4.6 driver, and
     # a frozen study column that disagrees with its own evidence is worse than
     # one that is simply old.
     #
-    # WHY ALL THREE HAD TO MOVE TOGETHER. opus48-plus-lite arrived pinned to 4.8
+    # WHY ALL THREE HAD TO MOVE TOGETHER. opus-4.8-plus-gemini-3.5-flash-lite arrived pinned to 4.8
     # (the pin for the hard work) while these two stayed on 4.6, which left
     # the anchor a generation behind the cells it exists to anchor: every delta
-    # between all-gemini-flash-high and opus48-plus-lite carried a driver change
+    # between all-gemini-flash-high and opus-4.8-plus-gemini-3.5-flash-lite carried a driver change
     # as well as a tiering change, and all-opus could no longer baseline either
     # of them. Moving one file would have fixed nothing — the property that
     # matters is that the three are IDENTICAL on this axis, not which value they

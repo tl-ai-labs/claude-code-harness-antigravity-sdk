@@ -90,10 +90,10 @@ models:
     adapter: builtin-anthropic        # the `claude` CLI talks to Anthropic itself
     api: anthropic
     # DRIVER RE-PINNED 2026-07-31: claude-opus-4-6 → claude-opus-4-8, in the
-    # same commit as all-opus and opus48-plus-lite. The three CURRENT cells now
+    # same commit as all-opus and opus-4.8-plus-gemini-3.5-flash-lite. The three CURRENT cells now
     # share one driver generation so that the only thing differing between this
     # policy and the anchor is the delegation, and the only thing differing
-    # between it and opus48-plus-lite is the tiering. The full rationale — and
+    # between it and opus-4.8-plus-gemini-3.5-flash-lite is the tiering. The full rationale — and
     # why the two historical columns deliberately stay on 4.6 — is at the driver
     # leaf in all-opus.yaml. "Same pin as all-opus" was true before and is still
     # true; only the value moved.

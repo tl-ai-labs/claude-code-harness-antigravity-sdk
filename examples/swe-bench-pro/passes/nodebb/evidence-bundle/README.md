@@ -1,6 +1,6 @@
 # Evidence bundle — instance_NodeBB__NodeBB-05f2236193f407cf8e2072757fbd6bb170bc13f0-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e
 
-Cell: `claude-code--opus48-plus-lite` · run `2026-07-31T10-09-15` · **unresolved**
+Cell: `claude-code--opus-4.8-plus-gemini-3.5-flash-lite` · run `2026-07-31T10-09-15` · **unresolved**
 
 ## What's here
 

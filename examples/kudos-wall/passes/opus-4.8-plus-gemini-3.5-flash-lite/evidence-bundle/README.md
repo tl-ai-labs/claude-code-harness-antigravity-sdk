@@ -1,6 +1,6 @@
 # Evidence bundle — kudos-wall (SDLC)
 
-Cell: `claude-code--opus48-plus-lite` · run `2026-07-31T09-54-42` · **PASS**
+Cell: `claude-code--opus-4.8-plus-gemini-3.5-flash-lite` · run `2026-07-31T09-54-42` · **PASS**
 
 A greenfield build: one brief in, one working tree out, graded by re-running
 the scaffold's own build and tests in the pinned container.

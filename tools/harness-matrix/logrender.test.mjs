@@ -296,7 +296,7 @@ test("a delegated stage with NO worker thinking still renders as delegated", () 
 // The cost-regime row names the region the policy actually pinned.
 //
 // WHY (2026-07-31). That row ended `worker: Vertex asia-south1` as a literal,
-// which was true of every policy in the repo until `opus48-plus-lite` pinned
+// which was true of every policy in the repo until `opus-4.8-plus-gemini-3.5-flash-lite` pinned
 // its Flash-Lite worker to `global` — Flash-Lite 404s in asia-south1. The
 // header then told a demo viewer the tokens were billed in a region the run's
 // own usage sidecars contradict, in the one row about where the money goes.

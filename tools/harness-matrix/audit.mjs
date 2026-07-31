@@ -263,7 +263,7 @@ export function bashInspectsRepo(rawCmd, { workdir, outDir }) {
  * printed a non-zero count as "NON-ZERO: the harness wrote code, investigate
  * audit.json". That wording is correct for a policy that delegates EVERY stage,
  * where the driver has no legitimate reason to write anything at all. It is
- * simply false for a MIXED policy. `opus48-plus-lite` — the tokenomics cell
+ * simply false for a MIXED policy. `opus-4.8-plus-gemini-3.5-flash-lite` — the tokenomics cell
  * that is the headline of this deliverable — resolves requirements, design,
  * plan-packets, review and judge as `solo`, and a solo stage's whole job is to
  * write its contract file. P4a therefore finished RESOLVED, 14/14 tests, judge

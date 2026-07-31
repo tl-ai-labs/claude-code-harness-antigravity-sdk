@@ -1,6 +1,6 @@
 # Integrity notes — instance_NodeBB__NodeBB-05f2236193f407cf8e2072757fbd6bb170bc13f0-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e
 
-Cell: claude-code--opus48-plus-lite · run 2026-07-31T10-09-15 · verdict unresolved
+Cell: claude-code--opus-4.8-plus-gemini-3.5-flash-lite · run 2026-07-31T10-09-15 · verdict unresolved
 Grader: scale swe_bench_pro_eval.py (local docker, network blocked)
 
 Enforced in code (tools/harness-matrix/run-harness.mjs, grade.mjs):
@@ -64,3 +64,30 @@ Known caveats (disclosed, not hidden):
   here was rewritten to tidy that up: "verbatim" is the stronger property, and a
   bundle whose files have been edited for appearance is a bundle you cannot hash
   against the originals.
+
+Identifier relabel applied after the run — disclosed, 2026-07-31:
+- This bundle was produced when the policy file was named `opus48-plus-lite.yaml`
+  and its cells were `opus48` and `opus48-lite`. Those names were ambiguous in
+  one direction — `opus48-lite` reads as "a lite tier OF Opus 4.8", which is the
+  opposite of what it is; there is no lite tier of Opus, and "lite" is the Gemini
+  model. The policy was renamed on 2026-07-31 so every identifier names its
+  models in full, and the SAME substitution was applied to the recorded files in
+  this bundle so that the evidence and the source tree agree:
+      opus48-plus-lite  →  opus-4.8-plus-gemini-3.5-flash-lite
+      opus48            →  opus-4.8-solo
+      opus48-lite       →  opus-4.8-delegating-to-gemini-3.5-flash-lite
+      opus48-anthropic  →  opus-4.8-anthropic
+  It is a pure identifier substitution. No model pin, token count, cost, timing,
+  exit code, diff, gate result or score was touched, and the run directory
+  segment `claude-code--<policy>` moved with the policy name for the same reason.
+- Two consequences you can check rather than take on trust:
+  (a) The `policy ... sha256` line above is the hash of the policy file AS LOADED
+      BY THE RUN, i.e. the pre-rename `opus48-plus-lite.yaml`. It does NOT match
+      the renamed file in the tree and is not meant to — it is the run's own
+      record of what it read. The renamed file differs from it by these
+      identifiers and by header comments only; `git log --follow` on
+      `tools/harness-matrix/policies/opus-4.8-plus-gemini-3.5-flash-lite.yaml`
+      reaches the exact bytes that hash was taken over.
+  (b) MANIFEST.sha256 WAS regenerated over the relabelled bytes, so it verifies
+      clean today. Its pre-rename version is one commit back in git history if
+      you want to hash the originals.

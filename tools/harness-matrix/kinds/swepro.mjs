@@ -618,7 +618,7 @@ export const swepro = {
     // ordered (2026-07-26; see audit.mjs delegationMismatches for the run that
     // motivated it). Built from phaseRecords, the same array the manifest is
     // written from, so audit and manifest cannot disagree. Since 2026-07-31 the
-    // Pro leg IS tiered (opus48-plus-lite runs repro/localize solo and only
+    // Pro leg IS tiered (opus-4.8-plus-gemini-3.5-flash-lite runs repro/localize solo and only
     // patch delegated), so this per-phase map is also how the audit learns
     // each phase's composition — see auditRun for what mis-scoping that to
     // the run cost the first live tiered Pro run.

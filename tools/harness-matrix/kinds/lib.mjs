@@ -115,7 +115,7 @@ export const bindingLabel = (b) =>
  *
  * WHY THIS EXISTS (2026-07-31). Both kinds used to pass `resolved[stages[0]]`,
  * on the unexamined assumption that a policy is delegated everywhere or nowhere
- * — true of the four uniform policies, and false of `opus48-plus-lite`, the
+ * — true of the four uniform policies, and false of `opus-4.8-plus-gemini-3.5-flash-lite`, the
  * tiered cell that is the whole tokenomics story. Its SDLC stage walk resolves
  * requirements/design/plan-packets SOLO and only `execute` DELEGATED, so
  * `stages[0]` is a plain model string and:

@@ -431,7 +431,7 @@ export function watchingBlock({ driver, worker, cable } = {}) {
  * the harness wrote code, investigate audit.json".
  *
  * That is right for a policy that delegates every stage, and wrong for a mixed
- * one. The P4a live run (kudos-wall × opus48-plus-lite, the tokenomics cell
+ * one. The P4a live run (kudos-wall × opus-4.8-plus-gemini-3.5-flash-lite, the tokenomics cell
  * this deliverable leads with) came back RESOLVED, 14/14 tests, judge 9/10,
  * zero audit flags — and printed "the harness wrote code" beneath it, because
  * its five SOLO stages had each written their own contract file into out/.

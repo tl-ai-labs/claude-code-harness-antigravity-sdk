@@ -9,7 +9,7 @@ for this run it matters more than usual.
 This run executed on 2026-07-31, hours **before** an audit fix, and it is
 the run that exposed the bug. The audit's delegated-cell checks were gated
 on the RUN-level delegation flag, so this policy's two **solo** phases
-(localize and repro — contracted to the driver on `opus48-plus-lite`) were
+(localize and repro — contracted to the driver on `opus-4.8-plus-gemini-3.5-flash-lite`) were
 judged as if they had been delegated. The recorded `audit.json` therefore
 carries **28 false `driver-predelegation-inspection` flags** (the driver
 inspecting the repo it was contracted to inspect) and one false

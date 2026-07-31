@@ -11,7 +11,7 @@ clone instead are four exemplar passes, committed under
 `examples/<workload>/passes/<pass-name>/`. Every one of them carries the
 `evidence-bundle/delegation/` subset described below at its top level —
 the hand-offs, the usage receipts, and `lint.json`. Two of them
-(`kudos-wall/opus48-plus-lite` and `swe-bench-pro/nodebb`) additionally
+(`kudos-wall/opus-4.8-plus-gemini-3.5-flash-lite` and `swe-bench-pro/nodebb`) additionally
 ship the **full** `evidence-bundle/`, phase-io and trajectory included.
 That is the part safe to publish.
 
@@ -116,7 +116,7 @@ play, which is the point of shipping more than one:
 | Pass | Model(s) | `vertex_location` | `sdk_version` |
 |---|---|---|---|
 | `kudos-wall/reference` | `gemini-3.5-flash` ×5, `gemini-2.5-flash` ×7 | `asia-south1` | `0.1.7` |
-| `kudos-wall/opus48-plus-lite` | `gemini-3.5-flash-lite` | `global` | `0.1.9` |
+| `kudos-wall/opus-4.8-plus-gemini-3.5-flash-lite` | `gemini-3.5-flash-lite` | `global` | `0.1.9` |
 | `swe-bench-pro/navidrome` | `gemini-3.5-flash` ×5 | *(absent)* | *(absent)* |
 | `swe-bench-pro/nodebb` | `gemini-3.5-flash-lite` | `global` | `0.1.9` |
 

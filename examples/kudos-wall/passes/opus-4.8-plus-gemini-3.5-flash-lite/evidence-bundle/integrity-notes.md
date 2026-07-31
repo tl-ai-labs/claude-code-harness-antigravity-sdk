@@ -1,13 +1,13 @@
 # Integrity notes — kudos-wall (SDLC)
 
-Cell: claude-code--opus48-plus-lite · run 2026-07-31T09-54-42 · verdict PASS
+Cell: claude-code--opus-4.8-plus-gemini-3.5-flash-lite · run 2026-07-31T09-54-42 · verdict PASS
 Grader: scaffold build+test re-run via run-in-env.sh (sdlc-env:node22-pnpm9.12.3)
 
 Everything this run was given, pinned by hash:
 - brief    sha256 26c62f79f5261eeb51566da9e9a371f72baff52af48eb7d49636fe0bc853f33a
 - template sdlc-mini v0.8.0 sha256 7627f4df57abe882c6799e8805f0c69469ff2d63aa35f2e8b23526691cb7a7c7
 - scaffold service-web v0.2.0
-- policy   opus48-plus-lite sha256 ccbe886160ba4f8bb30353081411c81de671e4462863be5e75cfcc011c60077d
+- policy   opus-4.8-plus-gemini-3.5-flash-lite sha256 ccbe886160ba4f8bb30353081411c81de671e4462863be5e75cfcc011c60077d
 - runtime  claude-code 2.1.215 (Claude Code)
 
 Enforced in code (tools/harness-matrix/kinds/sdlc.mjs):
@@ -72,7 +72,37 @@ Known caveats (disclosed, not hidden):
   "Delegation integrity".
 - Model calls go to vendor APIs during authoring, as in any live run.
 - This is ONE task under ONE cell. It is an attempt, not a rate.
-- Logs and scripts carry the absolute paths of the machine that ran them.
-  Nothing here was rewritten to tidy that up: "verbatim" is the stronger
-  property, and a bundle whose files have been edited for appearance is a
-  bundle you cannot hash against the originals.
+- Two documented, mechanical rewrites have been applied to these files since
+  the run wrote them: the machine's absolute paths were replaced with
+  `/harness` before publication, and the identifier relabel described below.
+  Both are pure textual substitutions over names, applied to every file
+  uniformly, and neither touched a number, a diff or a gate result. Beyond
+  those two, nothing was edited for appearance — which is why each one is
+  named here rather than left for you to notice.
+
+Identifier relabel applied after the run — disclosed, 2026-07-31:
+- This bundle was produced when the policy file was named `opus48-plus-lite.yaml`
+  and its cells were `opus48` and `opus48-lite`. Those names were ambiguous in
+  one direction — `opus48-lite` reads as "a lite tier OF Opus 4.8", which is the
+  opposite of what it is; there is no lite tier of Opus, and "lite" is the Gemini
+  model. The policy was renamed on 2026-07-31 so every identifier names its
+  models in full, and the SAME substitution was applied to the recorded files in
+  this bundle so that the evidence and the source tree agree:
+      opus48-plus-lite  →  opus-4.8-plus-gemini-3.5-flash-lite
+      opus48            →  opus-4.8-solo
+      opus48-lite       →  opus-4.8-delegating-to-gemini-3.5-flash-lite
+      opus48-anthropic  →  opus-4.8-anthropic
+  It is a pure identifier substitution. No model pin, token count, cost, timing,
+  exit code, diff, gate result or score was touched, and the run directory
+  segment `claude-code--<policy>` moved with the policy name for the same reason.
+- Two consequences you can check rather than take on trust:
+  (a) The `policy ... sha256` line above is the hash of the policy file AS LOADED
+      BY THE RUN, i.e. the pre-rename `opus48-plus-lite.yaml`. It does NOT match
+      the renamed file in the tree and is not meant to — it is the run's own
+      record of what it read. The renamed file differs from it by these
+      identifiers and by header comments only; `git log --follow` on
+      `tools/harness-matrix/policies/opus-4.8-plus-gemini-3.5-flash-lite.yaml`
+      reaches the exact bytes that hash was taken over.
+  (b) MANIFEST.sha256 WAS regenerated over the relabelled bytes, so it verifies
+      clean today. Its pre-rename version is one commit back in git history if
+      you want to hash the originals.

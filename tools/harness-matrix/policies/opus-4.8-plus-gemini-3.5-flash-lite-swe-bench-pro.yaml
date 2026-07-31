@@ -1,0 +1,201 @@
+# opus-4.8-plus-gemini-3.5-flash-lite-swe-bench-pro — the TIERED policy,
+# SWE-BENCH PRO ONLY: Claude Opus 4.8 holds the repository for the two judgment
+# phases (repro, localize) and Gemini 3.5 Flash-Lite authors the fix (patch).
+#
+# ---------------------------------------------------------------------------
+# WHY THE NAME IS THIS LONG — READ THIS FIRST IF YOU ARE LOOKING FOR
+# `opus48-plus-lite`
+# ---------------------------------------------------------------------------
+# RENAMED 2026-07-31. The tiering this file expresses used to live in a single
+# file called `opus48-plus-lite.yaml`, whose cells were `opus48` and
+# `opus48-lite` and whose worker leaf was `flash-lite-35-agsdk-vertex`. Every
+# one of those names was ambiguous in the same direction — `opus48-lite` reads
+# as "a lite tier OF Opus 4.8", which is the opposite of what it is. There is no
+# lite tier of Opus. "Lite" is the GEMINI model: `gemini-3.5-flash-lite`.
+#
+# Every identifier below now names its models in full, in vendor spelling, so
+# that no id can be read as anything but the models it binds:
+#
+#   former id                     current id                                    what it is
+#   opus48-plus-lite              opus-4.8-plus-gemini-3.5-flash-lite           the combined policy
+#   opus48                        opus-4.8-solo                                 the solo cell
+#   opus48-lite                   opus-4.8-delegating-to-gemini-3.5-flash-lite  the delegated cell
+#   opus48-anthropic              opus-4.8-anthropic                            the driver leaf
+#   flash-lite-35-agsdk-vertex    gemini-3.5-flash-lite-agsdk-vertex            the worker leaf
+#
+# The `model_name:` pins did NOT change — they were always the vendors' own API
+# strings (`claude-opus-4-8`, `gemini-3.5-flash-lite`) and were always correct.
+# Only the names this repository chose for itself moved.
+#
+# ---------------------------------------------------------------------------
+# THIS FILE IS ONE OF THREE
+# ---------------------------------------------------------------------------
+#   opus-4.8-plus-gemini-3.5-flash-lite.yaml                    both kinds, has a `default:`
+#   opus-4.8-plus-gemini-3.5-flash-lite-sdlc.yaml               SDLC only
+#   opus-4.8-plus-gemini-3.5-flash-lite-swe-bench-pro.yaml      SWE-bench Pro only
+#
+# All three carry a BYTE-IDENTICAL `models:` block — same cells, same leaves,
+# same pins, same region, same thinking settings — so cost and cable are the same
+# whichever you pick. `policy-family.test.mjs` asserts that identity and fails
+# the suite if an edit lands in one file and not its siblings. The full rationale
+# for the tiering itself (where the hard/easy split comes from, why Pro is tiered
+# on a different axis, why mixing solo and delegated is safe, why the region is
+# `global`) is in the combined file's header and is not repeated here.
+#
+# ---------------------------------------------------------------------------
+# THERE IS NO `default:` RULE IN THIS FILE, AND THAT IS THE POINT
+# ---------------------------------------------------------------------------
+# Every stage of the SWE-bench Pro kind is named explicitly in `rules:` below. Naming
+# them all IS the claim this file makes, so the fail-safe `default:` that the
+# combined policy carries is deliberately absent here.
+#
+# Without it, pointing this file at an SDLC task fails at LOAD time — before a
+# single token is spent — with
+#
+#   Policy '...' has no rule matching {"phase":"requirements",...} and no default rule.
+#
+# With a `default:`, the same mistake would instead resolve `requirements` quietly
+# to the premium cell and hand back a plausible-looking run with none of this
+# policy's tiering in it. A loud $0 failure beats a quiet wrong answer.
+#
+# The same applies to a stage id added to the SWE-bench Pro kind later: it will fail
+# here until someone decides which tier it belongs to, which is the decision
+# this file exists to record.
+version: 2
+name: opus-4.8-plus-gemini-3.5-flash-lite-swe-bench-pro
+# ===========================================================================
+# MODELS — KEEP BYTE-IDENTICAL WITH THE TWO KIND-SPECIFIC SIBLING FILES.
+# `policy-family.test.mjs` compares this block across all three and fails if
+# they drift. Edit one, edit all three, in the same commit.
+# ===========================================================================
+models:
+  # ---- the premium cell ---------------------------------------------------
+  # `solo` is the one-seat form: Claude Code's own driver seat and nothing
+  # else. No worker is named, and naming one would be rejected at load. This
+  # cell makes ZERO Antigravity SDK calls by design, which is correct for the
+  # stages that route to it and is why the per-stage gate finding above had to
+  # be established first.
+  #
+  # The id says `-solo` rather than plain `opus-4.8` so that it cannot be
+  # misread as "the Opus leaf". The leaf is `opus-4.8-anthropic`, below; this
+  # is the CELL that binds that leaf alone.
+  - id: opus-4.8-solo
+    composition: solo
+    runtime: claude-code
+    driver: opus-4.8-anthropic
+
+  # ---- the delegated cell -------------------------------------------------
+  # The two-seat form: the SAME Opus 4.8 driver leaf as above, conducting a
+  # Gemini 3.5 Flash-Lite worker reached through the provisioned Skill. Sharing
+  # one driver leaf between both cells is deliberate — if the tiers named
+  # separate driver entries, a later edit could drift them apart and the policy
+  # would silently stop being "one driver, two tiers", which is the entire claim
+  # it makes.
+  #
+  # The id spells the direction of the relationship — Opus 4.8 DELEGATING TO
+  # Gemini 3.5 Flash-Lite — because this id is what lands in every manifest as
+  # `modelId` and in every dashboard cell label, and it is the exact place the
+  # old `opus48-lite` misled a reader about which vendor was doing what.
+  - id: opus-4.8-delegating-to-gemini-3.5-flash-lite
+    composition: delegated
+    runtime: claude-code
+    driver: opus-4.8-anthropic
+    worker: gemini-3.5-flash-lite-agsdk-vertex
+
+  # ---- driver leaf --------------------------------------------------------
+  - id: opus-4.8-anthropic
+    adapter: builtin-anthropic        # the `claude` CLI talks to Anthropic itself
+    api: anthropic
+    model_name: claude-opus-4-8       # the pin for the hard work — and, since
+                                      # 2026-07-31, the SAME pin as all-opus and
+                                      # all-gemini-flash-high. It used to be the
+                                      # odd one out: this file said 4.8 while
+                                      # those two stayed on 4.6 to protect their
+                                      # existing comparison, which left the
+                                      # anchor a generation behind the cell it
+                                      # anchors and made every delta between
+                                      # this policy and all-gemini-flash-high
+                                      # carry a driver change as well as the
+                                      # tiering change it is supposed to isolate.
+                                      # All three moved together instead. Full
+                                      # rationale at the driver leaf in
+                                      # all-opus.yaml; the two historical
+                                      # columns stay on 4.6 on purpose.
+    reasoning:
+      effort: high                    # --effort high, the same setting the
+                                      # control policy uses, so what differs
+                                      # between this policy and all-opus is the
+                                      # tiering and the driver model — not how
+                                      # hard the driver was told to think.
+    # No `pricing:` — composition member. Driver spend is CLI-reported against
+    # the Max seat (quota, not wallet dollars) and is never summed with the
+    # worker's metered Vertex spend.
+
+  # ---- worker leaf --------------------------------------------------------
+  # The id carries model, adapter and API because the same model over a
+  # different cable is a different cell. The old `flash-lite-35-agsdk-vertex`
+  # spelled the model as `flash-lite-35`, which matches nothing you can pass to
+  # Vertex; it is now the vendor's own string, identical to `model_name` below.
+  - id: gemini-3.5-flash-lite-agsdk-vertex
+    adapter: antigravity-sdk          # gemini_worker.py → pip google-antigravity
+    api: vertex                       # the SDK's only doorway; validated at load
+    model_name: gemini-3.5-flash-lite # 2026-07-31: "Only 3.5 Flash-Lite."
+                                      # `gemini-3.6-flash` is the fallback and
+                                      # is used ONLY if Flash-Lite cannot
+                                      # produce economical, fully runnable code.
+                                      # Its rate card is already pinned in
+                                      # @harness/pricing so that fallback is a
+                                      # one-line edit here, not a rate lookup
+                                      # under time pressure.
+    region: global                    # NOT a copy-paste slip — see the region
+                                      # section in the header. Flash-Lite 404s
+                                      # in asia-south1 and us-central1.
+    reasoning:
+      tier: high                      # PROBE-VERIFIED 2026-07-31 before this
+                                      # file was written. Vertex hard-rejects
+                                      # thinking_level on 2.5 Flash with a 400,
+                                      # and discovering that cost a full paid
+                                      # run, so Flash-Lite was probed first:
+                                      # ThinkingLevel.HIGH resolved OK and
+                                      # returned thoughts_token_count 36, and
+                                      # tool use under allow_all() worked
+                                      # headlessly. The resolver upper-cases
+                                      # this back to ThinkingLevel.HIGH.
+    # No `pricing:` — the worker's spend comes from the real UsageMetadata in
+    # its worker_usage sidecars, never from a number typed here.
+rules:
+  # ---- premium tier -------------------------------------------------------
+  # Pro is tiered on WHO HOLDS THE REPOSITORY, not on hard-vs-mechanical: all
+  # three phases are judgment, and Pro's mechanical half (running tests in the
+  # container, classifying the diff, the gates) was never a model call at all.
+  # On a delegated cell the driver cannot edit files, cannot write through Bash,
+  # and before its first delegation cannot even Read/Grep/Glob — so routing
+  # repro and localize to the delegated cell would hand Flash-Lite the judgment.
+  # The combined policy's header carries the full argument and the runtimes.mjs
+  # evidence for it.
+  - when: { phase: [repro, localize] }
+    use: opus-4.8-solo
+    reason: reproducing the reported failure and locating the responsible code are the judgment half of Pro — and only the solo cell lets the driver read the repository to do them
+
+  # ---- cheap tier ---------------------------------------------------------
+  - when: { phase: [patch] }
+    use: opus-4.8-delegating-to-gemini-3.5-flash-lite
+    reason: authoring the fix is the bulk work, and it arrives with Opus's own repro.json and localize.json already inlined in the prompt
+
+  # NO `default:` — see the header. Pro has exactly three agent phases and all
+  # three are named above; there is nothing for a fail-safe to catch that would
+  # not be a mistake worth failing on.
+retry:
+  type: flat
+  max_attempts: 3
+# LIMITS — identical to all-opus and all-gemini-flash-high, deliberately.
+# DESIGN §2.4 forbids changing a limit mid-matrix because a limit is part of the
+# study definition: a cell that got 45 minutes and a cell that got 20 are not
+# comparable, whatever their model pins say. The delegated stages here inherit
+# the same 60/40 worker/driver split of the phase clock that the other
+# delegated policy documents, so 45 minutes leaves the worker 27 — comfortably
+# above the observed 2026-07-24 hand-offs.
+limits:
+  phase_timeout_min: 45
+  cmd_timeout_min: 15
+  phase_budget_usd: 8.00

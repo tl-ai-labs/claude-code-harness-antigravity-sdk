@@ -24,7 +24,7 @@ this repository, and you are not missing a file.** `DESIGN` is the study
 design document of the production SDLC orchestrator this harness was
 built alongside, which lives in a separate repository and is not part of
 this hand-off. The section numbers are cited the same way
-`opus-plus-sonnet.yaml` is cited in `opus48-plus-lite.yaml`: as
+`opus-plus-sonnet.yaml` is cited in `opus-4.8-plus-gemini-3.5-flash-lite.yaml`: as
 **provenance for a rule, not as a path you can open here.**
 
 They are left in rather than stripped because each one marks a decision

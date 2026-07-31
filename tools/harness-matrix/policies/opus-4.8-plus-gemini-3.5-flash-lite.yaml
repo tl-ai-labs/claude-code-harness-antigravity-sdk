@@ -1,13 +1,83 @@
-# opus48-plus-lite — the TIERED policy: Opus 4.8 does the judgment work, Gemini
-# 3.5 Flash-Lite does the production work, on both kinds.
+# opus-4.8-plus-gemini-3.5-flash-lite — the TIERED policy: Claude Opus 4.8 does
+# the judgment work, Gemini 3.5 Flash-Lite does the production work, on BOTH
+# kinds (SDLC and SWE-bench Pro) in one file.
 #
-# WHY THIS POLICY EXISTS. The instruction it was commissioned under
-# (2026-07-31): validate the live paths with Opus 4.8 doing the hard work and
-# 3.5 Flash-Lite doing the easy work, on SDLC *and* SWE-bench Pro. The three policies that existed before this
-# one answer a different question each — all-opus is the single-model control,
-# all-gemini-flash-high asks "how far does Gemini get if it does everything",
-# and neither shows the shape an economical production harness would actually
-# take. This one does: expensive judgment, cheap execution, one driver.
+# ---------------------------------------------------------------------------
+# WHY THE NAME IS THIS LONG — READ THIS FIRST IF YOU ARE LOOKING FOR
+# `opus48-plus-lite`
+# ---------------------------------------------------------------------------
+# RENAMED 2026-07-31. This file, its cell ids and its leaf ids used to be built
+# out of `opus48` and `lite`: the file was `opus48-plus-lite.yaml`, the two
+# cells were `opus48` and `opus48-lite`, and the worker leaf was
+# `flash-lite-35-agsdk-vertex`. Every one of those names was ambiguous in the
+# same direction — `opus48-lite` reads as "a lite tier OF Opus 4.8", which is
+# the opposite of what it is. There is no lite tier of Opus. "Lite" is the
+# GEMINI model: `gemini-3.5-flash-lite`. A reader who took the old name at face
+# value would conclude this policy compares two Claude tiers, when what it
+# actually compares is a Claude driver against a Gemini worker.
+#
+# The rule now applied throughout this file: every identifier names its models
+# in full, in vendor spelling, so that no id can be read as anything but the
+# models it binds. That is why they are long. Length is the cheaper mistake.
+#
+#   former id                     current id                                    what it is
+#   opus48-plus-lite              opus-4.8-plus-gemini-3.5-flash-lite           this policy
+#   opus48                        opus-4.8-solo                                 the solo cell
+#   opus48-lite                   opus-4.8-delegating-to-gemini-3.5-flash-lite  the delegated cell
+#   opus48-anthropic              opus-4.8-anthropic                            the driver leaf
+#   flash-lite-35-agsdk-vertex    gemini-3.5-flash-lite-agsdk-vertex            the worker leaf
+#
+# The `model_name:` pins did NOT change and are not part of that map — they were
+# always the vendors' own API strings (`claude-opus-4-8`, `gemini-3.5-flash-lite`)
+# and were always correct. Only the names this repository chose for itself moved.
+#
+# The two committed reference passes under `examples/` were recorded before the
+# rename. Their records were relabelled to match, and the exact terms of that
+# relabelling — including which fields were left exactly as recorded and why —
+# are stated in each bundle's `integrity-notes.md`. No measurement, cost, token
+# count, model pin or verdict was touched.
+#
+# ---------------------------------------------------------------------------
+# THIS FILE IS ONE OF THREE — PICK THE RIGHT ONE
+# ---------------------------------------------------------------------------
+# The same tiering is shipped three ways, because the two kinds are usually run
+# separately and a policy that silently mis-routes the kind it was not written
+# for is worse than no policy at all:
+#
+#   opus-4.8-plus-gemini-3.5-flash-lite.yaml                 <- THIS FILE. Both
+#                                                               kinds. Use it to
+#                                                               run SDLC and Pro
+#                                                               under one cell id.
+#   opus-4.8-plus-gemini-3.5-flash-lite-sdlc.yaml               SDLC only.
+#   opus-4.8-plus-gemini-3.5-flash-lite-swe-bench-pro.yaml      SWE-bench Pro only.
+#
+# All three carry a BYTE-IDENTICAL `models:` block — same cells, same leaves,
+# same pins, same regions, same thinking settings — so a run's cost and cable are
+# the same whichever you pick. `policy-family.test.mjs` asserts that identity and
+# fails the suite if an edit lands in one file and not its siblings.
+#
+# What differs is ONLY the `rules:` block, and only by omission: the two
+# kind-specific files carry their own kind's stages and NO `default:` rule. That
+# omission is the point. Run the SDLC file against SWE-bench Pro and it does not
+# quietly route `repro` to the fail-safe and hand you a run with zero delegation
+# in it — it fails at load time, before a single token is spent, with
+#
+#   Policy '...-sdlc' has no rule matching {"phase":"repro",...} and no default rule.
+#
+# THIS file keeps its `default:`, because it is the general-purpose one and is
+# the only one of the three that legitimately sees both kinds' stage lists.
+#
+# ---------------------------------------------------------------------------
+# WHY THIS POLICY EXISTS
+# ---------------------------------------------------------------------------
+# The instruction it was commissioned under (2026-07-31): validate the live
+# paths with Opus 4.8 doing the hard work and Gemini 3.5 Flash-Lite doing the
+# easy work, on SDLC *and* SWE-bench Pro. The three policies that existed before
+# this one answer a different question each — all-opus is the single-model
+# control, all-gemini-flash-high asks "how far does Gemini get if it does
+# everything", and neither shows the shape an economical production harness
+# would actually take. This one does: expensive judgment, cheap execution, one
+# driver.
 #
 # ---------------------------------------------------------------------------
 # WHERE THE HARD/EASY SPLIT COMES FROM — IT WAS NOT INVENTED HERE
@@ -49,9 +119,9 @@
 # the harness's build-and-test runner and `report` is emitted by the finish
 # block. What matters for cost is that verify's REPAIR ROUNDS inherit the
 # EXECUTE stage's binding automatically (kinds/sdlc.mjs), so the fix-the-build
-# loop runs on Flash-Lite. That is exactly the orchestrator's `debug`-on-the-
-# cheap-tier-for-the-first-two-attempts behaviour, arrived at through a different
-# mechanism, and it is why no `debug` rule appears below.
+# loop runs on Gemini 3.5 Flash-Lite. That is exactly the orchestrator's
+# `debug`-on-the-cheap-tier-for-the-first-two-attempts behaviour, arrived at
+# through a different mechanism, and it is why no `debug` rule appears below.
 #
 # ---------------------------------------------------------------------------
 # WHY SWE-BENCH PRO IS TIERED ON A DIFFERENT AXIS
@@ -136,7 +206,12 @@
 #   burned 2026-07-16. There is no mitigation available while the model is
 #   global-only; the run either gets served or fails fast on quota.
 version: 2
-name: opus48-plus-lite
+name: opus-4.8-plus-gemini-3.5-flash-lite
+# ===========================================================================
+# MODELS — KEEP BYTE-IDENTICAL WITH THE TWO KIND-SPECIFIC SIBLING FILES.
+# `policy-family.test.mjs` compares this block across all three and fails if
+# they drift. Edit one, edit all three, in the same commit.
+# ===========================================================================
 models:
   # ---- the premium cell ---------------------------------------------------
   # `solo` is the one-seat form: Claude Code's own driver seat and nothing
@@ -144,25 +219,35 @@ models:
   # cell makes ZERO Antigravity SDK calls by design, which is correct for the
   # stages that route to it and is why the per-stage gate finding above had to
   # be established first.
-  - id: opus48
+  #
+  # The id says `-solo` rather than plain `opus-4.8` so that it cannot be
+  # misread as "the Opus leaf". The leaf is `opus-4.8-anthropic`, below; this
+  # is the CELL that binds that leaf alone.
+  - id: opus-4.8-solo
     composition: solo
     runtime: claude-code
-    driver: opus48-anthropic
+    driver: opus-4.8-anthropic
 
   # ---- the delegated cell -------------------------------------------------
   # The two-seat form: the SAME Opus 4.8 driver leaf as above, conducting a
-  # Flash-Lite worker reached through the provisioned Skill. Sharing one driver
-  # leaf between both cells is deliberate — if the tiers named separate driver
-  # entries, a later edit could drift them apart and the policy would silently
-  # stop being "one driver, two tiers", which is the entire claim it makes.
-  - id: opus48-lite
+  # Gemini 3.5 Flash-Lite worker reached through the provisioned Skill. Sharing
+  # one driver leaf between both cells is deliberate — if the tiers named
+  # separate driver entries, a later edit could drift them apart and the policy
+  # would silently stop being "one driver, two tiers", which is the entire claim
+  # it makes.
+  #
+  # The id spells the direction of the relationship — Opus 4.8 DELEGATING TO
+  # Gemini 3.5 Flash-Lite — because this id is what lands in every manifest as
+  # `modelId` and in every dashboard cell label, and it is the exact place the
+  # old `opus48-lite` misled a reader about which vendor was doing what.
+  - id: opus-4.8-delegating-to-gemini-3.5-flash-lite
     composition: delegated
     runtime: claude-code
-    driver: opus48-anthropic
-    worker: flash-lite-35-agsdk-vertex
+    driver: opus-4.8-anthropic
+    worker: gemini-3.5-flash-lite-agsdk-vertex
 
   # ---- driver leaf --------------------------------------------------------
-  - id: opus48-anthropic
+  - id: opus-4.8-anthropic
     adapter: builtin-anthropic        # the `claude` CLI talks to Anthropic itself
     api: anthropic
     model_name: claude-opus-4-8       # the pin for the hard work — and, since
@@ -191,7 +276,11 @@ models:
     # worker's metered Vertex spend.
 
   # ---- worker leaf --------------------------------------------------------
-  - id: flash-lite-35-agsdk-vertex
+  # The id carries model, adapter and API because the same model over a
+  # different cable is a different cell. The old `flash-lite-35-agsdk-vertex`
+  # spelled the model as `flash-lite-35`, which matches nothing you can pass to
+  # Vertex; it is now the vendor's own string, identical to `model_name` below.
+  - id: gemini-3.5-flash-lite-agsdk-vertex
     adapter: antigravity-sdk          # gemini_worker.py → pip google-antigravity
     api: vertex                       # the SDK's only doorway; validated at load
     model_name: gemini-3.5-flash-lite # 2026-07-31: "Only 3.5 Flash-Lite."
@@ -224,28 +313,28 @@ rules:
   # is handled on purpose, and so a future stage id added to the SDLC kind
   # cannot silently change how Pro routes.
   - when: { phase: [repro, localize] }
-    use: opus48
+    use: opus-4.8-solo
     reason: reproducing the reported failure and locating the responsible code are the judgment half of Pro — and only the solo cell lets the driver read the repository to do them
   - when: { phase: [patch] }
-    use: opus48-lite
+    use: opus-4.8-delegating-to-gemini-3.5-flash-lite
     reason: authoring the fix is the bulk work, and it arrives with Opus's own repro.json and localize.json already inlined in the prompt
 
   # ---- SDLC premium tier --------------------------------------------------
   - when: { phase: [requirements, design, plan-packets] }
-    use: opus48
+    use: opus-4.8-solo
     reason: orchestrator premium tier (requirements_analysis, architecture_design, plan_task_packets) — the decisions the rest of the run is built on
   - when: { phase: [review] }
-    use: opus48
+    use: opus-4.8-solo
     reason: orchestrator premium tier (senior_code_review) — a cheap reviewer approving cheap code is not a review
   - when: { phase: [judge] }
-    use: opus48
+    use: opus-4.8-solo
     reason: the grader decides whether the run passed; running it on the model under test would make the headline number worthless
 
   # ---- SDLC cheap tier ----------------------------------------------------
   # `execute` only. verify's repair rounds inherit this binding automatically,
   # which is where the orchestrator's cheap-tier `debug` behaviour comes from.
   - when: { phase: [execute] }
-    use: opus48-lite
+    use: opus-4.8-delegating-to-gemini-3.5-flash-lite
     reason: orchestrator cheap tier (codegen) — bulk authoring under Opus direction, and the stage that carries verify's repair rounds with it
 
   # ---- fail-safe ----------------------------------------------------------
@@ -254,7 +343,12 @@ rules:
   # default for an unexamined stage is the model that is good at everything,
   # not the one that is cheap. This mirrors the orchestrator's own `default`, which
   # is likewise its premium tier.
-  - default: opus48
+  #
+  # ONLY THIS FILE HAS A DEFAULT. The two kind-specific siblings deliberately
+  # omit it so that running them against the wrong kind fails loudly at load
+  # instead of silently resolving every unmatched stage to premium — see the
+  # three-file section in the header.
+  - default: opus-4.8-solo
     reason: unrecognised stage — premium tier is the fail-safe, matching the orchestrator templates
 retry:
   type: flat

@@ -11,7 +11,7 @@ exec docker run --rm \
   -e npm_config_store_dir=/pkg-store/pnpm \
   -e PNPM_HOME=/pkg-store/pnpm-home \
   -e npm_config_cache=/pkg-store/npm \
-  -v "/harness/runs/kudos-wall/claude-code--opus48-plus-lite/2026-07-31T09-54-42/workdir:/app" \
+  -v "/harness/runs/kudos-wall/claude-code--opus-4.8-plus-gemini-3.5-flash-lite/2026-07-31T09-54-42/workdir:/app" \
   -v "sdlc-nm-2026-07-31T09-54-42:/app/node_modules" \
   -w /app \
   sdlc-env:node22-pnpm9.12.3 \

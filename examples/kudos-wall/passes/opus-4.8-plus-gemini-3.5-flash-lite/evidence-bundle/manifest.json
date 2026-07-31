@@ -18,8 +18,8 @@
     "version": "2.1.215 (Claude Code)"
   },
   "policy": {
-    "name": "opus48-plus-lite",
-    "file": "tools/harness-matrix/policies/opus48-plus-lite.yaml",
+    "name": "opus-4.8-plus-gemini-3.5-flash-lite",
+    "file": "tools/harness-matrix/policies/opus-4.8-plus-gemini-3.5-flash-lite.yaml",
     "sha256": "ccbe886160ba4f8bb30353081411c81de671e4462863be5e75cfcc011c60077d",
     "retry": {
       "type": "flat",
@@ -41,7 +41,7 @@
     {
       "stage": "requirements",
       "executor": "llm-task",
-      "model_id": "opus48",
+      "model_id": "opus-4.8-solo",
       "binding": "claude-opus-4-8",
       "thinking": "high",
       "passed": true,
@@ -86,7 +86,7 @@
     {
       "stage": "design",
       "executor": "llm-task",
-      "model_id": "opus48",
+      "model_id": "opus-4.8-solo",
       "binding": "claude-opus-4-8",
       "thinking": "high",
       "passed": true,
@@ -131,7 +131,7 @@
     {
       "stage": "plan-packets",
       "executor": "llm-task",
-      "model_id": "opus48",
+      "model_id": "opus-4.8-solo",
       "binding": "claude-opus-4-8",
       "thinking": "high",
       "passed": true,
@@ -176,7 +176,7 @@
     {
       "stage": "execute",
       "executor": "llm-task",
-      "model_id": "opus48-lite",
+      "model_id": "opus-4.8-delegating-to-gemini-3.5-flash-lite",
       "binding": {
         "driver": "claude-opus-4-8",
         "worker": "gemini-3.5-flash-lite",
@@ -232,7 +232,7 @@
                   "total_token_count": 811093
                 },
                 "tool_call_count": 24,
-                "text": "I have successfully implemented the **Kudos Wall** feature (`KudosModule`) on the service-web scaffold according to all specifications and rules.\n\n### Files Created / Modified\n- **Modified:**\n  - [prisma/schema.prisma](file:///harness/runs/kudos-wall/claude-code--opus48-plus-lite/2026-07-31T09-54-42/workdir/prisma/schema.prisma) — Appended the `Kudos` model below the `MODEL SLOT` marker.\n  - [src/modules/index.ts](file:///harness/runs/kudos-wall/claude-code--opus48-plus-lite/2026-07-31T09-54-42/workdir/src/modules/index.ts) — Imported and registered `KudosModule` in the `MODULES` array.\n- **Created (Modules & Services):**\n  - [src/modules/kudos/kudos.types.ts](file:///harness/runs/kudos-wall/claude-code--opus48-plus-lite/2026-07-31T09-54-42/workdir/src/modules/kudos/kudos.types.ts) — Defined `KudosRecord` shape and bound constants (`FROM_MAX = 80`, `TO_MAX = 80`, `MESSAGE_MAX = 280`).\n  - [src/modules/kudos/kudos.prisma.ts](file:///harness/runs/kudos-wall/claude-code--opus48-plus-lite/2026-07-31T09-54-42/workdir/src/modules/kudos/kudos.prisma.ts) — Implemented `PrismaService` extending `PrismaClient` with `OnModuleInit` and `OnModuleDestroy` hooks.\n  - [src/modules/kudos/kudos.service.ts](file:///harness/runs/kudos-wall/claude-code--opus48-plus-lite/2026-07-31T09-54-42/workdir/src/modules/kudos/kudos.service.ts) — Implemented validation pipeline (plain object check, unknown key rejection, required string presence check, non-empty after trim, max-length validation) and persistence (`create`/`list`).\n  - [src/modules/kudos/kudos.controller.ts](file:///harness/runs/kudos-wall/claude-code--opus48-plus-lite/2026-07-31T09-54-42/workdir/src/modules/kudos/kudos.controller.ts) — Created `@Controller('kudos')` with `POST /kudos` (201 Created) and `GET /kudos`.\n  - [src/modules/kudos/kudos.module.ts](file:///harness/runs/kudos-wall/claude-code--opus48-plus-lite/2026-07-31T09-54-42/workdir/src/modules/kudos/kudos.module.ts) — Assembled `KudosModule`.\n- **Created (Tests):**\n  - [test/modules/kudos/kudos.service.spec.ts](file:///harness/runs/kudos-wall/claude-code--opus48-plus-lite/2026-07-31T09-54-42/workdir/test/modules/kudos/kudos.service.spec.ts) — Unit tests with in-memory Prisma stub covering all validation edge cases, trimming, length bounds, and sorting/tie-breaks.\n  - [test/modules/kudos/kudos.registration.spec.ts](file:///harness/runs/kudos-wall/claude-code--opus48-plus-lite/2026-07-31T09-54-42/workdir/test/modules/kudos/kudos.registration.spec.ts) — Tests asserting `MODULES` registration and NestJS testing module compilation.\n\n### Verification Results\n- `pnpm build`: Exited 0 (`prisma generate` + `tsc -p tsconfig.json` successful).\n- `pnpm test`: Exited 0 (all 14 specs passed successfully)."
+                "text": "I have successfully implemented the **Kudos Wall** feature (`KudosModule`) on the service-web scaffold according to all specifications and rules.\n\n### Files Created / Modified\n- **Modified:**\n  - [prisma/schema.prisma](file:///harness/runs/kudos-wall/claude-code--opus-4.8-plus-gemini-3.5-flash-lite/2026-07-31T09-54-42/workdir/prisma/schema.prisma) — Appended the `Kudos` model below the `MODEL SLOT` marker.\n  - [src/modules/index.ts](file:///harness/runs/kudos-wall/claude-code--opus-4.8-plus-gemini-3.5-flash-lite/2026-07-31T09-54-42/workdir/src/modules/index.ts) — Imported and registered `KudosModule` in the `MODULES` array.\n- **Created (Modules & Services):**\n  - [src/modules/kudos/kudos.types.ts](file:///harness/runs/kudos-wall/claude-code--opus-4.8-plus-gemini-3.5-flash-lite/2026-07-31T09-54-42/workdir/src/modules/kudos/kudos.types.ts) — Defined `KudosRecord` shape and bound constants (`FROM_MAX = 80`, `TO_MAX = 80`, `MESSAGE_MAX = 280`).\n  - [src/modules/kudos/kudos.prisma.ts](file:///harness/runs/kudos-wall/claude-code--opus-4.8-plus-gemini-3.5-flash-lite/2026-07-31T09-54-42/workdir/src/modules/kudos/kudos.prisma.ts) — Implemented `PrismaService` extending `PrismaClient` with `OnModuleInit` and `OnModuleDestroy` hooks.\n  - [src/modules/kudos/kudos.service.ts](file:///harness/runs/kudos-wall/claude-code--opus-4.8-plus-gemini-3.5-flash-lite/2026-07-31T09-54-42/workdir/src/modules/kudos/kudos.service.ts) — Implemented validation pipeline (plain object check, unknown key rejection, required string presence check, non-empty after trim, max-length validation) and persistence (`create`/`list`).\n  - [src/modules/kudos/kudos.controller.ts](file:///harness/runs/kudos-wall/claude-code--opus-4.8-plus-gemini-3.5-flash-lite/2026-07-31T09-54-42/workdir/src/modules/kudos/kudos.controller.ts) — Created `@Controller('kudos')` with `POST /kudos` (201 Created) and `GET /kudos`.\n  - [src/modules/kudos/kudos.module.ts](file:///harness/runs/kudos-wall/claude-code--opus-4.8-plus-gemini-3.5-flash-lite/2026-07-31T09-54-42/workdir/src/modules/kudos/kudos.module.ts) — Assembled `KudosModule`.\n- **Created (Tests):**\n  - [test/modules/kudos/kudos.service.spec.ts](file:///harness/runs/kudos-wall/claude-code--opus-4.8-plus-gemini-3.5-flash-lite/2026-07-31T09-54-42/workdir/test/modules/kudos/kudos.service.spec.ts) — Unit tests with in-memory Prisma stub covering all validation edge cases, trimming, length bounds, and sorting/tie-breaks.\n  - [test/modules/kudos/kudos.registration.spec.ts](file:///harness/runs/kudos-wall/claude-code--opus-4.8-plus-gemini-3.5-flash-lite/2026-07-31T09-54-42/workdir/test/modules/kudos/kudos.registration.spec.ts) — Tests asserting `MODULES` registration and NestJS testing module compilation.\n\n### Verification Results\n- `pnpm build`: Exited 0 (`prisma generate` + `tsc -p tsconfig.json` successful).\n- `pnpm test`: Exited 0 (all 14 specs passed successfully)."
               }
             ],
             "task_files": [
@@ -269,7 +269,7 @@
     {
       "stage": "review",
       "executor": "llm-task",
-      "model_id": "opus48",
+      "model_id": "opus-4.8-solo",
       "binding": "claude-opus-4-8",
       "thinking": "high",
       "passed": true,
@@ -315,7 +315,7 @@
     {
       "stage": "judge",
       "executor": "judge",
-      "model_id": "opus48",
+      "model_id": "opus-4.8-solo",
       "binding": "claude-opus-4-8",
       "thinking": "high",
       "passed": true,

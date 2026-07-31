@@ -15,7 +15,7 @@ exec docker run --rm --platform linux/amd64 \
   --add-host gitlab.com:0.0.0.0 \
   --add-host bitbucket.org:0.0.0.0 \
   -e CMD="$*" \
-  -v "/harness/runs/instance_NodeBB__NodeBB-05f2236193f407cf8e2072757fbd6bb170bc13f0-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e/claude-code--opus48-plus-lite/2026-07-31T10-09-15/workdir:/app" \
+  -v "/harness/runs/instance_NodeBB__NodeBB-05f2236193f407cf8e2072757fbd6bb170bc13f0-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e/claude-code--opus-4.8-plus-gemini-3.5-flash-lite/2026-07-31T10-09-15/workdir:/app" \
   -w /app \
   swe-harness:nodebb-bm9kzwjilm5vzgvi \
   -c 'timeout -k 15 900 bash -c "$CMD"'

@@ -27,8 +27,8 @@ examples/*/passes/*
 !examples/swe-bench-pro/passes/navidrome/**
 # The two cost-tier reference passes from the 2026-07-31 live validation
 # (scrubbed with scrub-paths.mjs before commit; see CHANGELOG):
-!examples/kudos-wall/passes/opus48-plus-lite/
-!examples/kudos-wall/passes/opus48-plus-lite/**
+!examples/kudos-wall/passes/opus-4.8-plus-gemini-3.5-flash-lite/
+!examples/kudos-wall/passes/opus-4.8-plus-gemini-3.5-flash-lite/**
 !examples/swe-bench-pro/passes/nodebb/
 !examples/swe-bench-pro/passes/nodebb/**
 
