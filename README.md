@@ -177,9 +177,16 @@ read the driver-to-worker channel without running the harness:
 - **[examples/swe-bench-pro/passes/navidrome/](examples/swe-bench-pro/passes/navidrome/)** — 5 hand-offs and their SDK usage receipts from one real
   SWE-bench Pro attempt (navidrome instance,
   `all-gemini-flash-high` policy).
+- **[examples/kudos-wall/passes/opus48-plus-lite/](examples/kudos-wall/passes/opus48-plus-lite/)** — the single hand-off and receipt from a real
+  run of the cost-tier `opus48-plus-lite` policy (Claude Opus 4.8 driver,
+  `gemini-3.5-flash-lite` worker). RESOLVED, 14/14 grade tests, judge 9/10.
+- **[examples/swe-bench-pro/passes/nodebb/](examples/swe-bench-pro/passes/nodebb/)** — the single hand-off and receipt from one real
+  `opus48-plus-lite` SWE-bench Pro attempt (NodeBB instance). Not resolved:
+  the patch applies but failed the held-out evaluator — committed as-is.
 
-Both were recorded in July 2026, and their receipts name the worker
-that ran at the time — `gemini-3.5-flash` and `gemini-2.5-flash`.
+All were recorded in July 2026, and their receipts name the worker that
+ran at the time — `gemini-3.5-flash`, `gemini-2.5-flash`, and
+`gemini-3.5-flash-lite`.
 `all-gemini-flash-high` has since been re-pinned to
 `gemini-3.5-flash-lite`, so the model id in these files will not match
 the model id in the policy file of the same name. That is the receipts

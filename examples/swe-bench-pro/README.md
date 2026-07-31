@@ -24,6 +24,15 @@ and the single-container-at-a-time rule.
   `all-gemini-flash-high` policy. Not resolved on this attempt — the
   worker-task files show what the driver asked and the worker's usage
   receipts show what Gemini returned.
+- [passes/nodebb/](passes/nodebb/) — the same evidence set from one real
+  run of the cost-tier policy (`opus48-plus-lite`: Claude Opus 4.8 driver,
+  `gemini-3.5-flash-lite` worker, 2026-07-31) against the NodeBB
+  `05f2236193f407cf8e2072757fbd6bb170bc13f0` instance. Not resolved on
+  this attempt — all three phase gates passed and the patch applies, but
+  it failed the held-out evaluator. One hand-off (the patch delegation);
+  `lint.json` is the content lint re-run over it (zero passages flagged).
+  Host paths are scrubbed to `/harness` (`scrub-paths.mjs`); everything
+  else is verbatim from the run.
 
 ## Reproducing a similar run
 

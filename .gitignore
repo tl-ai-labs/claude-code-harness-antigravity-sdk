@@ -22,6 +22,12 @@ examples/*/passes/*
 !examples/*/passes/reference/**
 !examples/swe-bench-pro/passes/navidrome/
 !examples/swe-bench-pro/passes/navidrome/**
+# The two cost-tier reference passes from the 2026-07-31 live validation
+# (scrubbed with scrub-paths.mjs before commit; see CHANGELOG):
+!examples/kudos-wall/passes/opus48-plus-lite/
+!examples/kudos-wall/passes/opus48-plus-lite/**
+!examples/swe-bench-pro/passes/nodebb/
+!examples/swe-bench-pro/passes/nodebb/**
 
 # Local SWE-bench Pro corpus (fetched by tools/swe/fetch-instances-pro.mjs).
 # Not committed — fetch is deterministic, and the corpus is large.

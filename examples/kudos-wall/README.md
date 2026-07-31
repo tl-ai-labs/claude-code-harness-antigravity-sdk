@@ -18,6 +18,13 @@ module registration, integration tests, and a passing build.
   policy. Read the `worker-task-*.md` files to see what the driver actually
   handed the worker; read the `worker-usage-*.json` files to see the token
   counts the Antigravity SDK reported back.
+- [passes/opus48-plus-lite/](passes/opus48-plus-lite/) — the same evidence
+  set from a real run of the cost-tier policy (`opus48-plus-lite`: Claude
+  Opus 4.8 driver, `gemini-3.5-flash-lite` worker, 2026-07-31). RESOLVED —
+  14/14 grade tests, judge 9/10. This cell delegates sparingly by design,
+  so there is exactly one hand-off; `lint.json` is the content lint re-run
+  over it (zero passages flagged). Host paths are scrubbed to `/harness`
+  (`scrub-paths.mjs`); everything else is verbatim from the run.
 
 ## Reproducing the reference pass
 
