@@ -102,7 +102,6 @@ import { fileURLToPath } from "node:url";
 // because tools/harness-matrix is a plain .mjs tree with no node_modules —
 // workspace resolution ("@harness/pricing") is not available here.
 import { getVertexRates, costMicroUsd, microToUsd, PRICING_VERSION } from "../../packages/pricing/dist/index.js";
-import { benchmarkBrief } from "../lib/benchmark-brief.mjs";
 // The audit's own readers. Imported rather than re-derived here so the shape
 // the run kinds WRITE into manifest.json and the shape this exporter READS can
 // never disagree — and so the legacy-integer fallback lives in exactly one
@@ -1466,18 +1465,168 @@ function quoteTaskBrief(markdown) {
  * Written only when absent, or with --rewrite-brief, so hand-edits survive
  * every subsequent export.
  */
-// The BENCHMARK brief is no longer written here (Sriram, 2026-07-25). It was
-// ~110 lines of hand-maintained markdown that said the same things as the
-// orchestrator's own brief generator, in a second voice, in a second file — so the two
-// paths could describe one benchmark two different ways and neither would look
-// wrong on its own. Both now render from tools/lib/benchmark-brief.mjs, which
-// walks ONE section outline and accepts only fixed identity (dataset, cable,
-// cell shape). Nothing a run produces can reach it, so the brief cannot go
-// stale when the next batch lands.
-//
-// The SDLC-task variant below stays inline on purpose: it is a different
-// document about a different subject — no dataset, no instances, no held-out
-// tests — and bending it into the benchmark outline would make both worse.
+/**
+ * The SWE-bench Pro study brief.
+ *
+ * NOTHING A RUN PRODUCED REACHES THIS FUNCTION, and that is the design. It
+ * takes no arguments; the only facts it reads are the card's fixed identity
+ * already resolved above — `studyLabel`, `prettyRuntime`, `WORKER_SDK_LABEL`,
+ * and `anySidecars` (delegated cable vs single-seat). There is no parameter
+ * through which an instance id, a seed, a count, a date or a dollar could
+ * arrive, which is what keeps the study's first tab from going stale the moment
+ * the next batch lands. The sample a batch covered is recorded where it belongs:
+ * `instances/selection.json` on disk, the Instances tab on screen.
+ *
+ * WHY IT IS INLINE RATHER THAN A SHARED TEMPLATE. It briefly was one —
+ * `tools/lib/benchmark-brief.mjs`, parameterised over {Verified, Pro} ×
+ * {orchestrator, harness} — because in the repository this was extracted from
+ * two different applications described the same benchmark in two voices from
+ * two files. Only one of those callers came across. In this tree three of the
+ * four combinations are unreachable: there is no SWE-bench Verified corpus (the
+ * fetcher and the kind are Pro-only) and no orchestrator track, so the
+ * abstraction that existed to hold two callers in step held one, and its own
+ * docblock explained itself by naming a generator that is not here. It now sits
+ * beside `delegatedSdlcBrief()` — the other brief this exporter writes — where
+ * the two can be read against each other.
+ *
+ * Both cell shapes below are live: a delegated column (driver + worker) and a
+ * single-seat column (one CLI agent, one wallet) are both things this harness
+ * produces, so neither branch is dead code.
+ */
+function proBenchmarkBrief() {
+  const delegated = anySidecars;
+  return [
+    `# Project Brief — ${studyLabel}`,
+    "",
+    // The one-line summary doubles as the Study Overview hero sub (the dashboard
+    // prefers it over the registry description), so it must tell the SAME story
+    // as the card that was clicked to get here.
+    "## One-line summary",
+    ...(delegated ? [
+      `Frozen SWE-bench Pro instances, solved by a ${prettyRuntime} driver that cannot`,
+      "edit files — every line of every patch is authored by a worker model reached through",
+      `Google's ${WORKER_SDK_LABEL} — and graded by the benchmark's own Docker test harness.`,
+    ] : [
+      `Frozen SWE-bench Pro instances, solved end-to-end by a ${prettyRuntime} CLI agent`,
+      "under the harness-matrix runner and graded by the benchmark's own Docker test harness.",
+    ]),
+    "",
+    "## What this study is",
+    "",
+    ...(delegated ? [
+      // Fixed-cell ruling: for the delegated track the driver runtime and the
+      // SDK are the study's identity — only the batch, the worker binding behind
+      // the SDK, and the date vary per column.
+      "This card is a **track**, not a single experiment, and its cell is **fixed**: every run",
+      `column is the same cable — a **${prettyRuntime}** driver wired to the **${WORKER_SDK_LABEL}**.`,
+      "What varies from column to column is the batch of instances it covered, the worker model",
+      "the SDK carried on that day, and the date. Batches are added over time, so the sample is",
+      "a property of a column and never of the study.",
+    ] : [
+      "This card is a **track**, not a single experiment. Every run column is one *cell* — one CLI",
+      "runtime paired with one routing policy — evaluated on the batch of instances that column",
+      "covered. Batches are added over time, so the sample is a property of a column and never of",
+      "the study.",
+    ]),
+    "",
+    "Which instances a column ran, what each one cost and how each one was graded is on the",
+    "**Instances** tab; a column's totals are on **Runs Result**.",
+    "",
+    "## What SWE-bench Pro is",
+    "",
+    "SWE-bench Pro is Scale AI's harder successor to the original SWE-bench: real GitHub issues",
+    "from actively maintained repositories, each frozen at a base commit with a held-out test",
+    "suite. Unlike SWE-bench Verified (Python-only), Pro spans multiple languages.",
+    "",
+    "An instance is one issue. The agent gets the repository at the base commit plus the issue",
+    "description, and must produce a patch. It never sees the held-out tests or the reference",
+    "solution.",
+    "",
+    "Every run of an instance is an independent attempt. Two runs of the same instance share",
+    "nothing but the id, which exists so attempts can be lined up against each other — never so",
+    "one can stand in for another.",
+    "",
+    "## What one instance run does",
+    "",
+    "Each phase is a fresh agent session whose input is the previous phase's written output:",
+    "",
+    "1. **Repro** — reproduce the reported failure inside the instance's own Docker image, and",
+    "   prove it fails.",
+    "2. **Localize** — find the files that must change.",
+    "3. **Patch** — author the fix, then re-run the reproduction.",
+    "",
+    "Retries are **flat**: a phase that fails its gate is retried on the same binding. There is",
+    "no escalation ladder — no phase is quietly promoted to a more expensive model, so a",
+    "column's cost cannot be explained away by \"it escalated\".",
+    "",
+    "## How patches are authored",
+    "",
+    ...(delegated ? [
+      `The driver — the ${prettyRuntime} CLI — *drives* but cannot write: its file-edit tools are`,
+      "disallowed and a pre-tool hook blocks every tree-writing shell command, so it is",
+      "structurally incapable of authoring a line of the patch. Every edit is authored by a",
+      `worker model reached through the ${WORKER_SDK_LABEL}: the driver composes each task, the SDK carries`,
+      "the hand-off, and the driver reads back the reply, diff and test output, then accepts or",
+      "re-delegates.",
+      "",
+      "The driver runtime and the SDK are this study's fixed identity. **Which worker model** sits",
+      "behind the SDK is a per-column choice — each column states its own binding in its label,",
+      // NOT "the newest runs used". The strip never read the newest run — it read
+      // the FIRST, which silently asserted one column's worker for a whole card.
+      // It now pools every column and marks a side that varies, so this sentence
+      // describes that instead.
+      "and the strip above these tabs shows the cable itself — driver, worker, SDK version and",
+      "region — pooled across every column, with a side marked *varies by column* when the",
+      "columns bound different models there.",
+    ] : [
+      "The CLI agent is **single-seat**: it reads, reasons, edits and tests with its own tools.",
+      "One model, one wallet. Which model that is, is a per-column fact — each column states its",
+      "own binding in its label.",
+    ]),
+    "",
+    "## How verdicts are graded",
+    "",
+    "Grading is done by the benchmark's own Docker harness — no LLM judge anywhere. An instance",
+    "counts as **resolved** only when its fail-to-pass tests pass **and** the pass-to-pass suite",
+    "stays green. Verdicts are recorded verbatim; a partial fix counts as unresolved, and a",
+    "required test that never ran is reported as missing rather than as failed.",
+    "",
+    "## How cost is accounted",
+    "",
+    "Two wallets, never blended into one unexplained total:",
+    "",
+    "- **Driver** — reported by the CLI itself. On a Max seat this is **modeled, not wallet-real**: the",
+    "  seat is a flat subscription, so the figure is what those tokens would have cost on the metered",
+    "  API. Every surface that shows it says so.",
+    "- **Worker** — computed from the SDK's own token counts at the worker's Vertex region rates,",
+    "  including the non-global surcharge, through this repo's single pricing package. No rate is",
+    "  ever typed into the exporter.",
+    "",
+    "A runtime that reports no token counts exports zeros with `driver_tokens_reported: false`, so a 0",
+    "never reads as \"free\".",
+    "",
+    "## Integrity",
+    "",
+    "The benchmark's sealed data — reference patches, held-out test lists, hints — never enters a",
+    "prompt or the study directory. Telemetry timestamps are reconstructed from per-attempt durations",
+    "(the harness records how long each attempt took, not when it started), so ordering and durations",
+    "are exact while absolute offsets are approximate; nothing downstream reads them as billing facts.",
+    "",
+    "## Where the numbers are",
+    "",
+    "Nothing on this tab is a result. Per-instance verdicts, attempt ladders, failing test names",
+    "and per-instance spend are on **Instances**; per-column totals, cost and resolve rate are on",
+    "**Runs Result**; the raw call-by-call audit is on **Engineering View**. Which instances a",
+    "batch covered, and the rule that selected them, are recorded in that run's own",
+    "`selection.json`.",
+    "",
+  ].join("\n");
+}
+
+// The SDLC-task variant below stays a separate function on purpose: it is a
+// different document about a different subject — no dataset, no instances, no
+// held-out tests — and bending it into the benchmark outline would make both
+// worse.
 
 /**
  * The DELEGATED SDLC study brief.
@@ -1696,14 +1845,7 @@ function delegatedSdlcBrief() {
 }
 
 const briefMd = isPro
-  ? benchmarkBrief({
-      dataset: "pro",
-      track: "harness",
-      delegated: anySidecars,
-      driver: prettyRuntime,
-      sdk: WORKER_SDK_LABEL,
-      title: studyLabel,
-    })
+  ? proBenchmarkBrief()
   : anySidecars
   ? delegatedSdlcBrief()
   : [

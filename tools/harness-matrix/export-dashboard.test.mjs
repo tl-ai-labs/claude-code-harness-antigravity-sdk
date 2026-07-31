@@ -584,6 +584,89 @@ test("a second task adds its spec to the brief rather than replacing the first",
   }
 });
 
+// ---- the SWE-bench Pro study brief ------------------------------------------
+//
+// WHY THESE ARE HERE (Sriram, 2026-07-31). The Pro brief used to render from a
+// shared template, `tools/lib/benchmark-brief.mjs`, and was tested there over
+// every {Verified, Pro} × {orchestrator, harness} combination. Three of those
+// four are unreachable from this repository, so the template was inlined into
+// the exporter and its two surviving properties moved here — where they are now
+// checked against the file the exporter actually WRITES, which is what a reader
+// sees, rather than against the string a helper returned.
+//
+// Both properties fail silently. A brief that drops or reorders a section still
+// renders as a perfectly confident document, and a brief that absorbs one
+// batch's numbers looks right on the day it is written and is wrong the day the
+// next batch lands.
+
+/** The `##` section headings of a brief, in order. */
+const outline = (md) => md.split("\n").filter((l) => l.startsWith("## "));
+
+test("the Pro brief walks one section outline whether the cell is delegated or single-seat", (t) => {
+  // The two shapes fill different paragraphs into the SAME outline. Letting one
+  // of them grow a section the other lacks is how two descriptions of one
+  // benchmark start to look like descriptions of two benchmarks.
+  const a = workspace(t), b = workspace(t);
+  assert.equal(run(["--run-dir", proRun(a.runs, { delegated: true }), "--out", a.out]).status, 0);
+  assert.equal(run(["--run-dir", proRun(b.runs, { delegated: false }), "--out", b.out]).status, 0);
+
+  const delegatedBrief = readBrief(a.out), singleSeat = readBrief(b.out);
+  assert.deepEqual(outline(delegatedBrief), outline(singleSeat),
+    "the delegated and single-seat Pro briefs no longer walk the same outline");
+  assert.deepEqual(outline(delegatedBrief), [
+    "## One-line summary",
+    "## What this study is",
+    "## What SWE-bench Pro is",
+    "## What one instance run does",
+    "## How patches are authored",
+    "## How verdicts are graded",
+    "## How cost is accounted",
+    "## Integrity",
+    "## Where the numbers are",
+  ], "the Pro brief's section outline changed");
+});
+
+test("the Pro brief states its cell shape and never hedges over the other one", (t) => {
+  // A delegated column's headline claim is that the driver could not have
+  // written the patch. A single-seat column's is the opposite — one agent, one
+  // wallet. A brief carrying both sentences would be the only surface on the
+  // page unsure of what it ran.
+  const a = workspace(t), b = workspace(t);
+  run(["--run-dir", proRun(a.runs, { delegated: true }), "--out", a.out]);
+  run(["--run-dir", proRun(b.runs, { delegated: false }), "--out", b.out]);
+
+  const delegatedBrief = readBrief(a.out), singleSeat = readBrief(b.out);
+  assert.match(delegatedBrief, /Antigravity SDK/, "the delegated brief does not name the cable");
+  assert.match(delegatedBrief, /cannot\s+edit files/, "no delegation contract in the delegated brief");
+  assert.ok(!/single-seat/i.test(delegatedBrief), "the delegated brief hedges about single-seat cells");
+
+  assert.match(singleSeat, /single-seat/i, "the single-seat brief does not say so");
+  assert.ok(!/Antigravity SDK/.test(singleSeat),
+    "the single-seat brief claims a worker SDK that never ran");
+});
+
+test("no Pro brief carries an instance id, a count, a seed, a date or a dollar", (t) => {
+  // The rule this brief exists to enforce. The generator it replaced was
+  // titled "SWE-bench Pro × 12 instance(s)" and listed the seed and all twelve
+  // ids inline, which made the study's DESCRIPTION a run artifact: correct for
+  // exactly one batch, stale for every batch after it. The brief takes no
+  // argument through which any of those could arrive, and this is the test that
+  // notices when somebody adds one.
+  const ws = workspace(t);
+  proRun(ws.runs, { instance: "inst_alpha", stamp: "2026-07-24T09-32-34", cost: 4.25 });
+  proRun(ws.runs, { instance: "inst_beta", stamp: "2026-07-24T10-00-00", cost: 1.5 });
+  assert.equal(run(["--runs-root", ws.runs, "--out", ws.out]).status, 0);
+
+  const brief = readBrief(ws.out);
+  for (const id of ["inst_alpha", "inst_beta"]) {
+    assert.ok(!brief.includes(id), `the brief names instance ${id}`);
+  }
+  assert.ok(!/\$\s?\d/.test(brief), "the brief carries a dollar amount");
+  assert.ok(!/\b20\d\d-\d\d-\d\d\b/.test(brief), "the brief carries a run date");
+  assert.ok(!/\bseeds?\b/i.test(brief), "the brief carries a sampling seed");
+  assert.ok(!/\b\d+\s+instances?\b/i.test(brief), "the brief carries an instance count");
+});
+
 // ---- audit criticality, from the run directory to the dashboard -------------
 //
 // The exporter used to publish `audit_flags: <one summed integer>`. A sum is
