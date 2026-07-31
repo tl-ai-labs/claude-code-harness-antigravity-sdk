@@ -69,8 +69,12 @@
  *    refuses to convert them to dollars (a partial dollar total would be
  *    worse than an honest split). THIS script is that downstream: it prices
  *    each usage sidecar through @study-console/pricing `getVertexRates(model,
- *    region)`, which applies the +10% non-global Vertex surcharge for
- *    asia-south1. No rate is ever inlined here (operating rule #4) — the
+ *    region)`, which applies the +10% non-global Vertex surcharge. The region
+ *    and the paying Google Cloud project both come from the sidecar itself
+ *    (`vertex_location` / `vertex_project`), so a run executed outside the
+ *    default region is priced and described as what it was, and no exported
+ *    dashboard ever names a project that did not pay for it.
+ *    No rate is ever inlined here (operating rule #4) — the
  *    pricing package stays the single source of truth, imported by relative
  *    path because the harness tree has no package.json of its own.
  *
@@ -137,10 +141,14 @@ function resolveHarnessPath(rel) {
   return candidates.find((p) => existsSync(p)) ?? null;
 }
 
-// The Gemini worker pins asia-south1 (the global endpoint was quota-starved
-// 2026-07-16). Kept as a named constant so the +10% regional surcharge is
-// applied by getVertexRates() rather than assumed anywhere in this file.
-const WORKER_REGION = "asia-south1";
+// The Gemini worker DEFAULTS to asia-south1 (the global endpoint was
+// quota-starved 2026-07-16), and GOOGLE_CLOUD_LOCATION overrides it. Kept as a
+// named constant so the +10% regional surcharge is applied by getVertexRates()
+// rather than assumed anywhere in this file — but it is only ever a FALLBACK
+// here: every worker sidecar records the region it actually ran in
+// (`vertex_location`), and evidence outranks a constant. The constant is used
+// for sidecars written before that field existed.
+const WORKER_REGION_FALLBACK = "asia-south1";
 
 // THE CABLE. The delegated cell's whole point is CROSS-RUNTIME: a Claude Code
 // driver reaching Gemini through Google's Antigravity SDK, not a bare Gemini
@@ -153,8 +161,32 @@ const WORKER_REGION = "asia-south1";
 const WORKER_SDK = "google-antigravity";
 // WORKER_SDK_LABEL is imported from audit.mjs — it is written into the
 // published attribution sentence, which the evidence bundler also emits, so it
-// has to have exactly one definition. WORKER_SDK and WORKER_REGION stay here:
-// they are pricing and routing facts, not attribution ones.
+// has to have exactly one definition. WORKER_SDK and the region fallback stay
+// here: they are pricing and routing facts, not attribution ones.
+
+/**
+ * Where the worker actually ran, per sidecar. Reads the run's own evidence and
+ * falls back to the pinned region only for sidecars written before
+ * gemini_worker.py started recording it. Used for BOTH pricing (the +10%
+ * non-global Vertex surcharge is regional) and display, so a run executed in,
+ * say, europe-west4 is never priced or described as asia-south1.
+ */
+const sidecarRegion = (sc) => sc.vertex_location || WORKER_REGION_FALLBACK;
+
+/**
+ * Which Google Cloud project paid for the worker side, per sidecar.
+ *
+ * This used to be a hardcoded string naming the project these runs were
+ * originally developed against — which meant every exported dashboard, on any
+ * machine, asserted that OUR project paid for the reader's run. It is a
+ * billing claim, so it comes from the run's own receipt or it is not made at
+ * all: null when the sidecar predates the field, and the callers word the
+ * sentence without a project name in that case.
+ */
+const sidecarProject = (sc) => sc.vertex_project || null;
+
+/** Join a set of evidence values for display; null when nothing was recorded. */
+const listOrNull = (vals) => (vals.length ? [...new Set(vals)].sort().join(", ") : null);
 
 /**
  * Best-effort version of the Antigravity SDK, read from the worker venv's
@@ -422,6 +454,12 @@ function readRun(runDir) {
   // would otherwise be filed as a worker call.
   const driverModelSet = new Set();
   const workerModelSet = new Set();
+  // WHERE the worker ran and WHO paid, taken from the sidecars rather than
+  // from a constant in this file. Both are per-run sets because a single run
+  // could in principle span regions (a retry after a quota failure), and the
+  // export must be able to say so instead of averaging it away.
+  const workerRegionSet = new Set();
+  const workerProjectSet = new Set();
 
   /**
    * Per-leg cost split, accumulated as the events are built.
@@ -508,6 +546,8 @@ function readRun(runDir) {
         split.worker_calls += 1;
         if (sc.model && !split.worker_models.includes(sc.model)) split.worker_models.push(sc.model);
         workerModelSet.add(sc.model ?? "unknown-worker");
+        workerRegionSet.add(sidecarRegion(sc));
+        if (sidecarProject(sc)) workerProjectSet.add(sidecarProject(sc));
         events.push({
           // Spread the hand-offs across the attempt window purely so the
           // timeline orders them correctly inside their parent attempt.
@@ -525,8 +565,8 @@ function readRun(runDir) {
             rule_index: 1,
             // The per-call audit line. Names the SDK, not just the model, so a
             // reviewer reading one row can tell HOW Gemini was reached.
-            rule_reason: `worker via ${WORKER_SDK_LABEL} (${WORKER_SDK}) → Vertex ${WORKER_REGION} · ` +
-              `thinking ${sc.thinking ?? "n/a"}`,
+            rule_reason: `worker via ${WORKER_SDK_LABEL} (${WORKER_SDK}) → Vertex ` +
+              `${sidecarRegion(sc)} · thinking ${sc.thinking ?? "n/a"}`,
           },
           // TWO DIFFERENT CONVENTIONS, DELIBERATELY NOT MIXED UP. The pricing
           // package needs DISJOINT buckets (fresh and cache_read are billed at
@@ -673,7 +713,10 @@ function readRun(runDir) {
           worker: [...workerModelSet],
           worker_sdk: WORKER_SDK,
           worker_sdk_label: WORKER_SDK_LABEL,
-          worker_transport: `Vertex ${WORKER_REGION}`,
+          worker_transport: `Vertex ${listOrNull([...workerRegionSet]) ?? WORKER_REGION_FALLBACK}`,
+          // The billing surface for this instance's worker spend, from its own
+          // receipts. Absent (not guessed) when the sidecars predate the field.
+          worker_project: listOrNull([...workerProjectSet]),
           driver_cost_usd: driverCost,
           worker_cost_usd: workerCost,
           worker_calls: workerCallCount,
@@ -707,6 +750,7 @@ function readRun(runDir) {
     runDir, m, audit, handoffRecheck, verdict, kind, isPro, legs, subjectId, runtimeName, policyName, stamp,
     events, anySidecars, workerCallCount, unpricedModels, driverLedger,
     driverModels: [...driverModelSet], workerModels: [...workerModelSet],
+    workerRegions: [...workerRegionSet], workerProjects: [...workerProjectSet],
     driverCost, workerCost, totalCost, patch, resolved, submitted, instanceRow,
   };
 }
@@ -736,7 +780,9 @@ function priceSidecar(sc) {
   let usd = 0;
   let priced = false;
   try {
-    usd = microToUsd(costMicroUsd(tokens, getVertexRates(sc.model, WORKER_REGION)).total);
+    // Priced in the region the sidecar says it ran in: the surcharge is a
+    // property of the endpoint that served the call, not of our policy pin.
+    usd = microToUsd(costMicroUsd(tokens, getVertexRates(sc.model, sidecarRegion(sc))).total);
     priced = true;
   } catch {
     // Unknown model id in the price table → cost stays 0 and `priced:false`
@@ -821,6 +867,11 @@ const workerCallCount = runs.reduce((s, r) => s + r.workerCallCount, 0);
 const unpricedModels = new Set(runs.flatMap((r) => [...r.unpricedModels]));
 const driverModels = [...new Set(runs.flatMap((r) => r.driverModels))];
 const workerModels = [...new Set(runs.flatMap((r) => r.workerModels))];
+// Column-level "where it ran" and "who paid", from the runs' own sidecars.
+// workerProject is null when NO run in the column recorded one — the cable
+// sentences below then omit the project rather than naming a wrong one.
+const workerRegion = listOrNull(runs.flatMap((r) => r.workerRegions)) ?? WORKER_REGION_FALLBACK;
+const workerProject = listOrNull(runs.flatMap((r) => r.workerProjects));
 const driverLedger = runs.reduce((acc, r) => ({
   input: acc.input + r.driverLedger.input,
   cached: acc.cached + r.driverLedger.cached,
@@ -1051,9 +1102,15 @@ const v1Manifest = {
       worker_sdk_label: WORKER_SDK_LABEL,
       worker_sdk_version_at_export: sdkVersion,
       worker_models: workerModels,
-      worker_transport: `Vertex endpoint (vertex=True) · ${WORKER_REGION}`,
-      worker_auth: "Google ADC on the ai-studies-console project",
-      summary: `${runtimeName} driver → ${WORKER_SDK_LABEL} worker (Gemini on Vertex ${WORKER_REGION})`,
+      worker_transport: `Vertex endpoint (vertex=True) · ${workerRegion}`,
+      // Named from the sidecars, never from a constant: this is the sentence
+      // that tells a reader whose Google Cloud bill the worker side landed on.
+      worker_auth: workerProject
+        ? `Google ADC on the ${workerProject} project`
+        : "Google ADC — the operator's own Google Cloud project (not recorded in this run's evidence)",
+      worker_project: workerProject,
+      worker_region: workerRegion,
+      summary: `${runtimeName} driver → ${WORKER_SDK_LABEL} worker (Gemini on Vertex ${workerRegion})`,
       // ---- display-ready strings -----------------------------------------
       // The console renders these VERBATIM in the cable strip that sits above
       // every study tab. They live here, not in the dashboard, on purpose: the
@@ -1064,7 +1121,7 @@ const v1Manifest = {
       driver_display: `${first.m.runtime?.name} ${first.m.runtime?.version ?? ""}`.trim() +
         " · Max seat (OAuth) · file-edit tools disabled",
       worker_display: `via ${WORKER_SDK_LABEL} (${WORKER_SDK}` +
-        (sdkVersion ? ` ${sdkVersion}` : "") + `) → Vertex ${WORKER_REGION}`,
+        (sdkVersion ? ` ${sdkVersion}` : "") + `) → Vertex ${workerRegion}`,
       // Structural claim only. What the driver may have DICTATED down the
       // hand-off channel is a separate, measured claim and lives in
       // `attribution` below — never folded into this sentence, because the two
@@ -1081,8 +1138,9 @@ const v1Manifest = {
       attribution: columnAttribution(runs),
       billing_note: `Driver spend is billed to a Claude Code Max seat (OAuth), not the metered ` +
         `Anthropic API, so it is CLI-modeled rather than wallet-real. Worker spend is real ` +
-        `Vertex billing on Google ADC (project ai-studies-console), priced here from the SDK's ` +
-        `own token counts.`,
+        `Vertex billing on Google ADC` +
+        (workerProject ? ` (project ${workerProject})` : "") +
+        `, priced here from the SDK's own token counts.`,
       // Answers the first question a reviewer asks about these two numbers.
       // Every figure in it is measured, not estimated: turns and tokens come
       // from the driver's own result events, hand-offs from the trajectory.
@@ -1115,7 +1173,8 @@ const v1Manifest = {
     worker_cost_usd: workerCost,
     worker_cost_basis: anySidecars
       ? `computed here from real SDK token counts via @study-console/pricing ` +
-        `getVertexRates(model, "${WORKER_REGION}") — includes the +10% non-global Vertex surcharge`
+        `getVertexRates(model, "${workerRegion}") — the region comes from each sidecar, and a ` +
+        `non-global Vertex endpoint carries a +10% surcharge`
       : "n/a (non-delegated cell)",
     worker_calls: workerCallCount,
     pricing_version: PRICING_VERSION,

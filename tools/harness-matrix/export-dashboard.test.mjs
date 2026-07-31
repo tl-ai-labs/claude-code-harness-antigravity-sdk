@@ -784,3 +784,102 @@ test("a Pro instance row carries its own attribution, agreeing with its column",
   assert.deepEqual(row.integrity_warnings.by_family, { "driver-proxy-shell-command": 1 });
   assert.match(readPassManifest(ws.out).harness.cable.attribution.authored_by, /^MIXED/);
 });
+
+// ---- whose project paid, and where it ran -----------------------------------
+//
+// WHY THIS SECTION EXISTS (2026-07-31). The exporter used to write the Google
+// Cloud project these runs were developed against into every export, as a
+// literal string: `worker_auth: "Google ADC on the ai-studies-console project"`.
+// Harmless inside one company, wrong the moment the repository is published —
+// a reader exporting their own run got a dashboard asserting that somebody
+// else's project paid for it. Region had the same shape: a module constant
+// describing a policy pin, applied to runs that might not have honoured it.
+//
+// Both now come from the run's own worker sidecars (`vertex_project`,
+// `vertex_location`), which is the only place either fact is actually
+// recorded. These tests hold that line: an exporter that "simplifies" back to
+// a constant fails here, and so does one that invents a project when the
+// evidence does not carry one.
+
+/** Rewrite every worker sidecar in a run's manifest through `patch`. */
+function patchSidecars(runDir, patch) {
+  const mPath = join(runDir, "manifest.json");
+  const man = JSON.parse(readFileSync(mPath, "utf8"));
+  let n = 0;
+  for (const ph of man.phases ?? []) {
+    for (const a of ph.attempts ?? []) {
+      for (const sc of a.worker_usage?.sidecars ?? []) { patch(sc); n += 1; }
+    }
+  }
+  assert.ok(n > 0, "fixture carried no sidecars to patch");
+  writeFileSync(mPath, JSON.stringify(man, null, 2));
+  return runDir;
+}
+
+test("the exported cable names the project from the run's own sidecars", (t) => {
+  const ws = workspace(t);
+  patchSidecars(proRun(ws.runs, { delegated: true }), (sc) => {
+    sc.vertex_project = "customer-project-42";
+    sc.vertex_location = "europe-west4";
+  });
+  assert.equal(run(["--runs-root", ws.runs, "--out", ws.out]).status, 0);
+  const cable = readPassManifest(ws.out).harness.cable;
+
+  assert.equal(cable.worker_project, "customer-project-42");
+  assert.equal(cable.worker_region, "europe-west4");
+  assert.match(cable.worker_auth, /customer-project-42/);
+  assert.match(cable.billing_note, /customer-project-42/);
+  assert.match(cable.worker_transport, /europe-west4/);
+  assert.match(cable.worker_display, /europe-west4/);
+  assert.match(cable.summary, /europe-west4/);
+});
+
+test("no exported string names a project the evidence never mentioned", (t) => {
+  // The whole published artifact, not just the field that was wrong: a leftover
+  // project id in a brief or a routing reason is the same defect in a different
+  // file. The fixture's sidecars carry no vertex_project at all, so ANY project
+  // id in the output would have to have been invented by the exporter.
+  const ws = workspace(t);
+  proRun(ws.runs, { delegated: true });
+  assert.equal(run(["--runs-root", ws.runs, "--out", ws.out]).status, 0);
+
+  for (const f of filesUnder(ws.out)) {
+    const body = readFileSync(join(ws.out, f), "utf8");
+    assert.doesNotMatch(body, /ai-studies-console/, `${f} names a hardcoded Google Cloud project`);
+  }
+  const cable = readPassManifest(ws.out).harness.cable;
+  assert.equal(cable.worker_project, null, "an unrecorded project must stay null, not be guessed");
+  assert.match(cable.worker_auth, /not recorded in this run's evidence/);
+  assert.doesNotMatch(cable.billing_note, /project /);
+});
+
+test("a sidecar with no region falls back to the pinned default, not to nothing", (t) => {
+  // Runs recorded before gemini_worker.py wrote vertex_location still have to
+  // price and describe correctly — the pin is what they actually ran on.
+  const ws = workspace(t);
+  proRun(ws.runs, { delegated: true });
+  assert.equal(run(["--runs-root", ws.runs, "--out", ws.out]).status, 0);
+  assert.equal(readPassManifest(ws.out).harness.cable.worker_region, "asia-south1");
+});
+
+test("worker spend is priced in the region the sidecar recorded", (t) => {
+  // The +10% non-global Vertex surcharge is a property of the endpoint that
+  // served the call. Pricing every run at the pinned region would overcharge a
+  // run that went through `global` by exactly that 10%, silently.
+  const workerOf = (out) => Number(out.match(/worker \$([\d.]+)/)[1]);
+
+  const regional = workspace(t);
+  patchSidecars(proRun(regional.runs, { delegated: true }), (sc) => {
+    sc.vertex_location = "asia-south1";
+  });
+  const wsGlobal = workspace(t);
+  patchSidecars(proRun(wsGlobal.runs, { delegated: true }), (sc) => {
+    sc.vertex_location = "global";
+  });
+
+  const a = workerOf(run(["--runs-root", regional.runs, "--out", regional.out]).stdout);
+  const b = workerOf(run(["--runs-root", wsGlobal.runs, "--out", wsGlobal.out]).stdout);
+  assert.ok(a > b, `regional (${a}) must cost more than global (${b})`);
+  // gemini-3.5-flash is a Gemini 3 model, so the surcharge applies in full.
+  assert.ok(Math.abs(a / b - 1.1) < 0.005, `expected the +10% surcharge, got ${a / b}`);
+});
