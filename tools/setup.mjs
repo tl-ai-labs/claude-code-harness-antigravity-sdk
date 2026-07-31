@@ -18,15 +18,38 @@
  * of running the wizard. Every check has a `fix` message that spells out
  * the exact command to run.
  *
- * Idempotent — re-running is safe. No destructive action ever runs without
- * confirmation. All checks execute before the summary, so a failure names
- * every missing prereq at once, not one at a time.
+ * Idempotent — re-running is safe.
+ *
+ * THREE RULES THAT SHAPE THE FLOW (each exists because the opposite wasted a
+ * reader's time on a fresh machine):
+ *
+ *  1. CRITICAL CHECKS STOP THE RUN. A check marked critical is one that makes
+ *     every later check meaningless — no Node 22, no pnpm, no Python. Those
+ *     exit immediately with their own fix line. Everything else still runs to
+ *     completion first, so a merely-incomplete machine gets the whole list of
+ *     what it is missing in one pass rather than one item per re-run.
+ *
+ *  2. THE SETUP MODES SET THINGS UP. `--sdlc` and `--swe-pro` create the
+ *     worker venv, clone the pinned evaluator and build the grading venv
+ *     without asking. A wizard whose every useful action sat behind a y/N was
+ *     a checklist wearing a wizard's clothes. The guard is the TTY, not a
+ *     prompt: with no TTY (piped, CI, `| tee`) this is a pure diagnostic and
+ *     touches nothing on the machine.
+ *
+ *  3. AUTH IS REPORTED, NOT ENFORCED — with one exception. Missing Anthropic
+ *     credentials are an informational line here, because `run-harness.mjs`
+ *     preflights them for real at $0 and exits 2 with a named cause
+ *     (runtimes.mjs `preflight()`), and because a user without credentials
+ *     must still be able to run this wizard to find out what ELSE they need.
+ *     GOOGLE_CLOUD_PROJECT is the exception and stays blocking: nothing
+ *     downstream can catch it, since an unset project is a configuration
+ *     error the worker cannot distinguish from a deliberate one.
  */
 
-import { execSync, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { existsSync, statfsSync } from "node:fs";
 import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 
@@ -39,21 +62,18 @@ const c = {
   amber: "\x1b[33m", red: "\x1b[31m", reset: "\x1b[0m",
 };
 const ok    = (m) => console.log(`  ${c.green}✓${c.reset} ${m}`);
-const warn  = (m) => console.log(`  ${c.amber}!${c.reset} ${m}`);
 const fail  = (m) => console.log(`  ${c.red}✗${c.reset} ${m}`);
 const step  = (n, m) => console.log(`\n${c.bold}[${n}]${c.reset} ${m}`);
 const hint  = (m) => console.log(`    ${c.dim}${m}${c.reset}`);
 
+// The only question this wizard still asks is which profile to run. The y/N
+// confirmations that used to wrap every setup step are gone — see the setup
+// steps below for why — and `askYesNo` went with them rather than sitting here
+// as an unused helper implying a prompt that no longer happens. (`warn`, an
+// amber logger, was dead before that and went at the same time.)
 const isTty = !!output.isTTY;
 const rl = isTty ? createInterface({ input, output }) : null;
 const ask = async (q) => rl ? rl.question(`  ${c.dim}?${c.reset} ${q} `) : "";
-async function askYesNo(q, defaultYes = true) {
-  if (!rl) return defaultYes;
-  const suffix = defaultYes ? "[Y/n]" : "[y/N]";
-  const a = (await ask(`${q} ${suffix}`)).trim().toLowerCase();
-  if (a === "") return defaultYes;
-  return a === "y" || a === "yes";
-}
 
 function which(cmd) {
   const r = spawnSync("which", [cmd], { encoding: "utf8" });
@@ -94,19 +114,62 @@ function checkPnpm() {
         fix: "npm install -g pnpm" };
 }
 
-function checkOfflineTests() {
-  console.log(`    ${c.dim}Installing workspace deps and running the 290 offline tests…${c.reset}`);
+// Split out of checkOfflineTests so the wizard names what it is doing while it
+// does it. Folded together, a two-minute `pnpm install` printed nothing under a
+// step labelled "offline tests" and read as a hang — the single most likely
+// place for a first-time reader to kill the process and conclude the repo is
+// broken. Two steps, two labels, and the slow one says so.
+function checkWorkspaceInstall() {
+  console.log(`    ${c.dim}Installing workspace dependencies (pnpm install — this can take a minute)…${c.reset}`);
   const install = run("pnpm", ["install", "--silent"], { cwd: ROOT, stdio: "inherit" });
-  if (install.status !== 0) {
-    return { ok: false, label: "offline tests", detail: "pnpm install failed",
-             fix: "See the pnpm output above and re-run this wizard." };
-  }
+  return install.status === 0
+    ? { ok: true, label: "workspace dependencies installed" }
+    : { ok: false, label: "workspace install", detail: `pnpm install exited ${install.status}`,
+        fix: "See the pnpm output above, then re-run this wizard." };
+}
+
+/**
+ * Read the pass/skip counts out of `node --test`'s own trailing summary.
+ *
+ * The counts are read back from the runner rather than written here as
+ * literals. A hardcoded "290 tests pass" is a number that goes stale the first
+ * time anyone adds a test, and a wizard that reports a stale fact about the
+ * repo it is setting up is worse than one that reports none.
+ *
+ * SKIPS ARE REPORTED, NOT SWALLOWED. Several suites assert against recorded
+ * runs and a corpus checkout that a fresh clone does not have, so they skip
+ * themselves rather than fail — correct behaviour, but it means a bare "N tests
+ * pass" overstates what was actually verified on this machine. Naming the skip
+ * count is the difference between a green line the reader can trust and one
+ * that quietly hides its own coverage gap.
+ *
+ * Split out as a pure function so the parsing is unit-tested without spawning a
+ * three-hundred-test run inside the test suite (setup.test.mjs). Returns null
+ * when no summary is present at all — a crashed runner, not a passing one.
+ */
+function parseTestSummary(stdout) {
+  const pass = /^#\s*pass\s+(\d+)/im.exec(stdout || "");
+  if (!pass) return null;
+  const skipped = /^#\s*skipped\s+(\d+)/im.exec(stdout || "");
+  return { pass: parseInt(pass[1], 10), skipped: skipped ? parseInt(skipped[1], 10) : 0 };
+}
+
+function checkOfflineTests() {
+  console.log(`    ${c.dim}Running the offline test suite…${c.reset}`);
   const test = run("pnpm", ["test"], { cwd: ROOT, stdio: "pipe" });
-  const passed = /pass\s+\d+/i.test(test.stdout || "") && test.status === 0;
-  return passed
-    ? { ok: true, label: "290 offline tests pass" }
-    : { ok: false, label: "offline tests", detail: `pnpm test exited ${test.status}`,
-        fix: "Run `pnpm test` directly to see the failing tests." };
+  const summary = parseTestSummary(test.stdout);
+  if (test.status === 0 && summary) {
+    return {
+      ok: true,
+      label: `${summary.pass} offline tests pass`,
+      detail: summary.skipped
+        ? `${summary.skipped} skipped — suites that need recorded runs or the ` +
+          `SWE-bench Pro corpus, neither of which ships in a clone; not a failure`
+        : undefined,
+    };
+  }
+  return { ok: false, label: "offline tests", detail: `pnpm test exited ${test.status}`,
+           fix: "Run `pnpm test` directly to see the failing tests." };
 }
 
 function checkDryRun() {
@@ -142,9 +205,15 @@ function checkAnthropicAuth() {
   }
   if (oauth) return { ok: true, label: "Anthropic auth (subscription seat via CLAUDE_CODE_OAUTH_TOKEN)" };
   if (apiKey) return { ok: true, label: "Anthropic auth (metered API via ANTHROPIC_API_KEY)" };
-  return { ok: false, label: "Anthropic auth",
-    detail: "neither CLAUDE_CODE_OAUTH_TOKEN nor ANTHROPIC_API_KEY is set",
-    fix: "export CLAUDE_CODE_OAUTH_TOKEN=…   # or ANTHROPIC_API_KEY=…" };
+  // INFORMATIONAL, NOT BLOCKING. `runtimes.mjs` preflights this for real before
+  // a launch spends anything and exits 2 naming the missing variable, so a
+  // second gate here buys nothing — and it costs something: a reader with no
+  // Anthropic credentials yet could not use the wizard to discover the rest of
+  // what they need. Reported, and the run continues.
+  return { ok: true, label: "Anthropic auth — not configured yet",
+    detail: "neither CLAUDE_CODE_OAUTH_TOKEN nor ANTHROPIC_API_KEY is set; " +
+      "set one before a live run — run-harness.mjs refuses to start without it, at $0",
+    hintOnly: "export CLAUDE_CODE_OAUTH_TOKEN=…   # or ANTHROPIC_API_KEY=…" };
 }
 
 function checkPython() {
@@ -198,12 +267,20 @@ function checkVertexAdc() {
     fix: "gcloud auth application-default login" };
 }
 
+// The one auth-shaped check that stays BLOCKING, deliberately, against the rule
+// above. The other two are informational because something downstream catches
+// them at $0. Nothing catches this one: an unset project is indistinguishable
+// from a deliberate one to every layer below, so a wizard that waved it through
+// would hand the reader a green screen and a Vertex permission error later.
+// `gemini_worker.py` used to paper over it with a default project ID, which was
+// worse still — it pointed a stranger's run at somebody else's billing account.
+// It now refuses to start unset, and this is where a reader finds that out.
 function checkGoogleProject() {
   const p = process.env.GOOGLE_CLOUD_PROJECT;
   return p
     ? { ok: true, label: `GOOGLE_CLOUD_PROJECT=${p}` }
     : { ok: false, label: "GOOGLE_CLOUD_PROJECT",
-        detail: "unset — the worker will refuse to run",
+        detail: "unset — the Gemini worker refuses to start without it, and there is no default",
         fix: "export GOOGLE_CLOUD_PROJECT=your-gcp-project-id" };
 }
 
@@ -274,21 +351,31 @@ function checkFreeDisk() {
 }
 
 // ─── modes ─────────────────────────────────────────────────────────────
-// Each mode is an ordered list of check functions. Some checks offer to
-// remediate; those live below.
+// Each mode is an ordered list of `[label, fn]`, or `[label, fn, CRITICAL]`.
+//
+// CRITICAL means "every check after this one is noise if this fails". Node,
+// pnpm and Python are the toolchain the rest of the list is measured with; a
+// broken workspace install makes the test and dry-run steps meaningless; a
+// missing Claude Code CLI makes every driver-side check below it moot. Those
+// stop the run at the point of failure. Criticality is declared here, once per
+// check, rather than inside the check functions — the same function is critical
+// in every mode that uses it, and a check has no business knowing how badly the
+// caller needs it.
+const CRITICAL = true;
 
 const OFFLINE_CHECKS = [
-  ["Node ≥ 22", checkNode],
-  ["pnpm ≥ 11", checkPnpm],
-  ["offline tests + workspace install", checkOfflineTests],
+  ["Node ≥ 22", checkNode, CRITICAL],
+  ["pnpm ≥ 11", checkPnpm, CRITICAL],
+  ["workspace install", checkWorkspaceInstall, CRITICAL],
+  ["offline tests", checkOfflineTests, CRITICAL],
   ["harness --dry-run", checkDryRun],
 ];
 
 const SDLC_CHECKS = [
   ...OFFLINE_CHECKS,
-  ["Claude Code CLI", checkClaudeCli],
+  ["Claude Code CLI", checkClaudeCli, CRITICAL],
   ["Anthropic auth", checkAnthropicAuth],
-  ["Python ≥ 3.10", checkPython],
+  ["Python ≥ 3.10", checkPython, CRITICAL],
   ["worker venv", checkWorkerVenvExists],
   ["google-antigravity", checkAntigravityImport],
   ["Vertex ADC", checkVertexAdc],
@@ -304,100 +391,113 @@ const SWE_PRO_CHECKS = [
   ["free disk (≥ 30 GB)", checkFreeDisk],
 ];
 
-// ─── remediation offers (opt-in, y/N, defaults to no) ──────────────────
+// ─── setup steps (run, don't ask) ──────────────────────────────────────
+//
+// These used to be y/N offers. They are not any more, and the reason is worth
+// stating: `--sdlc` and `--swe-pro` are requests to set the machine up. Asking
+// "shall I create the venv you just asked me to create?" is a prompt with one
+// sensible answer, and a reader who mistypes at it gets a red screen listing the
+// very thing the wizard was about to fix.
+//
+// Each is idempotent — present means done, and it returns before touching
+// anything. Each is also gated on a TTY by its caller, which is the real safety
+// property: piped or in CI, this file is a read-only diagnostic.
 
-async function offerCreateWorkerVenv() {
-  if (existsSync(WORKER_PY)) return true;
-  console.log("");
-  const yes = await askYesNo(
-    "The worker venv is missing. Create it now? (python3 -m venv + pip install google-antigravity)",
-    true,
-  );
-  if (!yes) return false;
+function ensureWorkerVenv() {
+  if (existsSync(WORKER_PY)) { ok("worker venv already present"); return true; }
   const py = which("python3") || which("python");
-  if (!py) { fail("no python3 on PATH"); return false; }
-  console.log(`    ${c.dim}Creating venv…${c.reset}`);
+  if (!py) { fail("no python3 on PATH — cannot create the worker venv"); return false; }
+  console.log(`    ${c.dim}Creating the Gemini worker venv…${c.reset}`);
   const create = run(py.endsWith("python") ? "python" : "python3",
     ["-m", "venv", WORKER_VENV], { stdio: "inherit" });
   if (create.status !== 0) { fail("venv creation failed"); return false; }
   console.log(`    ${c.dim}Installing google-antigravity…${c.reset}`);
   const pip = run(join(WORKER_VENV, "bin/pip"), ["install", "google-antigravity"],
     { stdio: "inherit" });
-  return pip.status === 0;
+  if (pip.status !== 0) { fail("pip install google-antigravity failed"); return false; }
+  ok("worker venv created with google-antigravity");
+  return true;
 }
 
-async function offerCloneSweEvaluator() {
-  if (existsSync(SWE_HARNESS)) return true;
-  console.log("");
-  const yes = await askYesNo(
-    "The Scale evaluator clone is missing. git clone it at the pinned SHA now?",
-    true,
-  );
-  if (!yes) return false;
-  console.log(`    ${c.dim}Cloning Scale evaluator…${c.reset}`);
+function ensureSweEvaluator() {
+  if (existsSync(SWE_HARNESS)) { ok("Scale evaluator already cloned"); return true; }
+  console.log(`    ${c.dim}Cloning the Scale evaluator at the pinned SHA…${c.reset}`);
   run("mkdir", ["-p", dirname(SWE_HARNESS)], { stdio: "inherit" });
   const clone = run("git", ["clone", "https://github.com/scaleapi/SWE-bench_Pro-os", SWE_HARNESS],
     { stdio: "inherit" });
-  if (clone.status !== 0) return false;
+  if (clone.status !== 0) { fail("git clone failed"); return false; }
   const checkout = run("git", ["-C", SWE_HARNESS, "checkout", SWE_PIN.slice(0, 8)],
     { stdio: "inherit" });
-  return checkout.status === 0;
+  if (checkout.status !== 0) { fail(`checkout ${SWE_PIN.slice(0, 8)} failed`); return false; }
+  ok(`Scale evaluator cloned at ${SWE_PIN.slice(0, 8)}`);
+  return true;
 }
 
-async function offerCreateSweGradingVenv() {
-  if (existsSync(SWE_VENV_PY)) return true;
-  console.log("");
-  const yes = await askYesNo(
-    "The SWE-bench Pro grading venv is missing. Create it now?",
-    true,
-  );
-  if (!yes) return false;
+function ensureSweGradingVenv() {
+  if (existsSync(SWE_VENV_PY)) { ok("grading venv already present"); return true; }
   const py = which("python3") || which("python");
-  if (!py) { fail("no python3 on PATH"); return false; }
-  console.log(`    ${c.dim}Creating grading venv…${c.reset}`);
+  if (!py) { fail("no python3 on PATH — cannot create the grading venv"); return false; }
+  console.log(`    ${c.dim}Creating the SWE-bench Pro grading venv…${c.reset}`);
   const create = run(py.endsWith("python") ? "python" : "python3",
     ["-m", "venv", SWE_VENV], { stdio: "inherit" });
-  if (create.status !== 0) return false;
+  if (create.status !== 0) { fail("venv creation failed"); return false; }
   console.log(`    ${c.dim}Installing pandas tqdm docker requests…${c.reset}`);
   const pip = run(join(SWE_VENV, "bin/pip"),
     ["install", "pandas", "tqdm", "docker", "requests"],
     { stdio: "inherit" });
-  return pip.status === 0;
+  if (pip.status !== 0) { fail("pip install failed"); return false; }
+  ok("grading venv created");
+  return true;
 }
 
 // ─── driver ────────────────────────────────────────────────────────────
 
 async function runChecks(mode, checks) {
   console.log(`\n${c.bold}Claude Code Harness — setup (${mode} profile)${c.reset}`);
-  console.log(`${c.dim}Every check runs before the summary; you'll see the whole picture at once.${c.reset}`);
+  console.log(`${c.dim}Non-critical checks all run before the summary, so you see the whole picture at once.${c.reset}`);
 
-  // Remediation offers happen before the check itself, so a fresh clone can
-  // create the venv and then have its own check pass on the same run. They
-  // are strictly interactive — a headless run (no TTY) is a pure diagnostic
-  // and never touches the system.
+  // Setup steps happen before the checks that look for their output, so a fresh
+  // clone can build the venv and then have its own check pass on the same run.
+  // The TTY gate is the safety property, not a prompt: piped or in CI this file
+  // is a pure diagnostic and never writes to the machine.
   if (isTty && (mode === "sdlc" || mode === "swe-pro")) {
-    step("pre", "Optional setup steps");
-    await offerCreateWorkerVenv();
+    step("setup", "Preparing the machine");
+    ensureWorkerVenv();
   }
   if (isTty && mode === "swe-pro") {
-    await offerCloneSweEvaluator();
-    await offerCreateSweGradingVenv();
+    ensureSweEvaluator();
+    ensureSweGradingVenv();
   }
 
   const results = [];
   let i = 1;
-  for (const [label, fn] of checks) {
+  for (const [label, fn, critical] of checks) {
     step(String(i++), label);
-    const r = fn();
+    // Criticality is merged onto the result rather than returned by the check,
+    // so `r` carries everything the failure path needs in one object.
+    const r = { ...fn(), critical: !!critical };
     if (r.ok) {
       ok(r.label);
       if (r.detail) hint(r.detail);
+      // Reported-but-not-required next step (e.g. auth that preflight enforces
+      // later). Distinct from `fix`, which only ever appears under a failure.
+      if (r.hintOnly) hint(r.hintOnly);
     } else {
       fail(r.label);
       if (r.detail) hint(r.detail);
       if (r.fix) hint(`fix: ${r.fix}`);
     }
     results.push(r);
+
+    // Stop here rather than printing a cascade of failures that all say the
+    // same thing. Returning (not process.exit) keeps the whole driver testable
+    // — main() is the only place that turns a code into an exit.
+    if (!r.ok && r.critical) {
+      console.log("");
+      console.log(`${c.bold}${c.red}Stopped: ${label} is required before the remaining checks mean anything.${c.reset}`);
+      console.log(`${c.dim}Fix it and re-run this wizard — the checks after this one were not attempted.${c.reset}\n`);
+      return 1;
+    }
   }
 
   const failed = results.filter((r) => !r.ok);
@@ -469,4 +569,17 @@ async function main() {
   process.exit(code);
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+// Run only when invoked as a script. Imported — which is how tools/setup.test.mjs
+// exercises the driver and the pure checks — this file defines and returns.
+// Without the guard, `import` would run the whole wizard inside the test process.
+if (import.meta.url === pathToFileURL(process.argv[1] || "").href) {
+  main().catch((e) => { console.error(e); process.exit(1); });
+}
+
+// Exported for tools/setup.test.mjs. Everything here is side-effect-free to
+// call except runChecks, which is driven in tests with synthetic check tuples
+// rather than the real registries — no venv, no network, no spend.
+export {
+  checkNode, checkAnthropicAuth, checkGoogleProject, checkGoogleLocation,
+  parseTestSummary, runChecks, OFFLINE_CHECKS, SDLC_CHECKS, SWE_PRO_CHECKS,
+};
