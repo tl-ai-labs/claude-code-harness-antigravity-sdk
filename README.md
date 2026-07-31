@@ -104,7 +104,7 @@ Full workflow in [docs/running.md#bringing-your-own-sdlc-workload](docs/running.
 
 | Policy | What it uses | What it demonstrates |
 |---|---|---|
-| `all-opus` | Claude Opus 4.6 for every stage; no delegation | The **anchor** — baseline for cost and quality comparisons |
+| `all-opus` | Claude Opus 4.6 for every stage; no delegation | The **anchor** — baseline for cost and quality comparisons. **Runs no Antigravity SDK code at all**: use it for the baseline, not to check that the connector works. |
 | `all-gemini-flash-high` | Opus driver, Gemini 3.5 Flash worker on every stage | The **delegated cell** — cheapest way to prove the cable works end-to-end |
 | `all-gemini-25-flash-high` | Opus driver, Gemini 2.5 Flash worker on every stage | The **generation comparison** — diff against `all-gemini-flash-high` |
 | `gemini35-plus-25-flash-high` | Opus driver, 3.5 Flash on judgment stages, 2.5 Flash on volume stages | The **tokenomics pass** — the Gemini Enterprise story in one policy |

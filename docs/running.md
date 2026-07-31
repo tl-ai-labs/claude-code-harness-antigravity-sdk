@@ -51,9 +51,19 @@ Swap the policy to switch the tokenomics story:
 # Tiered — Opus for judgment, 2.5 Flash for volume (the tokenomics pass)
 --policy tools/harness-matrix/policies/gemini35-plus-25-flash-high.yaml
 
-# Anchor — Opus doing every stage itself, no delegation
+# Anchor — Opus doing every stage itself, no delegation.
+# Runs no Antigravity SDK code: cost baseline, not a connector check.
 --policy tools/harness-matrix/policies/all-opus.yaml
 ```
+
+`all-opus` is a `composition: solo` cell pinned to `runtime: claude-code`
+— one Anthropic model doing every stage, with no worker leg. It runs
+fine, and it needs neither the worker venv nor Vertex nor a Google Cloud
+project. But because it never reaches the Antigravity SDK, a successful
+`all-opus` run tells you nothing about whether the connector this
+repository exists to demonstrate is working on your machine. Prove the
+cable with `all-gemini-flash-high` first; use the anchor for the
+comparison afterwards.
 
 ## SWE-bench Pro
 
@@ -172,7 +182,7 @@ See [policies.md](policies.md). Short version:
 - **The Gemini Enterprise tokenomics story** (Opus for judgment,
   Gemini for volume): `gemini35-plus-25-flash-high` on
   `examples/kudos-wall`.
-- **Baseline for comparison** (no delegation, Opus does it all):
-  `all-opus` on any workload.
+- **Baseline for comparison** (no delegation, Opus does it all, no
+  Antigravity SDK on the path): `all-opus` on any workload.
 - **Generation comparison**: `all-gemini-25-flash-high` vs
   `all-gemini-flash-high` on the same workload.
