@@ -46,24 +46,25 @@ const requireFromPolicyPkg = createRequire(join(ROOT, "packages/policy/package.j
 export const { parse: parseYaml } = requireFromPolicyPkg("yaml");
 
 /**
- * The shared policy engine — the SAME module the console's loader runs on.
+ * The shared policy engine — the SAME module the orchestrator's loader runs on.
  *
  * WHY IT IS IMPORTED FROM packages/policy AND NOT COPIED HERE (2026-07-29).
- * Before unification this file had its own policy schema and its own
- * validator, and the console had another. Only the console's knew what an
- * adapter or an API was, so the surface where the Antigravity SDK actually
- * runs was the one that could not record which adapter or API a run used —
- * a delegated binding said `worker: gemini-3.5-flash` and nothing said that
- * reached Vertex through the SDK. Ravi's 2026-07-28 instruction was to
- * "integrate the SDLC policy & Antigravity SDK into ONE policy and rollout
- * code", "applicable to all the policies". One engine is what that means.
+ * Before unification this file had its own policy schema and its own validator,
+ * and the SDLC orchestrator it was built alongside (a separate repository) had
+ * another. Only the orchestrator's knew what an adapter or an API was, so the
+ * surface where the Antigravity SDK actually runs was the one that could not
+ * record which adapter or API a run used — a delegated binding said
+ * `worker: gemini-3.5-flash` and nothing said that reached Vertex through the
+ * SDK. The instruction that closed it was to integrate the SDLC policy layer
+ * and the Antigravity SDK into one policy and rollout code applicable to every
+ * policy. One engine is what that means.
  *
  * Reaching into packages/policy is not a NEW coupling: the `yaml` parser two
  * lines above already resolves through that package's manifest, for the same
  * reason (it is where the dependency is declared). The core is deliberately
  * plain .mjs with no build step, so the harness stays publishable as a
  * standalone source tree — importing built `dist` output would drag the
- * console's TypeScript build into the bundle handed to Google.
+ * orchestrator's TypeScript build into the bundle handed to Google.
  */
 const POLICY_CORE = join(ROOT, "packages/policy/core/policy-core.mjs");
 const {
@@ -111,7 +112,7 @@ export const bindingLabel = (b) =>
 // Every check fails BEFORE any docker build or model spend, with a message
 // naming exactly what is wrong — a policy typo must never surface mid-run as a
 // mystery CLI error. The checks themselves now live in the shared core, so the
-// harness and the console reject the same file for the same reason.
+// harness and the orchestrator reject the same file for the same reason.
 //
 // `agentStages` is the KIND's list of model-driven stages (Pro:
 // repro/localize/patch; SDLC: the template's llm-task + judge stage ids). The
@@ -121,9 +122,10 @@ export const bindingLabel = (b) =>
 //
 // TWO FILE SHAPES ARRIVE HERE, and both must keep working:
 //
-//   UNIFIED (version 2)  — what tools/harness-matrix/policies/*.yaml now are,
-//                          and the same schema templates/policies/*.yaml use.
-//                          Says which model AND how it is reached.
+//   UNIFIED (version 2)  — what tools/harness-matrix/policies/*.yaml now are.
+//                          Says which model AND how it is reached (adapter,
+//                          API, region), so the frozen snapshot records the
+//                          cable as well as the model.
 //   LEGACY  (version 1)  — `phases{}` + `models[].bindings{}`. Every finished
 //                          run froze one of these as policy_snapshot.yaml, and
 //                          those files ship inside evidence bundles ALREADY

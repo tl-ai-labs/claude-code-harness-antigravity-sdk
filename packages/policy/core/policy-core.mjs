@@ -5,44 +5,47 @@
  * ---------------------------------------------------------------------------
  * WHY THIS FILE EXISTS (2026-07-29)
  * ---------------------------------------------------------------------------
- * Until now the repo had TWO policy layers that did the same job in different
- * words, and neither knew the other existed:
+ * Two policy layers did the same job in different words, and neither knew the
+ * other existed:
  *
- *   CONSOLE   templates/policies/*.yaml (19 files), loaded by src/loader.ts.
- *             `models[{id, adapter, api, model_name, pricing, …}]` + `rules[]`.
- *             Says WHICH model AND how it is reached.
+ *   ORCHESTRATOR  the policy files of the production SDLC orchestrator this
+ *                 harness was built alongside (a separate repository).
+ *                 `models[{id, adapter, api, model_name, pricing, …}]` +
+ *                 `rules[]`. Says WHICH model AND how it is reached.
  *
- *   HARNESS   tools/harness-matrix/policies/*.yaml (4 files), loaded by
- *             kinds/lib.mjs. `models[{id, bindings{}, thinking{}}]` + `phases{}`.
- *             Says WHICH model. Says NOTHING about how it is reached — the
- *             adapter and the API were hardcoded in runtimes.mjs.
+ *   HARNESS       tools/harness-matrix/policies/*.yaml (4 files), loaded by
+ *                 kinds/lib.mjs. `models[{id, bindings{}, thinking{}}]` +
+ *                 `phases{}`. Says WHICH model. Says NOTHING about how it is
+ *                 reached — the adapter and the API were hardcoded in
+ *                 runtimes.mjs.
  *
  * The second omission is the whole problem. `worker: gemini-3.5-flash` is
  * reached through the Antigravity SDK against Vertex AI, but no policy file
- * says so, so a frozen policy_snapshot.yaml does not record the cable the run
- * actually used — the exact provenance hole src/types.ts documents for the
- * console side, still open on the side where the Antigravity SDK actually runs.
+ * said so, so a frozen policy_snapshot.yaml did not record the cable the run
+ * actually used. Two runs whose snapshots were byte-identical could have
+ * crossed the wire differently, and nothing on disk would show it — a
+ * provenance hole on the one side where the Antigravity SDK actually runs.
  *
- * The instruction that closed it (Ravi, 2026-07-28) was to "integrate the SDLC
- * policy & Antigravity SDK into ONE policy and rollout code, applicable to all
- * the policies", with opus-plus-flash.yaml as the reference example that
- * "shouldn't lose its structural strength (in terms of rules and models
- * abstraction), rather should be extended to support model + adapter
- * combinations (each having its own id)".
+ * The instruction that closed it was to integrate the SDLC policy layer and the
+ * Antigravity SDK into ONE policy and rollout code applicable to every policy,
+ * without losing the structural strength of the rules/models abstraction —
+ * extending it instead to support model + adapter combinations, each having its
+ * own id.
  *
- * So: the console's v2 shape IS the unified shape. Nothing about it changes.
- * It gains two OPTIONAL things the harness needs and the console ignores:
+ * So: the orchestrator's v2 shape IS the unified shape. Nothing about it
+ * changes. It gains two OPTIONAL things the harness needs and the orchestrator
+ * ignores:
  *
  *   1. COMPOSITION ENTRIES in `models[]`. A delegated cell — an Anthropic
  *      driver in Claude Code's seat orchestrating a Gemini worker over the
- *      Antigravity SDK — is two models reached two ways. Ravi's sentence
+ *      Antigravity SDK — is two models reached two ways. The instruction above
  *      applied literally ("each having its own id") makes it a models[] entry
  *      of its own that NAMES two other entries. A rule then points at one id,
  *      exactly as it always did, and the rules abstraction is untouched.
  *
  *   2. `retry` and `limits` top-level blocks. Execution ceilings for a 45-minute
- *      containerised agent phase. The console's unit of work is one API call, so
- *      it has no analog and simply ignores them.
+ *      containerised agent phase. The orchestrator's unit of work is one API
+ *      call, so it has no analog and simply ignores them.
  *
  * `phases{stage → id}` is gone, because it was always a strict subset of
  * `rules[]`: `phases: {execute: cheap, default: premium}` is exactly
@@ -59,7 +62,7 @@
  * legacy shapes, and BOTH must keep parsing and keep resolving to exactly the
  * models they resolved to when they were written — forever:
  *
- *   - console v1 (no `api` key): handled as it always was — an absent `api`
+ *   - orchestrator v1 (no `api` key): handled as it always was — an absent `api`
  *     means "resolve the doorway the way this adapter always did".
  *   - harness legacy (`phases` + `bindings`): detected by the presence of a
  *     top-level `phases` key and resolved by a compatibility branch that is a
@@ -73,11 +76,12 @@
  * ---------------------------------------------------------------------------
  * WHY PLAIN .mjs AND NOT TypeScript
  * ---------------------------------------------------------------------------
- * The console builds; the harness does not, and must stay publishable as a
- * standalone tree (it is handed to Google as source). A TypeScript core would
- * drag the console's build into that bundle. Authoring the core in plain ESM
- * and letting src/loader.ts re-export it with types costs the console nothing —
- * it already resolves this package's `yaml` dependency the same way.
+ * The orchestrator builds; this harness does not, and must stay publishable as
+ * a standalone tree (it is handed to Google as source). A TypeScript core would
+ * drag that build into this bundle. Authoring the core in plain ESM and letting
+ * the orchestrator's loader re-export it with types costs it nothing — it
+ * already resolves this package's `yaml` dependency the same way. The
+ * hand-written .d.mts beside this file is what gives the typed side its types.
  */
 
 // ---------------------------------------------------------------------------
@@ -176,7 +180,7 @@ export function isComposition(m) {
 /**
  * True for a pre-unification harness policy — `phases` at the top level.
  *
- * Unambiguous in both directions: the console's Policy has never had a
+ * Unambiguous in both directions: the orchestrator's Policy has never had a
  * top-level `phases` key (its shape is version/name/models/select/rules), and
  * a harness legacy file cannot load without one.
  */
@@ -185,16 +189,16 @@ export function isLegacyHarnessShape(raw) {
 }
 
 // ---------------------------------------------------------------------------
-// Validation — the unified (and console-legacy) shape
+// Validation — the unified (and orchestrator-legacy) shape
 // ---------------------------------------------------------------------------
 
 /**
  * Validate and CANONICALISE a policy. Returns the same object, with every
  * `adapter` normalised in place so nothing downstream sees an alias.
  *
- * Ported verbatim from src/loader.ts, message for message — packages/policy's
- * tests pin those strings, and an error a user has learned to recognise is part
- * of the contract. What is new is composition support, and it is additive: a
+ * Ported verbatim from the orchestrator's loader, message for message —
+ * packages/policy's tests pin those strings, and an error a user has learned to
+ * recognise is part of the contract. What is new is composition support, and it is additive: a
  * policy with no composition entries validates on exactly the path it did
  * before this file existed.
  */
@@ -326,9 +330,9 @@ export function validatePolicy(raw) {
   });
 
   // ---- harness-only blocks, validated only when present --------------------
-  // A console policy carries neither and is unaffected. The harness resolver
+  // A orchestrator policy carries neither and is unaffected. The harness resolver
   // REQUIRES both; that demand belongs there, not here, so one malformed limit
-  // does not make a console policy unloadable.
+  // does not make a orchestrator policy unloadable.
   if (r.retry !== undefined) validateRetry(r.retry);
   if (r.limits !== undefined) validateLimits(r.limits);
 
@@ -476,7 +480,7 @@ function validateLimits(limits) {
 }
 
 // ---------------------------------------------------------------------------
-// Routing — pure matching, shared by the console's router and the harness
+// Routing — pure matching, shared by the orchestrator's router and the harness
 // ---------------------------------------------------------------------------
 
 /**
@@ -605,7 +609,7 @@ export function resolveHarnessStages(policy, { runtime, stages, overrides = {}, 
 
   for (const stage of stages) {
     // `task_type` mirrors the stage so a rule written against either key
-    // matches. The console distinguishes them (a phase runs several task
+    // matches. The orchestrator distinguishes them (a phase runs several task
     // types); the harness has one unit per stage, so they coincide.
     const decision = pickModelId(
       { phase: stage, task_type: stage, module: "", retry_count: 0 },
@@ -648,7 +652,7 @@ export function resolveHarnessStages(policy, { runtime, stages, overrides = {}, 
       };
     } else {
       // A plain leaf named directly by a rule: runtime-agnostic solo, which is
-      // how the console has always used models[] and how an all-one-model
+      // how the orchestrator has always used models[] and how an all-one-model
       // harness policy reads most simply.
       resolved[stage] = {
         modelId: entry.id,

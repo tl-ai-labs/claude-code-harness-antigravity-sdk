@@ -17,22 +17,19 @@
 # other three carry a short note and point here, the same way they already
 # point here for the `limits` rationale.
 #
-# WHY. Until now this repo had two policy layers doing the same job in
-# different words. The console's (templates/policies/*.yaml, 19 files) said
-# WHICH model AND how it is reached — `adapter` + `api`. The harness's (these
-# four files) said only WHICH model; the adapter and the API were hardcoded in
-# runtimes.mjs. So `worker: gemini-3.5-flash` was reached through the
-# Antigravity SDK against Vertex AI, and no policy file said so — meaning the
-# frozen policy_snapshot.yaml inside every recorded run did not record the
-# cable the run actually used. That is the exact provenance hole
-# packages/policy/src/types.ts documents for the console, left open on the one
-# surface where the Antigravity SDK actually runs.
+# WHY. These files used to say only WHICH model a stage runs on. The adapter
+# and the API endpoint were hardcoded in runtimes.mjs, so `worker:
+# gemini-3.5-flash` was reached through the Antigravity SDK against Vertex AI
+# and NO policy file said so — meaning the frozen policy_snapshot.yaml inside
+# every recorded run did not record the cable the run actually used. Two runs
+# whose snapshots were byte-identical could have crossed the wire differently,
+# and nothing on disk would show it. For a study whose whole claim is that its
+# numbers are reproducible, that is a provenance hole, not a tidiness problem.
 #
-# Ravi's 2026-07-28 instruction closed it: "integrate the SDLC policy &
-# Antigravity SDK into ONE policy and rollout code", "applicable to all the
-# policies", with opus-plus-flash.yaml as the reference that "shouldn't lose its
-# structural strength (in terms of rules and models abstraction), rather should
-# be extended to support model + adapter combinations (each having its own id)".
+# Version 2 closes it: a policy now names the model AND how it is reached, and
+# does so without losing the structural strength of the rules/models split —
+# each model + adapter combination is its own entry with its own id, and the
+# stage rules keep pointing at ids rather than at endpoints.
 #
 # WHAT THAT MEANS HERE, mechanically:
 #
@@ -40,14 +37,15 @@
 #                                       models[] entries as driver/worker.
 #   models[].thinking{runtime → …}   →  `reasoning.effort` on the driver leaf,
 #                                       `reasoning.tier` on the worker leaf.
-#   phases{stage → id}               →  rules[], the console's matcher.
+#   phases{stage → id}               →  rules[], the orchestrator's matcher.
 #
 # Every model × adapter × API combination is now its own models[] entry with
-# its own id — Ravi's sentence applied literally — and a cell that COMBINES two
-# of them (an Anthropic driver orchestrating a Gemini worker) is likewise an
-# entry with its own id. A rule still names exactly one id, so the rules and
-# models abstraction is not weakened; it is the same abstraction reaching one
-# level further. Full engine rationale: packages/policy/core/policy-core.mjs.
+# its own id — the unification instruction applied literally — and a cell that
+# COMBINES two of them (an Anthropic driver orchestrating a Gemini worker) is
+# likewise an entry with its own id. A rule still names exactly one id, so the
+# rules and models abstraction is not weakened; it is the same abstraction
+# reaching one level further. Full engine rationale:
+# packages/policy/core/policy-core.mjs.
 #
 # THE COMPOSITION ID IS THE OLD MODEL ID, DELIBERATELY. `opus` here,
 # `flash-high` in all-gemini-flash-high, and so on. That string is what the
@@ -58,7 +56,7 @@
 #
 # THREE THINGS FALL OUT FREE, which is the evidence the shape is right:
 #   1. No new schema fields were invented. `reasoning: {tier, effort}` already
-#      existed in the console's v2 schema and carries exactly what `thinking:`
+#      existed in the orchestrator's v2 schema and carries exactly what `thinking:`
 #      and `worker_thinking:` carried.
 #   2. `rules[]` brings the whole matcher, including `retry_count` — the
 #      escalation gemini35-plus-25-flash-high.yaml's header records as
@@ -114,7 +112,7 @@ models:
   #
   # `solo` rather than pointing the rules straight at the leaf, because a leaf a
   # rule names directly is a routing target, and routing targets must carry
-  # pricing (see header). This is an anchor harness cell, not a priced console
+  # pricing (see header). This is an anchor harness cell, not a priced orchestrator
   # route.
   - id: opus                          # UNCHANGED id — this is `modelId` everywhere
     composition: solo

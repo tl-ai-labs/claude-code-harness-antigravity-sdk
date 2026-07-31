@@ -9,9 +9,10 @@
 # That needs a column where the generations are MIXED per stage, which is what
 # this file is.
 #
-# WHERE THE TIER SPLIT COMES FROM — it is NOT invented here. templates/policies/
-# opus-plus-flash.yaml has been the console's cost-optimised pass since pass 3,
-# and its thesis is that the premium tier buys JUDGMENT, not typing:
+# WHERE THE TIER SPLIT COMES FROM — it is NOT invented here. It is lifted from
+# the cost-optimised policy of a production SDLC orchestrator that has been
+# running this split across many passes, whose thesis is that the premium tier
+# buys JUDGMENT, not typing:
 #
 #   requirements_analysis  → opus    "Judgment-heavy, low volume — premium"
 #   architecture_design    → opus    "Foundational, decision-bearing — premium"
@@ -24,11 +25,12 @@
 #
 # This file maps that same split onto the harness's SDLC stage ids, with
 # opus→gemini-3.5-flash (premium) and gemini-flash→gemini-2.5-flash
-# (cost-efficient). Reusing the console's split rather than authoring a new one
-# is the whole point: the harness leg and the console leg then disagree about
-# the MODELS and about nothing else, so a delta between them is attributable.
+# (cost-efficient). Reusing a split that was already in production rather than
+# authoring a new one is the whole point: this leg and that one then disagree
+# about the MODELS and about nothing else, so a delta between them is
+# attributable to the models rather than to two people's taste in stage tiers.
 #
-#   console phase            harness stage    tier
+#   orchestrator phase       harness stage    tier
 #   ─────────────────────────────────────────────────────────
 #   requirements_analysis    requirements     premium  (3.5)
 #   architecture_design      design           premium  (3.5)
@@ -36,41 +38,41 @@
 #   codegen + tests + docs   execute          cheap    (2.5)
 #   debug                    verify repairs   cheap    (2.5) — see below
 #   senior_code_review       review           premium  (3.5)
-#   security_review          security_review  premium  (3.5) — see below
+#   security_review          (no analog)      —        sdlc-mini has no security
+#                                                      stage; see the note above
+#                                                      `rules:`
 #   (default rule)           judge            premium  (3.5)
 #
 # VERIFY REPAIRS INHERIT THE EXECUTE BINDING. The harness bills a verify
 # stage's repair rounds under the EXECUTE stage's binding, so pinning execute
-# to 2.5 automatically puts repairs on 2.5 — which is exactly what the console
-# rule `debug → gemini-flash "Most debugs have clear cause"` asks for. No extra
-# rule is needed, and adding one would let the two drift apart.
+# to 2.5 automatically puts repairs on 2.5 — which is exactly what the source
+# rule `debug → cost-efficient tier "Most debugs have clear cause"` asks for. No
+# extra rule is needed, and adding one would let the two drift apart.
 #
 # ---------------------------------------------------------------------------
 # MIGRATED TO THE UNIFIED SCHEMA — version 2 (2026-07-29)
 # ---------------------------------------------------------------------------
-# Full rationale lives in all-opus.yaml. This file gains the most from it,
-# because the thing it exists to mirror — opus-plus-flash.yaml — is now written
-# in the SAME schema. Before the migration the two legs were compared through a
-# hand-maintained table in this comment block; the two files can now be diffed
-# directly, and the mapping table above is a reading aid rather than the only
-# record of the correspondence. Both cell ids (`flash-35-high`, `flash-25-high`)
-# are UNCHANGED, because they are the `modelId` recorded runs already carry.
+# Full rationale lives in all-opus.yaml. This file gains the most from it: the
+# per-stage tier split it inherits used to be recorded only as the
+# hand-maintained table above, and is now expressed in the same schema the
+# bindings are, so the split a run actually used is frozen into that run's
+# policy_snapshot.yaml rather than living in a comment. Both cell ids
+# (`flash-35-high`, `flash-25-high`) are UNCHANGED, because they are the
+# `modelId` recorded runs already carry.
 #
-# TWO GAPS THIS MIGRATION CLOSES, AND ONE IT DOES NOT:
+# ONE GAP THIS MIGRATION CLOSES, AND ONE IT DOES NOT:
 #
-# CLOSED — SECURITY_REVIEW is now stated. It used to read "(no analog)" in the
-# table above, because a `phases:` map could only list stage ids somebody had
-# already decided existed, and there was no way to record an intent for a stage
-# the templates might emit later. There is a rule for it below. It resolves to
-# the same premium tier the `default` rule would have given it, so nothing about
-# any run changes — what changes is that routing security review to premium is
-# now a stated decision matching the console's, rather than an accident of the
-# fail-safe. The underlying gap is unchanged and still tracked separately: six
-# console policies route this phase and the templates that would emit it are
-# still being reconciled.
+# CLOSED — the tier split is now expressed with the source orchestrator's own
+# matcher, so the two legs share one routing vocabulary rather than two.
 #
-# CLOSED — the tier split is now expressed with the console's own matcher, so
-# the two legs share one routing vocabulary rather than two.
+# SECURITY_REVIEW STAYS UNSTATED, deliberately. The source split routes it to
+# the premium tier, and the migration briefly carried a rule saying so. The rule
+# was removed on 2026-07-31 because templates/sdlc-mini/template.yaml defines no
+# such stage: the rule could never match, so it advertised a routing decision
+# that no run would ever exercise — a comment pretending to be behaviour. If a
+# template ever emits a security stage, the `default` rule already sends it to
+# premium, which is the tier the source split asks for; state it explicitly then,
+# once there is a stage for it to bind to.
 #
 # NOT CLOSED — the escalation rule (`debug, retry_count: {gte: 2} → opus`). The
 # SCHEMA can express it now; `retry_count` is a first-class matcher key and the
@@ -83,8 +85,8 @@
 # to the harness's execution loop and is deliberately NOT smuggled in here.
 # Recorded so nobody reads this column as already testing escalation: it does
 # not. Whoever builds it should know escalation is not a new idea needing a
-# design — the console has shipped this exact rule since pass 3, and the table
-# above is the precedent to port.
+# design — the source orchestrator has shipped this exact rule across many
+# passes, and the table above is the precedent to port.
 #
 # HELD CONSTANT vs both clean columns: driver pin, driver effort, region, retry
 # policy, limits.
@@ -130,7 +132,7 @@ models:
   - id: flash-35-agsdk-vertex
     adapter: antigravity-sdk
     api: vertex
-    model_name: gemini-3.5-flash      # premium tier (console's `opus` slot)
+    model_name: gemini-3.5-flash      # premium tier (orchestrator's `opus` slot)
     region: asia-south1
     reasoning:
       tier: high                      # was `worker_thinking: HIGH`
@@ -139,7 +141,7 @@ models:
   - id: flash-25-agsdk-vertex
     adapter: antigravity-sdk          # same cable as the premium tier — only the model tiers
     api: vertex
-    model_name: gemini-2.5-flash      # cost-efficient tier (console's `gemini-flash` slot)
+    model_name: gemini-2.5-flash      # cost-efficient tier (orchestrator's `gemini-flash` slot)
     region: asia-south1
     # NO `reasoning:` BLOCK — DO NOT ADD ONE (2026-07-26, carried through the
     # 2026-07-29 migration). Under the legacy schema this was the absent
@@ -171,41 +173,45 @@ models:
     # varied independently for 2.5 Flash. That is a platform constraint to
     # report, not a defect to hide.
 rules:
-  # One rule per stage, mirroring opus-plus-flash.yaml's structure rather than
-  # collapsing them into an array — the per-stage `reason` is the record of WHY
-  # each stage sits in its tier, and it is the thing a reader comparing the two
-  # legs is actually looking for.
+  # One rule per stage rather than one array entry covering several — the
+  # per-stage `reason` is the record of WHY that stage sits in its tier, it is
+  # frozen into every run's policy_snapshot.yaml, and it is the first thing
+  # somebody auditing the cost split will read.
+  #
+  # EVERY `when.phase` BELOW IS A REAL STAGE ID from
+  # templates/sdlc-mini/template.yaml. A rule naming a stage the template does
+  # not define is not an error and not a warning — it simply never matches, so
+  # it reads as an intentional tier assignment while doing nothing at all. One
+  # such rule (`security_review`) was inherited from the source policy's phase
+  # list and removed on 2026-07-31; the template's eight stages are
+  # requirements, design, plan-packets, execute, verify, review, judge, report.
   - when: { phase: requirements }
     use: flash-35-high
-    reason: console requirements_analysis — judgment-heavy, low volume → premium
+    reason: requirements analysis — judgment-heavy, low volume → premium
   - when: { phase: design }
     use: flash-35-high
-    reason: console architecture_design — foundational, decision-bearing → premium
+    reason: architecture design — foundational, decision-bearing → premium
   - when: { phase: plan-packets }
     use: flash-35-high
-    reason: console plan_task_packets — needs full context to slice work cleanly → premium
+    reason: task-packet planning — needs full context to slice work cleanly → premium
   - when: { phase: execute }
     use: flash-25-high
-    reason: console codegen + tests + docs — schema-driven boilerplate → cost-efficient
+    reason: codegen + tests + docs — schema-driven boilerplate → cost-efficient
   - when: { phase: review }
     use: flash-35-high
-    reason: console senior_code_review — cross-file reasoning + judgment → premium
-  - when: { phase: security_review }
-    use: flash-35-high
-    reason: console security_review — risk-bearing, low volume → premium
+    reason: senior code review — cross-file reasoning + judgment → premium
   - when: { phase: judge }
     use: flash-35-high
-    reason: adjudication is judgment — premium, matching the console's fail-safe default
-  # SWE-bench Pro's phases are NOT tiered here. The console's split is a map of
-  # SDLC phases and has no honest Pro analog (a bug fix is not "schema-driven
-  # boilerplate"), so pointing --kind swepro at this file falls through to the
-  # default below and runs premium throughout — the same fail-safe the console
-  # uses. A tiered Pro column should be designed on its own evidence, not
-  # inherited by accident from an SDLC file.
+    reason: adjudication is judgment — premium, matching the fail-safe default
+  # SWE-bench Pro's phases are NOT tiered here. This split is a map of SDLC
+  # stages and has no honest Pro analog (a bug fix is not "schema-driven
+  # boilerplate"), so pointing --instance-dir at this file falls through to the
+  # default below and runs premium throughout. A tiered Pro column should be
+  # designed on its own evidence, not inherited by accident from an SDLC file.
   - default: flash-35-high
     # Quoted because the value contains a colon-space, which YAML would
     # otherwise read as a nested mapping key.
-    reason: "console `default: opus` — unrecognised stage fails safe to premium"
+    reason: "fail-safe `default` — an unrecognised stage runs on the premium tier"
 retry:
   type: flat
   max_attempts: 3

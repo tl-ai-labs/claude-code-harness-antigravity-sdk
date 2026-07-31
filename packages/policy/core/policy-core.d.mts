@@ -3,17 +3,17 @@
  *
  * WHY A HAND-WRITTEN .d.mts AND NOT A COMPILED .ts. The core has to be readable
  * by the harness, which does not build — it is published to Google as a
- * standalone source tree, and a TypeScript core would drag the console's build
- * into that bundle. So the engine is authored as plain ESM and this file gives
- * the console's TypeScript the same types it had when the logic lived in
- * loader.ts. The two are kept in step by packages/policy's own suites: every
- * console test still runs through src/loader.ts, which is now a thin wrapper,
- * so a signature that drifts from reality fails typecheck or a test.
+ * standalone source tree, and a TypeScript core would drag a build step into
+ * that bundle. So the engine is authored as plain ESM and this file gives the
+ * OTHER consumer of the same engine — the production SDLC orchestrator in a
+ * separate repository, whose loader re-exports it — the types it had when this
+ * logic lived inside that loader. The two are kept in step by packages/policy's
+ * own suites, so a signature that drifts from reality fails typecheck or a test.
  *
- * The types here are DELIBERATELY looser than src/types.ts in one respect: the
- * core also serves the harness, whose policies carry `retry` and `limits` that
- * the console's Policy interface has never had. Those appear as optional here
- * and are simply absent from the console's own view of the same object.
+ * The types here are DELIBERATELY loose in one respect: the core serves the
+ * harness too, whose policies carry `retry` and `limits` that the orchestrator's
+ * own Policy interface has never had. Those appear as optional here and are
+ * simply absent from its narrower view of the same object.
  */
 
 export type AdapterName =
@@ -41,8 +41,8 @@ export declare function isLegacyHarnessShape(raw: unknown): boolean;
 
 /**
  * Validates and CANONICALISES in place, then returns the same object. Typed as
- * `unknown` in / `any` out because the two surfaces narrow it differently:
- * src/loader.ts casts to the console's `Policy`, the harness keeps it raw.
+ * `unknown` in / `any` out because the two surfaces narrow it differently: the
+ * orchestrator's loader casts to its own `Policy`, the harness keeps it raw.
  */
 export declare function validatePolicy(raw: unknown): any;
 

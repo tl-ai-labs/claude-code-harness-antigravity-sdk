@@ -79,11 +79,10 @@ models:
   # it was reached lived in runtimes.mjs. All three facts below were true of
   # every recorded run and none of them were in the policy.
   - id: flash-35-agsdk-vertex
-    # Named model-adapter-api, matching the console's convention in
-    # templates/policies/opus-plus-flash.yaml (flash-mcp-vertex,
-    # flash-agsdk-vertex, flash-mcp-ai-studio, flash-router-ai-studio). Ravi's
-    # "Gemini can be accessed through 2 adapters and 3 APIs" is exactly that
-    # naming: one entry per combination, each with its own id.
+    # Named model-adapter-api. Gemini is reachable through more than one
+    # adapter and more than one API, and the same model over a different cable
+    # is a different cell — so the id carries all three parts and each
+    # combination gets its own entry rather than being implied by code.
     adapter: antigravity-sdk          # gemini_worker.py → pip google-antigravity
     api: vertex                       # the SDK's only doorway; validated at load
     model_name: gemini-3.5-flash      # SDK model id passed to gemini_worker.py --model
@@ -101,13 +100,12 @@ models:
     # UsageMetadata in its worker_usage sidecars, never from a number typed here.
     #
     # WHY THERE IS NO `select:` SLOT YET, though the schema now offers one. A
-    # slot would let this policy hold flash-mcp-vertex and flash-mcp-ai-studio
-    # beside this entry and let `--select` pick per run — which is exactly what
-    # opus-plus-flash.yaml does on the console. The harness cannot honestly
-    # offer it: gemini_worker.py speaks the Antigravity SDK and only the
-    # Antigravity SDK, so an `mcp` option here would pass validation and then
-    # fail at the first delegation, which is the precise class of failure this
-    # schema change exists to end. The slot lands the day a worker script speaks
+    # slot would let this policy hold several adapter/API combinations beside
+    # this entry and let `--select` pick one per run. This repository cannot
+    # honestly offer it: gemini_worker.py speaks the Antigravity SDK and only
+    # the Antigravity SDK, so any other option here would pass validation and
+    # then fail at the first delegation, which is the precise class of failure
+    # this schema change exists to end. The slot lands the day a worker script speaks
     # a second lane, not before.
 rules:
   # SWE-bench Pro's three phases, named explicitly. Was `phases.{repro,localize,

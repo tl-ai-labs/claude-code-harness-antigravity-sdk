@@ -1138,13 +1138,25 @@ export const RUNTIMES = {
   },
 
   /**
-   * The `antigravity` runtime (agy CLI, headless `agy -p`) was REMOVED
-   * 2026-07-23: Teja parked the agy CLI (2026-07-21), so the CLI-as-harness
-   * cells (antigravity×Claude = box 1, antigravity×Gemini = box 3) are no
-   * longer wired. It returns later as an SDK-based Antigravity harness once the
-   * Gemini harness path is corrected — the git history holds the CLI adapter,
-   * and agy-trajectory.mjs stays on disk for that revival. Until then the
-   * matrix runtime is claude-code only; the delegated cc×Gemini worker (above)
-   * is the SDK's live path.
+   * There is deliberately no `antigravity` runtime here — no entry that puts
+   * the Antigravity harness in the DRIVER seat. Two different reasons, and
+   * they should not be confused (docs/antigravity-sdk.md has the detail):
+   *
+   *   Antigravity × Claude   BLOCKED upstream. The SDK's OpenAI-compatible
+   *                          path sends no Authorization header at all, and
+   *                          even with one supplied it labels tool results
+   *                          `assistant` instead of `role:"tool"`, so the
+   *                          agent loop dies on turn 2 against Anthropic.
+   *
+   *   Antigravity × Gemini   NOT blocked — just not written. This exact pair
+   *                          already runs on every delegated cell, one rung
+   *                          down, as the WORKER (see the block above).
+   *                          Promoting it to a driver means an adapter that
+   *                          owns the stage sequence and writes its contract
+   *                          files outside the workdir, which the SDK's
+   *                          `workspaces=[…]` does not do for free.
+   *
+   * An earlier `antigravity` runtime drove the `agy` CLI headlessly and was
+   * removed 2026-07-23 when that CLI was parked; git history holds it.
    */
 };
