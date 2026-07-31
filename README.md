@@ -49,7 +49,7 @@ node tools/setup.mjs
 The setup wizard has three modes and picks the smallest one that fits
 what you want to do:
 
-- **`--offline`** — Node + pnpm, run the 290 offline tests, exit.
+- **`--offline`** — Node + pnpm, run the offline test suite, exit.
   No credentials needed.
 - **`--sdlc`** — offline + Claude Code CLI + Anthropic auth + the
   Antigravity SDK worker venv + Google Cloud ADC + Docker. Enough
@@ -155,6 +155,14 @@ Each `worker-usage-*.json` is the Antigravity SDK's own token receipt
 for that delegation (model, SDK version, Vertex project/location,
 token counts). These are the artifacts a customer engineer can hand a
 customer as proof-of-mechanism without running the harness.
+
+These receipts are unedited, which is the point of shipping them — so
+the kudos-wall ones name the Google Cloud project that actually paid
+for that run, which is ours. It is a record of who was billed, not a
+setting: your own runs record your own project, and nothing in the
+harness reads a project from these files. The older navidrome receipts
+predate the project/region fields and simply omit them; the exporter
+reports that as unrecorded rather than filling in a guess.
 
 ## Documentation
 

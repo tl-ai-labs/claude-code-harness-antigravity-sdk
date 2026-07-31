@@ -5,7 +5,7 @@ want to do — nothing above what you need is required.
 
 | Profile | What it lets you do | Prereqs |
 |---|---|---|
-| **Offline** | Read the code, run the 290 offline tests, dry-run any policy without spending | Node ≥ 22, pnpm ≥ 11 |
+| **Offline** | Read the code, run the offline test suite, dry-run any policy without spending | Node ≥ 22, pnpm ≥ 11 |
 | **SDLC live** | Run a delegated SDLC workload end-to-end against a fresh scaffold | Offline + Claude Code CLI + Anthropic auth + Python venv + Google Cloud ADC + Docker |
 | **SWE-bench Pro** | Fetch Scale AI's public corpus, run a real bug fix, grade with Scale's official evaluator | SDLC live + Scale evaluator clone at a pinned SHA + ~30 GB free disk |
 
@@ -21,8 +21,12 @@ cd claude-code-harness-antigravity-sdk
 pnpm install && pnpm build && pnpm test
 ```
 
-The 290 tests take under 10 seconds and touch no network. If any fail, do
-not proceed — file an issue.
+The suite takes under 10 seconds and touches no network. **Zero failures is
+the bar, not zero skips** — a handful of suites assert against recorded runs
+and against a SWE-bench Pro corpus checkout, neither of which ships in a
+clone, so they skip themselves and say so in the summary line. That is the
+designed behaviour on a fresh machine. If anything *fails*, do not proceed —
+file an issue.
 
 Dry-run the plumbing without spending:
 
@@ -84,8 +88,11 @@ gcloud auth application-default login
 Or set `GOOGLE_APPLICATION_CREDENTIALS` to a service-account JSON.
 
 **c. Point it at YOUR project.** This step is the one most likely to be
-missed. The worker reads `GOOGLE_CLOUD_PROJECT` from the environment; if
-unset, it falls back to a default that is not yours.
+missed. The worker reads `GOOGLE_CLOUD_PROJECT` from the environment and
+has **no default** — unset, it exits before spending anything and tells
+you so. That is deliberate: a fallback project would either fail with a
+permission error naming something you have never heard of, or, worse,
+bill an account that is not yours.
 
 ```bash
 export GOOGLE_CLOUD_PROJECT=your-gcp-project-id
@@ -122,11 +129,18 @@ Docker holds several gigabytes of RAM while running. On a machine with
 |---|---|---|
 | `CLAUDE_CODE_OAUTH_TOKEN` | — | Driver auth (subscription seat). This or the next, not both. |
 | `ANTHROPIC_API_KEY` | — | Driver auth (metered API). |
-| `GOOGLE_CLOUD_PROJECT` | — | **Always set.** The worker refuses to run without it once you cross into a live cell. |
+| `GOOGLE_CLOUD_PROJECT` | — (no default, by design) | **Always set.** The worker exits with an explanation rather than guessing a project. |
 | `GOOGLE_CLOUD_LOCATION` | `asia-south1` | Override only if your quota lives elsewhere. |
 | `GOOGLE_APPLICATION_CREDENTIALS` | — | Alternative to `gcloud auth application-default login`. |
 | `GEMINI_WORKER_PYTHON` | `tools/harness-matrix/sdk-probe/sdkprobe/bin/python` | If your venv lives elsewhere. |
 | `GEMINI_WORKER_DYLD` | `/opt/homebrew/opt/expat/lib` | The Homebrew `pyexpat` workaround. |
+| `NO_COLOR` | — | Suppresses ANSI colour in the run log. Colour already switches itself off when stdout is not a TTY, so you only need this when capturing a log through something that reports itself as one. |
+
+That is the complete set the code reads — grep for `process.env.` under
+`tools/` and `os.environ` under `tools/harness-matrix/*.py` to confirm.
+Nothing else is consulted, and the only values baked into the repository are
+the ones spelled out in the Default column — a region pin and two local
+paths. No credential and no account identifier has a default.
 
 ### 5. Preflight verifies all of this at $0
 

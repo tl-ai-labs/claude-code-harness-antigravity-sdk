@@ -78,6 +78,16 @@ with the network blocked.
 `--instance-dir` and `--task-dir` are mutually exclusive; one is
 required. Unknown flags are silently ignored, so check your spelling.
 
+The directory each one names must hold that kind's descriptor —
+`instance.json` for `--instance-dir`, `task.json` for `--task-dir`. If
+it doesn't, the run exits `2` before anything is spent and the message
+names the missing file. Worth knowing for `--instance-dir` in
+particular: a Pro instance is a corpus entry under
+`studies/swe-pro-corpus/<instance_id>/` written by the fetch script
+(see [swe-bench-pro.md](swe-bench-pro.md)) — `examples/swe-bench-pro/`
+is that workload's documentation and its committed exemplar pass, not
+an instance you can point the harness at.
+
 ## Exit codes
 
 | Exit | Meaning |
@@ -131,6 +141,27 @@ its directory exists.
 - `grade-verdict.json` is the pass/fail from the grader.
 
 Full walk in [understanding-output.md](understanding-output.md).
+
+### Replaying the terminal log at $0
+
+A finished run's log can be re-rendered from its own `manifest.json` —
+the same opening header and closing scoreboard the live run printed,
+with the run's own trajectories and `[+m:ss]` timings:
+
+```bash
+node tools/harness-matrix/replay-log.mjs --run-dir tools/harness-matrix/runs/<task>/<cell>/<stamp>
+```
+
+Add `--frames` for just the header and scoreboard, or `--stage <id>`
+for one stage.
+
+Read-only: no model, no network, no container, nothing written. Both
+the live frames and the replay are rendered by the same pure functions
+in `logrender.mjs` from the same descriptor shape, so a replay agrees
+with the run it reproduces by construction rather than by someone
+remembering to copy an edit across — `logrender.test.mjs` asserts that
+against every run present on the machine. Use it to review demo copy,
+or to re-read a run you have already paid for, without paying again.
 
 ## Choosing between the policies
 

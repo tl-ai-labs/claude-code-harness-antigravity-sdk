@@ -121,6 +121,13 @@ at all on a hit. This is the subset safe to share externally.
   the run's `manifest.json` under `harness.brief_sha256`, so the brief
   the run saw is unambiguous.
 
+## Re-reading the terminal log
+
+The run's own log — opening header, per-stage narration, closing
+scoreboard — is reproducible from `manifest.json` at `$0` with
+`replay-log.mjs`. See
+[running.md → Replaying the terminal log](running.md#replaying-the-terminal-log-at-0).
+
 ## Exporting for a dashboard
 
 `tools/harness-matrix/export-dashboard.mjs` reads a run's
@@ -135,3 +142,12 @@ node tools/harness-matrix/export-dashboard.mjs \
 
 The viewer is a separate application not included here. The contract
 is documented at the top of `export-dashboard.mjs`.
+
+Worker spend in the export is priced from the SDK's own token counts
+against the Vertex region each usage sidecar records — a non-global
+endpoint carries a +10% surcharge, so pricing every run at one pinned
+region would overcharge a `global` run by exactly that. The paying
+Google Cloud project is read from the same sidecars, which is why an
+export never names a project that did not pay for the run. Receipts
+that predate those fields report the region as the `asia-south1`
+default and the project as unrecorded, rather than guessing either.

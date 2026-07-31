@@ -22,7 +22,7 @@ Open an issue to discuss before writing a large PR — saves everyone time.
 
 1. Fork the repo, create a feature branch off `main`.
 2. Make your change. Keep the diff focused; one topic per PR.
-3. Run `pnpm install && pnpm build && pnpm test` on a clean clone to verify the 290 offline tests still pass.
+3. Run `pnpm install && pnpm build && pnpm test` on a clean clone to verify the offline suite still passes. Some suites skip themselves when a recorded run or the SWE-bench Pro corpus is absent — that is expected on a clone; zero failures is the bar.
 4. Run `node tools/harness-matrix/run-harness.mjs --task-dir examples/kudos-wall --runtime claude-code --policy tools/harness-matrix/policies/all-gemini-flash-high.yaml --dry-run` to verify the plumbing still resolves.
 5. If you touched the runner or a kind module, run a full live pass locally and confirm the manifest and evidence bundle still render sensibly.
 6. Open a pull request. Describe what changed and why in one or two paragraphs.
