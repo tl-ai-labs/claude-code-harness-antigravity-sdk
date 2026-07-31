@@ -23,7 +23,7 @@ and the boundaries are load-bearing rather than tidy:
 
 | Layer | Code | Owns | Deliberately does not know |
 |---|---|---|---|
-| **Engine** | [run-harness.mjs](../tools/harness-matrix/run-harness.mjs) | Argument parsing, kind selection, handing over | Anything benchmark-specific — no SWE-bench or SDLC conditionals exist past line 130 |
+| **Engine** | [run-harness.mjs](../tools/harness-matrix/run-harness.mjs) | Argument parsing, kind selection, handing over | How either benchmark works. The whole file is ~130 lines and its last act is `await kind.run(...)` — the only kind-specific things in it are which descriptor file to check for and which module to import |
 | **Kind** | [kinds/swepro.mjs](../tools/harness-matrix/kinds/swepro.mjs), [kinds/sdlc.mjs](../tools/harness-matrix/kinds/sdlc.mjs) | The recipe: stage order, prompts, gates, retries, container, grading | Which model is running, or how a phase is executed |
 | **Runtime** | [runtimes.mjs](../tools/harness-matrix/runtimes.mjs) | The inside of one phase: launch the agent process, enforce the delegated contract, return telemetry | The stage sequence, the gates, whether it is Pro or SDLC |
 | **Policy** | [policies/*.yaml](../tools/harness-matrix/policies/) + `packages/policy/core/policy-core.mjs` | Which model on which stage, thinking level, retries, timeouts, budgets | Everything else |
