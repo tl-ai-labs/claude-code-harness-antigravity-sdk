@@ -13,11 +13,15 @@ module registration, integration tests, and a passing build.
 - [task.json](task.json) — task-id, template-id (`sdlc-mini`), scaffold-id
   (`service-web`), and the SHA-256 of the brief so the input is pinned.
 - [passes/reference/](passes/reference/) — a full committed set of
-  driver→worker hand-offs and worker usage receipts from a real run:
-  Claude Opus driver × Gemini 3.5 Flash worker, `gemini35-plus-25-flash-high`
-  policy. Read the `worker-task-*.md` files to see what the driver actually
-  handed the worker; read the `worker-usage-*.json` files to see the token
-  counts the Antigravity SDK reported back.
+  driver→worker hand-offs and worker usage receipts from a real run of the
+  `gemini35-plus-25-flash-high` policy: a `claude-opus-4-6` driver over
+  **two** worker tiers, which is the point of that column. Twelve hand-offs
+  and twelve receipts — `gemini-3.5-flash` on the five judgment stages
+  (requirements, design, plan-packets, review, judge) and `gemini-2.5-flash`
+  on the seven `execute` delegations, all at `asia-south1`. Read the
+  `worker-task-*.md` files to see what the driver actually handed the
+  worker; read the `worker-usage-*.json` files to see the token counts the
+  Antigravity SDK reported back, and which of the two models each one billed.
 - [passes/opus48-plus-lite/](passes/opus48-plus-lite/) — the same evidence
   set from a real run of the cost-tier policy (`opus48-plus-lite`: Claude
   Opus 4.8 driver, `gemini-3.5-flash-lite` worker, 2026-07-31). RESOLVED —
@@ -44,8 +48,12 @@ node tools/harness-matrix/run-harness.mjs \
 The full run output (the workdir, the grade verdict, the trajectory,
 `manifest.json`, `telemetry.jsonl`) lands under
 `tools/harness-matrix/runs/kudos-wall/claude-code--gemini35-plus-25-flash-high/<stamp>/`.
-That directory is gitignored — only the `evidence-bundle/delegation/`
-subset from the committed reference pass is under version control.
+That directory is gitignored. What is under version control is the two
+committed passes above: `passes/reference/` carries the
+`evidence-bundle/delegation/` subset only, and `passes/opus48-plus-lite/`
+carries that subset **plus** the full `evidence-bundle/` described above.
+Nothing a run writes ever lands in `passes/` — the committed passes were
+copied there deliberately, through `scrub-paths.mjs`.
 
 ## Bringing your own SDLC workload
 

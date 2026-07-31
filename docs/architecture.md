@@ -15,7 +15,27 @@ home:
 | What does a run write to disk? | [understanding-output.md](understanding-output.md) |
 | What can the Antigravity SDK do? | [antigravity-sdk.md](antigravity-sdk.md) |
 
-## The four-way split
+### One convention you will hit before anything else: `DESIGN §N`
+
+Roughly thirty comments across `tools/harness-matrix/`,
+`packages/policy/` and the policy YAMLs cite a section number — `DESIGN
+§2.4`, `DESIGN §11 defect 3`, and so on. **There is no `DESIGN.md` in
+this repository, and you are not missing a file.** `DESIGN` is the study
+design document of the production SDLC orchestrator this harness was
+built alongside, which lives in a separate repository and is not part of
+this hand-off. The section numbers are cited the same way
+`opus-plus-sonnet.yaml` is cited in `opus48-plus-lite.yaml`: as
+**provenance for a rule, not as a path you can open here.**
+
+They are left in rather than stripped because each one marks a decision
+that was ruled on once and is not the author's to re-open casually. The
+four you will meet most often are `§2.1` (pin, don't float), `§2.4` (a
+limit is part of the study definition), `§7` (cost honesty) and `§11`
+(the recorded-defects list); a handful of others appear once each. In
+every case the rule itself is restated inline right where it is cited,
+so nothing in this repository depends on reading the document: the
+citation tells you the rule has a history, and the sentence around it
+tells you what the rule is.
 
 One run is one **kind** × one **runtime** × one **policy**, assembled by
 the **engine**. Each layer knows as little as possible about the others,
@@ -23,7 +43,7 @@ and the boundaries are load-bearing rather than tidy:
 
 | Layer | Code | Owns | Deliberately does not know |
 |---|---|---|---|
-| **Engine** | [run-harness.mjs](../tools/harness-matrix/run-harness.mjs) | Argument parsing, kind selection, handing over | How either benchmark works. The whole file is ~130 lines and its last act is `await kind.run(...)` — the only kind-specific things in it are which descriptor file to check for and which module to import |
+| **Engine** | [run-harness.mjs](../tools/harness-matrix/run-harness.mjs) | Argument parsing, kind selection, handing over | How either benchmark works. The whole file is under 200 lines and its last act is `await kind.run(...)` — the only kind-specific things in it are which descriptor file to check for and which module to import |
 | **Kind** | [kinds/swepro.mjs](../tools/harness-matrix/kinds/swepro.mjs), [kinds/sdlc.mjs](../tools/harness-matrix/kinds/sdlc.mjs) | The recipe: stage order, prompts, gates, retries, container, grading | Which model is running, or how a phase is executed |
 | **Runtime** | [runtimes.mjs](../tools/harness-matrix/runtimes.mjs) | The inside of one phase: launch the agent process, enforce the delegated contract, return telemetry | The stage sequence, the gates, whether it is Pro or SDLC |
 | **Policy** | [policies/*.yaml](../tools/harness-matrix/policies/) + `packages/policy/core/policy-core.mjs` | Which model on which stage, thinking level, retries, timeouts, budgets | Everything else |
@@ -220,8 +240,17 @@ where each layer lives and why there are three.
   itself is always allowed and touches a per-attempt sentinel file; after
   that the repository unlocks for verification.
 - **The post-run audit** re-checks the recorded trajectory afterwards, in
-  three families: git-history mining and source-host fetching (both
-  critical) and test-edit attempts (non-critical).
+  six families. Three are exploit patterns matched against Bash commands
+  — git-history mining and source-host fetching (both critical) and
+  test-edit attempts (non-critical) — and these three are the ones
+  skipped, on the record, for SDLC runs. The other three are behavioural
+  rather than pattern-based: delegation-policy mismatch (critical when
+  the model differs from the resolved binding, non-critical when only the
+  thinking level does), driver pre-delegation inspection, and
+  driver-direct-edit (both non-critical, both meaning the guard was
+  bypassed rather than that an exploit was attempted). `lintDelegationText`
+  adds four more families over the hand-off *text* — see
+  [methodology.md](methodology.md).
 
 All three import the *same* classifier functions —
 `bashEditsTree`, `bashInspectsRepo`, `searchTargetsRepo`,

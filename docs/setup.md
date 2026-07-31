@@ -116,7 +116,10 @@ python3 -m venv tools/harness-matrix/sdk-probe/sdkprobe
 tools/harness-matrix/sdk-probe/sdkprobe/bin/pip install google-antigravity
 ```
 
-Verified against `google-antigravity 0.1.7`.
+Deliberately unpinned. Verified against `google-antigravity 0.1.9`,
+which is what the 2026-07-31 validation runs recorded in their usage
+receipts; `0.1.7` also works and is what the earlier committed passes
+under `examples/*/passes/` ran on.
 
 *Homebrew Python users:* if the venv cannot `import pyexpat`, run
 `brew install expat`. The worker defaults `GEMINI_WORKER_DYLD` to
@@ -197,11 +200,18 @@ Docker holds several gigabytes of RAM while running. On a machine with
 | `GEMINI_WORKER_DYLD` | `/opt/homebrew/opt/expat/lib` | The Homebrew `pyexpat` workaround. |
 | `NO_COLOR` | — | Suppresses ANSI colour in the run log. Colour already switches itself off when stdout is not a TTY, so you only need this when capturing a log through something that reports itself as one. |
 
-That is the complete set the code reads — grep for `process.env.` under
-`tools/` and `os.environ` under `tools/harness-matrix/*.py` to confirm.
-Nothing else is consulted, and the only values baked into the repository are
-the ones spelled out in the Default column — a region pin and two local
-paths. No credential and no account identifier has a default.
+That is the complete set that configures a **run**. The only values baked
+into the repository are the ones spelled out in the Default column — a
+region pin and two local paths. No credential and no account identifier
+has a default.
+
+Grep for `process.env.` under `tools/` and `os.environ` under
+`tools/harness-matrix/*.py` and you will find three more names, none of
+which you set: the setup wizard reads `HOME`/`USERPROFILE` to print an
+absolute path in its report, and a test reads `PYTHON` to pick the
+interpreter it probes with. The Python side reads exactly three —
+`ANTHROPIC_API_KEY`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` —
+all of them in the table above.
 
 ### 5. Preflight verifies all of this at $0
 

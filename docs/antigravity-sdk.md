@@ -9,8 +9,10 @@ Nothing here is asserted. Every claim below is produced by a script in
 [../tools/harness-matrix/sdk-probe/](../tools/harness-matrix/sdk-probe/),
 most of them at `$0` with no network; that directory's
 [README](../tools/harness-matrix/sdk-probe/README.md) is how you re-run
-them. Probed against **google-antigravity 0.1.7**, first on 2026-07-21
-and re-verified against the same wheel on 2026-07-31.
+them. First probed on 2026-07-21 against **google-antigravity 0.1.7**,
+and re-run on 2026-07-31 against **0.1.9** — the wheel the live
+validation runs of that date recorded in their own usage receipts. Every
+finding below held across both.
 
 ## The shape of it
 
@@ -130,8 +132,8 @@ save_dir, app_data_dir, response_schema, skills_paths, kwargs
 There is no `api_key`, and `probe_openai_shape.py` — which points the
 SDK at a local capture server and reads back the request it actually
 emitted — confirms no `Authorization` header is sent either. Against
-any endpoint that requires authentication, the SDK is unaided
-unreachable.
+any endpoint that requires authentication, the SDK cannot reach it
+unaided.
 
 ### 3. Supply the header yourself and you get exactly one turn
 
@@ -215,7 +217,7 @@ is a 2×2. This repository ships one row of it:
 
 | | Claude worker | Gemini worker |
 |---|---|---|
-| **Claude Code driver** | `all-opus` — shipped, and runs no SDK code at all | the three delegated policies — shipped |
+| **Claude Code driver** | `all-opus` — shipped, and runs no SDK code at all | the four delegated policies — shipped |
 | **Antigravity driver** | **blocked upstream** — §§2–5 above | **not blocked, just unwritten** |
 
 The two empty cells are not the same kind of empty, and collapsing them

@@ -13,8 +13,11 @@ attempting.
 - [task.json](task.json) — task-id, template-id, scaffold-id, brief hash.
 
 No committed reference pass — the workload exists to be run locally as a
-warm-up, not as a scoring workload. `passes/` shows up under this
-directory the first time you run and is gitignored.
+warm-up, not as a scoring workload. Nor will one appear here: a run never
+writes into `examples/`. Its output goes to
+`tools/harness-matrix/runs/uptime-ping/<runtime>--<policy>/<stamp>/`,
+which is gitignored. The `passes/` directories in the other two workloads
+are curated copies, put there deliberately.
 
 ## Running it
 

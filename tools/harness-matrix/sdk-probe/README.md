@@ -11,8 +11,10 @@ can re-run them instead of taking our word for it.
 SDK does, what it does not, and the defect that blocks a Claude worker.
 This page is only how to reproduce them.
 
-Probed against **google-antigravity 0.1.7**, first on 2026-07-21 and
-re-verified against the same wheel on 2026-07-31.
+First probed on 2026-07-21 against **google-antigravity 0.1.7**, and
+re-run on 2026-07-31 against **0.1.9** — the wheel that day's live
+validation runs recorded in their own usage receipts. Every finding held
+across both.
 
 | Script | Costs | Answers |
 |---|---|---|

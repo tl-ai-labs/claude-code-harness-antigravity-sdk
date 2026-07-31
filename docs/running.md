@@ -49,7 +49,14 @@ hit on the first run: ~$3–4, 20–30 minutes.
 Swap the policy to switch the tokenomics story:
 
 ```bash
-# Tiered — Opus for judgment, 2.5 Flash for volume (the tokenomics pass)
+# The tokenomics pass — Opus 4.8 holds the judgment stages by itself,
+# Flash-Lite does execute and the repair rounds. Tiered across the
+# driver/worker line.
+--policy tools/harness-matrix/policies/opus48-plus-lite.yaml
+
+# Historical column — the same tiering cut with the WORKER as the
+# variable: every stage delegates, 3.5 Flash on judgment, 2.5 Flash on
+# volume. Frozen on its Opus 4.6 driver; see policies.md.
 --policy tools/harness-matrix/policies/gemini35-plus-25-flash-high.yaml
 
 # Anchor — Opus doing every stage itself, no delegation.

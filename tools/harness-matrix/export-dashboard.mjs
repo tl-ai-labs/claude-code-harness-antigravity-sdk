@@ -179,10 +179,21 @@ const listOrNull = (vals) => (vals.length ? [...new Set(vals)].sort().join(", ")
 
 /**
  * Best-effort version of the Antigravity SDK, read from the worker venv's
- * dist-info at EXPORT time. Deliberately reported as "at export" rather than
- * "at run": the harness does not stamp the SDK version into a run's evidence,
- * so claiming it as the version that produced these numbers would be an
- * unverifiable assertion. null when the venv is absent.
+ * dist-info at EXPORT time, and named `_at_export` everywhere it surfaces
+ * because that is honestly all it is: the version installed on the machine
+ * doing the exporting, which on a re-export months later is NOT the version
+ * that produced the numbers.
+ *
+ * Per-run SDK provenance is a different, better source: `gemini_worker.py`
+ * stamps `sdk` / `sdk_version` into every usage sidecar it writes, so any
+ * receipt from 2026-07-24 onward carries the exact wheel that call ran on
+ * (the committed exemplars show `0.1.7` and `0.1.9`). Sidecars written before
+ * that field existed — `examples/swe-bench-pro/passes/navidrome/` is the one
+ * in the tree — carry nothing, which is why this export-time reading is still
+ * emitted rather than replaced. Prefer the sidecar when you are attributing a
+ * number to a wheel; this field is an environment fact, not a run fact.
+ *
+ * null when the venv is absent.
  */
 function workerSdkVersionAtExport() {
   try {

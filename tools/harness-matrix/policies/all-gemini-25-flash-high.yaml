@@ -9,32 +9,45 @@
 # first should not take `gemini-2.5-flash` for the model this repo currently
 # runs.
 #
-# WHAT THIS COLUMN ACTUALLY RAN WITH — the whole reason it is kept unedited.
-# Every value below is the value its recorded pass used, not a value chosen for
-# today, and the entries further down this file still hold exactly these:
+# WHAT THIS COLUMN WAS PINNED TO — the whole reason it is kept unedited.
+# Every value below is a July 2026 value, not a value chosen for today, and the
+# entries further down this file still hold exactly these:
 #
 #   driver   claude-opus-4-6, --effort high   (builtin-anthropic → anthropic)
 #   worker   gemini-2.5-flash, thinking NONE  (antigravity-sdk → vertex, asia-south1)
 #            NONE is not a preference — Vertex 400s on thinking_level for this
 #            model; the verbatim error is quoted at the worker leaf below.
-#   evidence examples/kudos-wall/passes/reference/ — worker-task/worker-usage
-#            sidecars naming this policy
+#
+# BE PRECISE ABOUT THE EVIDENCE, because an earlier version of this header was
+# not. NO pass committed to this repository was run under the name
+# `all-gemini-25-flash-high` — grep `examples/` for that string and you get
+# nothing. What IS committed is the worker LEAF this column pins: the seven
+# `execute` receipts in examples/kudos-wall/passes/reference/ are
+# gemini-2.5-flash, thinking NONE, asia-south1 — this leaf exactly — and they
+# were produced by `gemini35-plus-25-flash-high`, the tiered column, which uses
+# the same leaf for its volume tier. So the leaf's behaviour (including the
+# thinking 400) is evidenced; the whole-column pass is not shipped here.
+# Treating the two as the same claim is what a reader of a Google-facing repo
+# is entitled not to have to catch.
 #
 # The driver line is the one most likely to look stale to a reader arriving from
 # the current policies: all three of those were re-pinned to claude-opus-4-8 on
-# 2026-07-31 and this file was deliberately not, because its exemplar pass ran
-# on 4.6. See the note at the driver leaf below.
+# 2026-07-31 and this file was deliberately not, because the July 2026 runs
+# this column is frozen against ran on 4.6. See the note at the driver leaf
+# below.
 #
 # It was proposed for deletion on 2026-07-31, on the reasoning that once the
 # matrix stopped pinning 2.5 and 3.5 Flash these two cross-generation columns
 # had lost their subject. Deletion was REJECTED, for reasons that outlive the
 # proposal:
-#   1. Its evidence is SHIPPED. Eight worker-usage and worker-task sidecars
-#      under examples/kudos-wall/passes/reference/ record a real run of this
-#      exact policy and name it in their contents. Deleting the policy would
-#      leave shipped evidence pointing at a file that does not exist — and the
-#      sidecars are receipts from a run that happened, so rewriting them to
-#      cover the gap is not available either.
+#   1. Its worker leaf's evidence is SHIPPED, and its finding with it. Seven
+#      worker-usage receipts under examples/kudos-wall/passes/reference/ record
+#      gemini-2.5-flash at thinking NONE in asia-south1 — this file's leaf,
+#      byte for byte. (They name gemini35-plus-25-flash-high, not this policy;
+#      see the evidence note above. The leaf is shared, the column name is
+#      not.) Those receipts are what makes the thinking-400 below a recorded
+#      platform fact rather than a remembered one, and they are receipts from a
+#      run that happened, so rewriting them is not available either.
 #   2. It carries a platform finding the deliverable needs. The verbatim Vertex
 #      400 on `thinking_level` for 2.5 Flash, quoted at the worker leaf below,
 #      is the evidence for a real constraint in the SDK's surface — precisely
@@ -56,9 +69,9 @@
 # 2026. Two of those have since moved in the 3.5 column and are called out at
 # their leaves below: the driver pin (Opus 4.6 here, Opus 4.8 there) and the
 # worker region (asia-south1 here, `global` there, because Flash-Lite is
-# global-only). This column is frozen against its recorded pass, so the
-# comparison is against the OTHER column's recorded July 2026 pass too, never
-# against a fresh run of it. kinds/sdlc.test.mjs asserts each of those
+# global-only). This column is frozen against July 2026, so the comparison is
+# against the OTHER column's recorded July 2026 pass too, never against a fresh
+# run of it. kinds/sdlc.test.mjs asserts each of those
 # differences by name so a THIRD one cannot appear silently.
 #
 # THE ONE KNOB THAT COULD NOT BE HELD CONSTANT — worker thinking level. This
@@ -133,9 +146,10 @@ models:
   # THE SIBLINGS HAVE SINCE MOVED, AND THIS ENTRY DELIBERATELY HAS NOT
   # (2026-07-31). all-opus, all-gemini-flash-high and opus48-plus-lite were
   # re-pinned together to claude-opus-4-8 so the three CURRENT cells share one
-  # driver generation. This file stayed on 4.6 because its exemplar pass ran on
-  # 4.6 — re-pinning it would make the policy describe a run that never
-  # happened, which is the same reason the column was not deleted. The cost is
+  # driver generation. This file stayed on 4.6 because 4.6 is what the July
+  # 2026 matrix ran — re-pinning it would make a frozen column describe a
+  # generation it never ran under, which is the same reason the column was not
+  # deleted. The cost is
   # that "held constant with its siblings" is now a statement about July 2026,
   # not about the files on disk: compare this column against the RECORDED
   # passes of the others, not against a fresh run of them.
@@ -164,9 +178,10 @@ models:
                                       # Left on asia-south1 deliberately, for the
                                       # same reason the driver stays on Opus 4.6:
                                       # this is a FROZEN column and asia-south1
-                                      # is where its recorded pass actually
-                                      # billed. Re-pinning it to global would
-                                      # make the file describe a run nobody made.
+                                      # is where every committed 2.5 Flash
+                                      # receipt actually billed. Re-pinning it
+                                      # to global would make the file describe
+                                      # a lane nobody ran this model on.
                                       # The cost is real and is now stated rather
                                       # than hidden: global takes no Vertex
                                       # non-global surcharge, asia-south1 takes

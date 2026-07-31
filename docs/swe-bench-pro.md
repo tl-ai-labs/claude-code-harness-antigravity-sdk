@@ -98,11 +98,21 @@ counts as a flag, not a pass).
 
 ## Costs actually observed
 
-From the ten runs recorded before the deliverable reshape:
+One cell, six recorded runs. That is the whole of the cost evidence
+this repository has for the Pro workload, and it is stated as a range
+rather than a headline figure because six runs of one cell is not a
+benchmark result:
 
 | Cell | Runs | Cost per run | Wall clock | Attempts |
 |---|---|---|---|---|
 | SWE-bench Pro × `all-gemini-flash-high` | 6 | **$1.68 – $2.42** (mean $1.93) | 15 – 39 min | 3 – 4 |
+
+Those six ran when `all-gemini-flash-high` still pinned
+`gemini-3.5-flash` at `asia-south1`. The policy now pins
+`gemini-3.5-flash-lite` at `global`, so re-running the cell today
+prices differently in both directions — a cheaper model, and no +10%
+non-global surcharge. Treat the range as a record of what was
+observed, not as a forecast of what you will pay.
 
 Grading is free in tokens (Scale's evaluator does not call a model)
 but not free in time — on Apple silicon the Pro images are
@@ -110,12 +120,23 @@ but not free in time — on Apple silicon the Pro images are
 than seconds. An empty diff short-circuits the grader: the verdict is
 recorded as unresolved without invoking Python at all.
 
-## Reference exemplar
+## Reference exemplars
 
-`examples/swe-bench-pro/passes/navidrome/` carries the committed
-driver-to-worker hand-offs and worker usage receipts from one real
-run against the navidrome instance. Not resolved on that attempt —
-the files show what the driver asked and what the SDK returned. See
+Two committed passes, one per model pin, both real:
+
+- **`examples/swe-bench-pro/passes/navidrome/`** — the older pin,
+  `gemini-3.5-flash` at `asia-south1`, five hand-offs across
+  `repro` → `localize` → `patch` (two repro attempts). **Not resolved**
+  on that attempt. Its receipts predate the `vertex_location` /
+  `sdk_version` fields, so they carry neither.
+- **`examples/swe-bench-pro/passes/nodebb/`** — the current pin,
+  `gemini-3.5-flash-lite` at `global` on SDK `0.1.9`, one `patch`
+  hand-off, and the only Pro pass that ships a **full**
+  `evidence-bundle/` — phase-io, trajectory, and the grader's own
+  output tree under `grade/`. Also **not resolved**, and
+  `grade-verdict.json` says so in Scale's own words.
+
+Between them they show what changed and what did not. See
 [understanding-output.md](understanding-output.md) for what to read.
 
 ## Why the paths are hard-coded

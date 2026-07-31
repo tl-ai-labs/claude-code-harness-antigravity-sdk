@@ -20,10 +20,16 @@ and the single-container-at-a-time rule.
 - [passes/navidrome/](passes/navidrome/) — a full committed set of
   driver→worker hand-offs and worker usage receipts from one real run
   against navidrome's `navidrome-3bc9e75b2843f91f6a1e9b604e321c2bd4fd442a`
-  instance. Claude Opus driver × Gemini 3.5 Flash worker,
-  `all-gemini-flash-high` policy. Not resolved on this attempt — the
-  worker-task files show what the driver asked and the worker's usage
-  receipts show what Gemini returned.
+  instance. A `claude-opus-4-6` driver × `gemini-3.5-flash` worker under
+  the `all-gemini-flash-high` policy **as that policy stood in July 2026**
+  — it has since been re-pinned to `gemini-3.5-flash-lite` at `global`,
+  so the command below reproduces the *cell*, not this exact model pair.
+  Not resolved on this attempt — the worker-task files show what the
+  driver asked and the worker's usage receipts show what Gemini returned.
+  Those receipts predate the `vertex_location` / `sdk_version` fields and
+  carry neither; they are the one committed pass with no recorded
+  provenance, which is why the pricing path has an explicit rule for it
+  ([understanding-output.md](../../docs/understanding-output.md)).
 - [passes/nodebb/](passes/nodebb/) — the same evidence set from one real
   run of the cost-tier policy (`opus48-plus-lite`: Claude Opus 4.8 driver,
   `gemini-3.5-flash-lite` worker, 2026-07-31) against the NodeBB
@@ -42,6 +48,13 @@ and the single-container-at-a-time rule.
   the corrected numbers from the bundle alone at $0.
 
 ## Reproducing a similar run
+
+This fetches the navidrome instance and runs the same **cell** the pass
+above ran. It will not run the same **models**: `all-gemini-flash-high`
+now pins `gemini-3.5-flash-lite` at `global`, where the recorded pass ran
+`gemini-3.5-flash` at `asia-south1`. Expect a different worker, a
+different meter, and a different bill — the policy file says so at its
+worker leaf.
 
 ```bash
 # The `instance_` prefix is part of the dataset's instance_id and the fetcher

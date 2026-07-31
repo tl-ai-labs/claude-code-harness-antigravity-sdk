@@ -237,9 +237,11 @@ export const PRICES: Record<string, ModelPrice> = {
     notes:
       "Verified 2026-07-31 against the Vertex and Gemini API pricing pages (1.50/7.50/0.15). " +
       "Gemini 3 family, so the non-global surcharge applies via getVertexRates() like its " +
-      "siblings. Independently corroborated by the studies-console policy " +
-      "flash-3-6-escalate-fable-5.yaml, which pinned the same 1.50/0.15/7.50 block against " +
-      "the public launch rates on 2026-07-22.",
+      "siblings. Independently corroborated by `flash-3-6-escalate-fable-5.yaml`, a policy " +
+      "belonging to the production SDLC orchestrator this harness was built alongside — a " +
+      "SEPARATE repository, so that filename is cited as provenance, not as a path you can " +
+      "open here. It pinned the same 1.50/0.15/7.50 block against the public launch rates " +
+      "on 2026-07-22.",
   },
   "gemini-3.1-pro": {
     model_id: "gemini-3.1-pro",

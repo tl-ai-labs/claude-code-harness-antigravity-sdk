@@ -12,16 +12,19 @@
 # ---------------------------------------------------------------------------
 # WHERE THE HARD/EASY SPLIT COMES FROM — IT WAS NOT INVENTED HERE
 # ---------------------------------------------------------------------------
-# The split below is lifted from the two production template policies in the
-# studies console, `opus-plus-sonnet.yaml` (its SWE-verified path) and
-# `opus-plus-flash.yaml` (its SDLC path). Those two files carry BYTE-IDENTICAL
-# rules blocks, which is the useful part: the console shipped one canonical
-# opinion about which SDLC phases are worth premium tokens, and it held that
-# opinion across two different cheap tiers. Reproducing it here means this
-# policy inherits a split that has already been run in production, rather than
-# one argued into existence for a demo.
+# The split below is lifted from two production template policies —
+# `opus-plus-sonnet.yaml` (the SWE-verified path) and `opus-plus-flash.yaml`
+# (the SDLC path) — that belong to the production SDLC orchestrator this
+# harness was built alongside. That orchestrator lives in a SEPARATE
+# repository and is not in this tree, so the two filenames are cited as
+# provenance, not as paths you can open here. Those two files carry
+# BYTE-IDENTICAL rules blocks, which is the useful part: the orchestrator
+# shipped one canonical opinion about which SDLC phases are worth premium
+# tokens, and it held that opinion across two different cheap tiers.
+# Reproducing it here means this policy inherits a split that has already been
+# run in production, rather than one argued into existence for a demo.
 #
-#   console premium tier          -> our stage
+#   orchestrator premium tier     -> our stage
 #     requirements_analysis          requirements
 #     architecture_design            design
 #     plan_task_packets              plan-packets
@@ -30,13 +33,13 @@
 #     debug @ retry_count >= 2       (see the verify note below)
 #     default                        default
 #
-#   console cheap tier            -> our stage
+#   orchestrator cheap tier       -> our stage
 #     codegen                        execute
 #     tests                          (harness-executed, never a model call)
 #     docs                           (no analog in sdlc-mini)
 #     debug, first two attempts      (see the verify note below)
 #
-# `judge` has no console analog because the console has no judge stage. It sits
+# `judge` has no analog there because that orchestrator has no judge stage. It sits
 # on the premium tier here for a reason that is about honesty rather than
 # difficulty: the judge is the thing that decides whether the run passed, and a
 # grader running on the same cheap model that produced the work is the single
@@ -46,8 +49,8 @@
 # the harness's build-and-test runner and `report` is emitted by the finish
 # block. What matters for cost is that verify's REPAIR ROUNDS inherit the
 # EXECUTE stage's binding automatically (kinds/sdlc.mjs), so the fix-the-build
-# loop runs on Flash-Lite. That is exactly the console's `debug`-on-the-cheap-
-# tier-for-the-first-two-attempts behaviour, arrived at through a different
+# loop runs on Flash-Lite. That is exactly the orchestrator's `debug`-on-the-
+# cheap-tier-for-the-first-two-attempts behaviour, arrived at through a different
 # mechanism, and it is why no `debug` rule appears below.
 #
 # ---------------------------------------------------------------------------
@@ -230,29 +233,29 @@ rules:
   # ---- SDLC premium tier --------------------------------------------------
   - when: { phase: [requirements, design, plan-packets] }
     use: opus48
-    reason: console premium tier (requirements_analysis, architecture_design, plan_task_packets) — the decisions the rest of the run is built on
+    reason: orchestrator premium tier (requirements_analysis, architecture_design, plan_task_packets) — the decisions the rest of the run is built on
   - when: { phase: [review] }
     use: opus48
-    reason: console premium tier (senior_code_review) — a cheap reviewer approving cheap code is not a review
+    reason: orchestrator premium tier (senior_code_review) — a cheap reviewer approving cheap code is not a review
   - when: { phase: [judge] }
     use: opus48
     reason: the grader decides whether the run passed; running it on the model under test would make the headline number worthless
 
   # ---- SDLC cheap tier ----------------------------------------------------
   # `execute` only. verify's repair rounds inherit this binding automatically,
-  # which is where the console's cheap-tier `debug` behaviour comes from.
+  # which is where the orchestrator's cheap-tier `debug` behaviour comes from.
   - when: { phase: [execute] }
     use: opus48-lite
-    reason: console cheap tier (codegen) — bulk authoring under Opus direction, and the stage that carries verify's repair rounds with it
+    reason: orchestrator cheap tier (codegen) — bulk authoring under Opus direction, and the stage that carries verify's repair rounds with it
 
   # ---- fail-safe ----------------------------------------------------------
   # Consulted only after every `when` above fails. Premium on purpose: an
   # unrecognised stage is one nobody has reasoned about yet, and the safe
   # default for an unexamined stage is the model that is good at everything,
-  # not the one that is cheap. This mirrors the console's own `default`, which
+  # not the one that is cheap. This mirrors the orchestrator's own `default`, which
   # is likewise its premium tier.
   - default: opus48
-    reason: unrecognised stage — premium tier is the fail-safe, matching the console templates
+    reason: unrecognised stage — premium tier is the fail-safe, matching the orchestrator templates
 retry:
   type: flat
   max_attempts: 3

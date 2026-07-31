@@ -10,13 +10,19 @@
 # the pin is always the `model_name` below, which is the only place that ever
 # decided what actually ran.
 #
-# High, not Low/Medium, because (a) SWE-bench Pro is hard and G4 already
-# showed Flash needing Opus rescues at low effort; (b) on the agy seat the
-# marginal cost of High is $0, so there is no cost reason to handicap it;
-# (c) "Flash at its best thinking" is the honest version of the
+# High, not Low/Medium, because (a) SWE-bench Pro is hard, and an earlier
+# 12-instance Pro study — run in the orchestrator repository, not here —
+# already showed Flash needing Opus rescues at low effort; (b) on the agy
+# seat the marginal cost of High is $0, so there is no cost reason to
+# handicap it; (c) "Flash at its best thinking" is the honest version of the
 # Google-facing question "how far does Flash get in a harness". Flash over
-# 3.1 Pro because Flash is the G4-comparable model and the Vertex gateway
-# serves 3.5 Flash — a future claude-code×gemini run compares like-for-like.
+# 3.1 Pro because Flash is the model that earlier study also ran, so the two
+# compare like-for-like.
+#
+# That paragraph was written while this cell still pinned `gemini-3.5-flash`.
+# What survived the 2026-07-31 re-pin is the TIER argument — Flash-class at
+# its best thinking, not Pro-class — which is why the name and the cell id
+# did not move with the model. The pin itself is at the worker leaf below.
 #
 # The claude-code cell is the DELEGATED form (DESIGN §2.5) — Google
 # email ask 3b verbatim: "Claude Code as Harness and when it calls Gemini
@@ -36,8 +42,12 @@
 # — which is exactly why the DRIVER stays Claude Code's own seat and is NOT
 # routed through the SDK.) Reported always as "Opus driver → Flash worker",
 # never as pure Gemini; per-attempt delegation_calls in the manifest is the
-# honesty meter. Cell stays GATED ON EXPLICIT GO (needs the sdk-probe venv
-# built + ADC + pricing preflight; runs after cross 1 + its own smoke).
+# honesty meter. This cell HAS run — `examples/swe-bench-pro/passes/navidrome/`
+# is a committed pass from it — so the preconditions below are a checklist, not
+# a gate that was never cleared: the sdk-probe venv built, gcloud ADC available,
+# and the pricing preflight done before the first paid run of the day. The last
+# is not ceremony: a stale rate pin has already produced a wrong dashboard
+# number once, and this is the only cell that bills two vendors at once.
 #
 # ---------------------------------------------------------------------------
 # MIGRATED TO THE UNIFIED SCHEMA — version 2 (2026-07-29)

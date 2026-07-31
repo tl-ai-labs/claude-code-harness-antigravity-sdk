@@ -13,10 +13,13 @@ gcs/*.json
 # OS noise
 .DS_Store
 
-# Run artifacts are ignored by tools/harness-matrix/.gitignore. Committed
-# reference exemplars live under examples/<workload>/passes/reference/;
-# local `examples/<workload>/passes/<stamp>/` outputs from user runs are
-# ignored below.
+# Run artifacts are ignored by tools/harness-matrix/.gitignore — a run writes
+# to tools/harness-matrix/runs/, never into examples/, so nothing here is
+# catching stray run output. This block exists for the opposite reason: the
+# committed exemplar passes were copied in by hand, and the deny-then-allow
+# shape makes that curation explicit. Anything a reader drops under
+# examples/<workload>/passes/ is ignored unless it is named below, so an
+# unreviewed pass cannot ride along in a commit.
 examples/*/passes/*
 !examples/*/passes/reference/
 !examples/*/passes/reference/**

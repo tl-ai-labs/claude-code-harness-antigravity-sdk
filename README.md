@@ -82,11 +82,11 @@ node tools/harness-matrix/run-harness.mjs \
   --runtime claude-code \
   --policy tools/harness-matrix/policies/all-gemini-flash-high.yaml
 
-# The tokenomics pass — Opus + tiered Gemini worker
+# The tokenomics pass — Opus 4.8 keeps judgment, Flash-Lite does production
 node tools/harness-matrix/run-harness.mjs \
   --task-dir examples/kudos-wall \
   --runtime claude-code \
-  --policy tools/harness-matrix/policies/gemini35-plus-25-flash-high.yaml
+  --policy tools/harness-matrix/policies/opus48-plus-lite.yaml
 ```
 
 Output lands under
@@ -173,7 +173,11 @@ Each workload directory carries one committed exemplar pass so you can
 read the driver-to-worker channel without running the harness:
 
 - **[examples/kudos-wall/passes/reference/](examples/kudos-wall/passes/reference/)** — 12 hand-offs and their SDK usage receipts from a real
-  `gemini35-plus-25-flash-high` run (the tokenomics pass, on kudos-wall).
+  `gemini35-plus-25-flash-high` run on kudos-wall: 5 judgment-stage
+  delegations to `gemini-3.5-flash` and 7 `execute` delegations to
+  `gemini-2.5-flash`. Every stage delegates here, so the tiering is
+  between two *workers* — not across the driver/worker line the way
+  `opus48-plus-lite` splits it.
 - **[examples/swe-bench-pro/passes/navidrome/](examples/swe-bench-pro/passes/navidrome/)** — 5 hand-offs and their SDK usage receipts from one real
   SWE-bench Pro attempt (navidrome instance,
   `all-gemini-flash-high` policy).

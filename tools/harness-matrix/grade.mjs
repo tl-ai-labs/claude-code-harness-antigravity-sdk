@@ -2,8 +2,13 @@
 /**
  * grade.mjs — score one harness-matrix run with Scale's OFFICIAL SWE-bench
  * Pro evaluator (the same script that grades leaderboard submissions),
- * running locally in Docker. Same grading shape as the G4 pipeline and the
- * Setup 1 rig, so verdicts are comparable across all three setups.
+ * running locally in Docker. Same grading shape as the two earlier
+ * SWE-bench Pro setups this work grew out of — a batch pipeline and a
+ * containerised single-agent rig, both in the orchestrator repository and
+ * neither part of this hand-off — so verdicts are comparable across all
+ * three. That comparability is the reason the evaluator is Scale's own and
+ * is invoked unmodified: a verdict is only portable between setups if none
+ * of them scored themselves.
  *
  * Why this shape: the evaluator wants (a) a "raw sample" table carrying the
  * instance's sealed grading data (gold patch, test_patch, fail_to_pass /

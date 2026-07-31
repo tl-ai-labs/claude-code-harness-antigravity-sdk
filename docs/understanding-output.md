@@ -6,10 +6,14 @@ Every live invocation of `run-harness.mjs` writes into
 tools/harness-matrix/runs/<taskId>/<runtime>--<policy>/<stamp>/
 ```
 
-Directory is gitignored — evidence is machine-local. The committed
-`examples/<workload>/passes/reference/` directories carry the same
-files as the `evidence-bundle/delegation/` subset described below —
-that's the part safe to publish.
+Directory is gitignored — evidence is machine-local. What ships in the
+clone instead are four exemplar passes, committed under
+`examples/<workload>/passes/<pass-name>/`. Every one of them carries the
+`evidence-bundle/delegation/` subset described below at its top level —
+the hand-offs, the usage receipts, and `lint.json`. Two of them
+(`kudos-wall/opus48-plus-lite` and `swe-bench-pro/nodebb`) additionally
+ship the **full** `evidence-bundle/`, phase-io and trajectory included.
+That is the part safe to publish.
 
 ## Full directory layout
 
@@ -70,27 +74,60 @@ The Antigravity SDK's own `UsageMetadata` for that delegation:
 ```json
 {
   "model": "gemini-3.5-flash-lite",
-  "sdk_version": "0.1.7",
-  "vertex": { "project": "…", "location": "global" },
-  "prompt_token_count": 4213,
-  "candidates_token_count": 812,
-  "total_token_count": 5025
+  "thinking": "HIGH",
+  "sdk": "google-antigravity",
+  "sdk_version": "0.1.9",
+  "vertex_project": "…",
+  "vertex_location": "global",
+  "usage": {
+    "prompt_token_count": 3116310,
+    "cached_content_token_count": 2616871,
+    "candidates_token_count": 11012,
+    "thoughts_token_count": 19431,
+    "total_token_count": 3146753
+  },
+  "tool_call_count": 35,
+  "text": "…"
 }
 ```
+
+That is a real receipt, from
+`examples/swe-bench-pro/passes/nodebb/`, with only the project id and
+the worker's closing message elided. The counts inside `usage` are the
+SDK's `UsageMetadata` verbatim; everything outside it is what the worker
+recorded about the call it made. `cached_content_token_count` is a
+subset of `prompt_token_count`, not an addition to it, and
+`thoughts_token_count` is billed at the output rate — both matter when
+re-deriving a dollar figure.
 
 These are the token counts the Gemini spend was computed from. They
 come from the SDK, not from us — a run's dollar total can be
 re-derived from them plus the current Vertex price sheet.
 
-`location` is the region the worker **resolved and called**, not the
-ambient `GOOGLE_CLOUD_LOCATION`: a policy's worker leaf declares its own
-region and the runner passes it as `--region`, which wins. That is what
-makes this line evidence — a receipt that could not disagree with the
-environment would prove nothing about where the tokens were billed. The
-exemplar receipts shipped under `examples/*/passes/reference/` show
-`gemini-3.5-flash` at `asia-south1`, which is what those July 2026
-passes ran with; the current delegated policies pin
-`gemini-3.5-flash-lite`, which Vertex serves on `global` only.
+`vertex_location` is the region the worker **resolved and called**, not
+the ambient `GOOGLE_CLOUD_LOCATION`: a policy's worker leaf declares its
+own region and the runner passes it as `--region`, which wins. That is
+what makes this line evidence — a receipt that could not disagree with
+the environment would prove nothing about where the tokens were billed.
+
+The four committed exemplar passes show all three of the model pins in
+play, which is the point of shipping more than one:
+
+| Pass | Model(s) | `vertex_location` | `sdk_version` |
+|---|---|---|---|
+| `kudos-wall/reference` | `gemini-3.5-flash` ×5, `gemini-2.5-flash` ×7 | `asia-south1` | `0.1.7` |
+| `kudos-wall/opus48-plus-lite` | `gemini-3.5-flash-lite` | `global` | `0.1.9` |
+| `swe-bench-pro/navidrome` | `gemini-3.5-flash` ×5 | *(absent)* | *(absent)* |
+| `swe-bench-pro/nodebb` | `gemini-3.5-flash-lite` | `global` | `0.1.9` |
+
+The navidrome receipts predate the provenance fields and carry neither,
+which is exactly why the pricing path has to decide what an absent field
+means: it falls back to `asia-south1` for the region — the value those
+runs did use — and to *unrecorded* for the project, because guessing a
+project would put a billing claim in a dashboard. See the export note at
+the end of this page. `gemini-3.5-flash-lite` is at `global` in both
+rows that name it because Vertex serves that model on the global
+endpoint only.
 
 ### `lint.json` — the delegation content lint's verdict
 
