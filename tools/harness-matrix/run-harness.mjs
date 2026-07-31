@@ -47,6 +47,7 @@
  */
 
 import { existsSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { RUNTIMES } from "./runtimes.mjs";
 
 // ---- args ------------------------------------------------------------------
@@ -82,6 +83,38 @@ if (!runtimeName || !RUNTIMES[runtimeName]) {
   usageExit(`required: --runtime, one of: ${Object.keys(RUNTIMES).join(", ")}`);
 }
 if (!policyPath || !existsSync(policyPath)) usageExit("required: --policy <existing yaml file>");
+
+// THE SELECTOR MUST NAME A DIRECTORY OF THE KIND IT SELECTED.
+//
+// Both kinds open a descriptor file as their first act — instance.json for
+// Pro, task.json for SDLC — and until this check existed, a directory without
+// one produced a raw Node ENOENT stack trace from inside the kind module. That
+// is the single easiest mistake to make on a first run, because the obvious
+// guess is wrong in a defensible way: `examples/swe-bench-pro/` is the Pro
+// workload's documentation and committed exemplars, while the thing
+// `--instance-dir` actually wants is a corpus entry under
+// `studies/swe-pro-corpus/<instance-id>/` that the fetch script writes. A
+// stack trace answers none of that; the message below does, and it exits 2
+// ("usage or preflight error — nothing was spent") like every other bad
+// invocation rather than 1 ("infrastructure error"), which is what an
+// uncaught throw would have produced.
+//
+// Checked HERE rather than in each kind so the two kinds cannot drift, and so
+// it fires before the dynamic import — a mis-typed --instance-dir should not
+// first require packages/swe-bench/dist to be built.
+const KIND_DESCRIPTOR = instanceDir
+  ? { dir: instanceDir, file: "instance.json", flag: "--instance-dir", kind: "SWE-bench Pro",
+      hint: "Pro instances are corpus entries fetched by tools/swe/fetch-instances-pro.mjs " +
+            "into studies/swe-pro-corpus/<instance-id>/ — see docs/swe-bench-pro.md. " +
+            "examples/swe-bench-pro/ is that workload's documentation, not an instance." }
+  : { dir: taskDir, file: "task.json", flag: "--task-dir", kind: "SDLC",
+      hint: "An SDLC workload is a directory holding task.json and the brief it names — " +
+            "examples/kudos-wall/ is the reference one. See docs/running.md." };
+if (!existsSync(join(resolve(KIND_DESCRIPTOR.dir), KIND_DESCRIPTOR.file))) {
+  usageExit(`${KIND_DESCRIPTOR.flag} ${KIND_DESCRIPTOR.dir}: no ${KIND_DESCRIPTOR.file} here, ` +
+    `so this is not a ${KIND_DESCRIPTOR.kind} workload directory.\n  ${KIND_DESCRIPTOR.hint}`);
+}
+
 const runtime = RUNTIMES[runtimeName];
 
 // Dynamic per-kind import, deliberately not a pair of static imports: only
