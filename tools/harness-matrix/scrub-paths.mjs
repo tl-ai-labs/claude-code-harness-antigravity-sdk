@@ -114,8 +114,53 @@ export function buildScrubRules(opts = {}) {
     // replaced.
     { re: /\/Users\/[^/\s"'`:,;)\]}]+/g, to: HOME_PLACEHOLDER,
       why: "any other macOS home directory" },
+    // Two shapes the first live bundle publication caught (2026-07-31), both
+    // leaks of the same machine identity through a costume the path rules
+    // above cannot see:
+    //
+    //  1. The DASH-MUNGED path. Claude Code names its per-project config dir
+    //     by replacing every "/" in the project path with "-"
+    //     (`~/.claude/projects/-Users-<account>-Desktop-<repo>`), and the
+    //     driver's own trajectory quotes that name when it lists or reads its
+    //     config. No "/" survives the munging, so every rule above walks past
+    //     it. Rewritten with the SAME munging applied to the placeholders, so
+    //     a reader can still see it is the config-dir encoding of the repo
+    //     root (`-repo`) or the home dir (`-home-user`). Repo root first —
+    //     it contains the home form as a prefix.
+    //  2. The ACCOUNT NAME as a bare word. `ls -l` prints the file owner, so
+    //     any trajectory where the driver listed a directory carries the
+    //     account name with no path anywhere near it. Word-bounded, so an
+    //     account like "sri" does not fire inside "sriram123" or prose; and
+    //     LAST, so the munged-path rules above consume their copies of the
+    //     name first. Machine-local by construction, like the literal home
+    //     rule: a bundle recorded on another machine is that machine's
+    //     scrub run to make.
+    ...[
+      { re: new RegExp(escapeRe(mungPath(repoRoot)), "g"), to: mungPath(REPO_PLACEHOLDER),
+        why: "the repo root in Claude Code's dash-munged config-dir encoding" },
+      { re: new RegExp(escapeRe(mungPath(home)), "g"), to: mungPath(HOME_PLACEHOLDER),
+        why: "the home directory in the same dash-munged encoding" },
+    ],
+    ...(accountName(home)
+      ? [{ re: new RegExp(`\\b${escapeRe(accountName(home))}\\b`, "g"), to: "user",
+           why: "this machine's account name as a bare word (ls -l owner column)" }]
+      : []),
   ];
 }
+
+/** `/Users/alice/Desktop/x` → `-Users-alice-Desktop-x`, Claude Code's config-dir encoding. */
+const mungPath = (p) => "-" + String(p).split("/").filter(Boolean).join("-");
+
+/**
+ * The account name a home directory implies, or null when it is too short to
+ * replace safely: a 1–2 character account would word-match ordinary prose and
+ * shell flags, and rewriting those would corrupt evidence to fix a leak the
+ * detector would still catch for review.
+ */
+const accountName = (home) => {
+  const name = String(home).split("/").filter(Boolean).pop() ?? "";
+  return name.length >= 3 ? name : null;
+};
 
 /**
  * Apply the rules to a string. Pure — no I/O, no state, safe to call on any
@@ -184,6 +229,18 @@ export function hostPathHits(text, opts = {}) {
   const add = (s) => { if (!seen.has(s)) { seen.add(s); hits.push(s); } };
 
   for (const m of String(text).matchAll(/\/Users\/[^\s"'`:,;)\]}]+/g)) add(m[0]);
+  // The dash-munged twin of the /Users/ signal (Claude Code's config-dir
+  // encoding, see buildScrubRules). Machine-independent on purpose: ANY
+  // `-Users-<segment>` is a macOS home directory in a costume, never a
+  // placeholder — the placeholders' munged forms are `-repo`/`-home-user`.
+  for (const m of String(text).matchAll(/-Users-[A-Za-z0-9._-]+/g)) add(m[0]);
+  // This machine's account name as a bare word (the ls -l owner column).
+  // Machine-local like the home-literal scrub rule: checking a tree recorded
+  // elsewhere still gets the two generic signals above and below.
+  const account = opts.account ?? accountName(homedir());
+  if (account) {
+    for (const m of String(text).matchAll(new RegExp(`\\b${escapeRe(account)}\\b`, "g"))) add(m[0]);
+  }
   if (repoDirName) {
     const re = new RegExp(
       `(^|[^A-Za-z0-9._-])(/(?:[A-Za-z0-9_-]+/)+${escapeRe(repoDirName)})\\b`, "gm");

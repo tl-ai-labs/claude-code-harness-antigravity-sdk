@@ -1,0 +1,4 @@
+{
+  "command": "redis-server --daemonize yes --save '' >/dev/null 2>&1; sleep 1; npx mocha test/harness_repro.js",
+  "files": ["test/harness_repro.js"]
+}

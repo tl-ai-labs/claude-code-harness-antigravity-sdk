@@ -32,7 +32,14 @@ and the single-container-at-a-time rule.
   it failed the held-out evaluator. One hand-off (the patch delegation);
   `lint.json` is the content lint re-run over it (zero passages flagged).
   Host paths are scrubbed to `/harness` (`scrub-paths.mjs`); everything
-  else is verbatim from the run.
+  else is verbatim from the run. The
+  [evidence-bundle/](passes/nodebb/evidence-bundle/) subdirectory is the
+  run's **full** scrubbed evidence bundle — trajectories, gate logs, phase
+  I/O, both diffs, the grade tree, the recorded `audit.json`, and a
+  regenerated `MANIFEST.sha256`. Read its `AUDIT-NOTE.md` first: the
+  recorded audit predates a same-day audit fix and carries 28 flags the
+  fixed tool retracts; the note explains which, why, and how to re-derive
+  the corrected numbers from the bundle alone at $0.
 
 ## Reproducing a similar run
 

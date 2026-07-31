@@ -1,0 +1,55 @@
+info: database config redis {"database":1,"host":"127.0.0.1","port":6379}
+info: environment production
+
+info: test_database flushed
+info: Populating database with default configs, if not already set...
+
+info: Giving default global privileges...
+
+info: Enabling default plugins
+
+info: [install/enableDefaultPlugins] activating default plugins {"0":"nodebb-plugin-dbsearch","1":"nodebb-widget-essentials"}
+info: [socket.io] Restricting access to origin: *:*
+
+warn: [plugins/load] The following plugins may not be compatible with your version of NodeBB. This may cause unintended behaviour or crashing. In the event of an unresponsive NodeBB caused by this plugin, run `./nodebb reset -p PLUGINNAME` to disable it.
+  * nodebb-plugin-dbsearch
+  * nodebb-widget-essentials
+  * nodebb-theme-persona
+
+info: [api] Adding 0 route(s) to `api/v3/plugins`
+info: [router] Routes added
+info: NodeBB Ready
+info: Enabling 'trust proxy'
+info: NodeBB is now listening on: 0.0.0.0:4567
+
+  !info: test_database flushed
+info: Populating database with default configs, if not already set...
+
+info: Giving default global privileges...
+
+info: Enabling default plugins
+
+info: [install/enableDefaultPlugins] activating default plugins {"0":"nodebb-plugin-dbsearch","1":"nodebb-widget-essentials"}
+
+
+  0 passing (3s)
+  1 failing
+
+  1) getSortedTopics with sort="old" (harness_repro)
+       should return topics ordered by lastposttime ascending (oldest first):
+
+      AssertionError [ERR_ASSERTION]: expected ascending-by-lastposttime order but got []
+      + expected - actual
+
+      -[]
+      +[
+      +  2
+      +  3
+      +  1
+      +]
+      
+      at Context.<anonymous> (test/harness_repro.js:61:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+
+
+

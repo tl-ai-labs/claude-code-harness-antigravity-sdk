@@ -24,7 +24,13 @@ module registration, integration tests, and a passing build.
   14/14 grade tests, judge 9/10. This cell delegates sparingly by design,
   so there is exactly one hand-off; `lint.json` is the content lint re-run
   over it (zero passages flagged). Host paths are scrubbed to `/harness`
-  (`scrub-paths.mjs`); everything else is verbatim from the run.
+  (`scrub-paths.mjs`); everything else is verbatim from the run. The
+  [evidence-bundle/](passes/opus48-plus-lite/evidence-bundle/) subdirectory
+  is the run's **full** scrubbed evidence bundle — per-phase trajectories,
+  gate logs, phase I/O, diffs, grade verdict, the recorded `audit.json`,
+  and a regenerated `MANIFEST.sha256`. Read its `AUDIT-NOTE.md` first: the
+  recorded audit predates a same-day audit fix, and the note carries the
+  corrected numbers plus how to re-derive them from the bundle alone at $0.
 
 ## Reproducing the reference pass
 

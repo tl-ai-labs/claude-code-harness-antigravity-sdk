@@ -1,0 +1,38 @@
+[
+  {
+    "id": "schema-kudos-model",
+    "title": "Append the Kudos Prisma model to the schema",
+    "goal": "Below the `// ═══ MODEL SLOT ═══` marker in prisma/schema.prisma, append exactly one `model Kudos` with fields `id Int @id @default(autoincrement())`, `from String`, `to String`, `message String`, `createdAt DateTime @default(now())`, and `@@index([createdAt, id])`. The datasource, generator, and AppMeta blocks are left untouched. `pnpm build` (which runs `prisma generate`) succeeds and the generated `@prisma/client` exposes a `kudos` delegate. (FR-6, FR-7)",
+    "files_hint": ["prisma/schema.prisma"]
+  },
+  {
+    "id": "kudos-types-and-prisma-service",
+    "title": "Add shared types and the module's PrismaService wrapper",
+    "goal": "Create src/modules/kudos/kudos.types.ts exporting the `KudosRecord` response shape (`id`, `from`, `to`, `message`, `createdAt`) and the bound constants `FROM_MAX = 80`, `TO_MAX = 80`, `MESSAGE_MAX = 280`. Create src/modules/kudos/kudos.prisma.ts exporting an injectable `PrismaService` that `extends PrismaClient` (from `@prisma/client`) and implements `OnModuleInit` (`$connect()`) and `OnModuleDestroy` (`$disconnect()`). Both files compile under `pnpm build`. (FR-3, FR-6, FR-7)",
+    "files_hint": ["src/modules/kudos/kudos.types.ts", "src/modules/kudos/kudos.prisma.ts"]
+  },
+  {
+    "id": "kudos-service",
+    "title": "Implement KudosService validation and persistence logic",
+    "goal": "Create src/modules/kudos/kudos.service.ts with an injectable `KudosService` depending on `PrismaService` via constructor DI. `create(body: unknown): Promise<KudosRecord>` runs the ordered validation pipeline — (1) body is a plain non-null, non-array object; (2) own keys are a subset of {from,to,message}, no unknown keys; (3) each field present and a string; (4) non-empty after trim; (5) trimmed length within bounds (from/to ≤80, message ≤280) — throwing `BadRequestException` on the first failure with no create call, otherwise persisting trimmed values via `prisma.kudos.create` and returning the created row. `list(): Promise<KudosRecord[]>` returns `prisma.kudos.findMany({ orderBy: [{ createdAt: 'desc' }, { id: 'desc' }] })`. Compiles under `pnpm build`. (FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7)",
+    "files_hint": ["src/modules/kudos/kudos.service.ts"]
+  },
+  {
+    "id": "kudos-controller-and-module",
+    "title": "Add the KudosController and KudosModule wiring",
+    "goal": "Create src/modules/kudos/kudos.controller.ts with `@Controller('kudos')` exposing `@Post()` `@HttpCode(201)` `create(@Body() body: unknown)` delegating to `KudosService.create`, and `@Get()` `list()` delegating to `KudosService.list` (default 200). Create src/modules/kudos/kudos.module.ts with `@Module({ controllers: [KudosController], providers: [KudosService, PrismaService] })` exporting `KudosModule`. Compiles under `pnpm build`. (FR-1, FR-5, FR-6)",
+    "files_hint": ["src/modules/kudos/kudos.controller.ts", "src/modules/kudos/kudos.module.ts"]
+  },
+  {
+    "id": "register-kudos-module",
+    "title": "Register KudosModule in the MODULES array",
+    "goal": "Edit src/modules/index.ts to import `KudosModule` and include it in the exported `MODULES` array (`export const MODULES: any[] = [KudosModule]`). No chassis file is touched. After this, `GET /health` reports `modules_registered >= 1` with `ok: true`, and the chassis mounts the kudos endpoints. (FR-8, AC-9)",
+    "files_hint": ["src/modules/index.ts"]
+  },
+  {
+    "id": "kudos-tests",
+    "title": "Add unit specs for KudosService and module registration",
+    "goal": "Create test/modules/kudos/kudos.service.spec.ts using vitest globals and `@nestjs/testing` with a stub `PrismaService` (in-memory `kudos.create`/`kudos.findMany`) covering: AC-2 (missing from/to/message, blank-after-trim, non-string each → BadRequestException, no create call), AC-3 (80/80/280 accepted; 81/81/281 rejected), AC-4 (' Ada ' stored/returned as 'Ada'), AC-5 (non-object body 'hello' and [], and extra `id` key → 400 no create), AC-1/AC-6/AC-7 (created record echoes trimmed fields plus truthy `id` and a `createdAt`; `list()` returns most-recent-first order C,B,A, returns [] when empty, and applies the createdAt-desc/id-desc tie-break). Create test/modules/kudos/kudos.registration.spec.ts asserting `MODULES` includes `KudosModule` and that `Test.createTestingModule({ imports: [KudosModule] })` (PrismaService overridden by a stub) compiles and resolves `KudosController`. `pnpm test` passes green. (AC-1 through AC-7, AC-9)",
+    "files_hint": ["test/modules/kudos/kudos.service.spec.ts", "test/modules/kudos/kudos.registration.spec.ts"]
+  }
+]

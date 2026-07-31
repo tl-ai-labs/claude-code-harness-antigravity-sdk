@@ -1,0 +1,379 @@
+diff --git a/prisma/schema.prisma b/prisma/schema.prisma
+index 0f9887e..bb4a7fa 100644
+--- a/prisma/schema.prisma
++++ b/prisma/schema.prisma
+@@ -18,3 +18,14 @@ model AppMeta {
+ }
+ 
+ // ═══ MODEL SLOT — generated domain models are appended below ═══
++
++model Kudos {
++  id        Int      @id @default(autoincrement())
++  from      String
++  to        String
++  message   String
++  createdAt DateTime @default(now())
++
++  @@index([createdAt, id])
++}
++
+diff --git a/src/modules/index.ts b/src/modules/index.ts
+index 4d704cc..9a0146d 100644
+--- a/src/modules/index.ts
++++ b/src/modules/index.ts
+@@ -3,9 +3,10 @@
+  * This is the module registration point. Generated modules live in
+  * sibling directories (src/modules/<name>/) and are exported here; the
+  * chassis mounts whatever this array contains.
+- *
+- * Ships EMPTY by design: the pristine chassis must build, test, and boot
+- * with zero modules before any model touches it.
+  */
+ 
+-export const MODULES: any[] = [];
++import { KudosModule } from './kudos/kudos.module';
++
++export const MODULES: any[] = [
++  KudosModule,
++];
+diff --git a/src/modules/kudos/kudos.controller.ts b/src/modules/kudos/kudos.controller.ts
+new file mode 100644
+index 0000000..714174f
+--- /dev/null
++++ b/src/modules/kudos/kudos.controller.ts
+@@ -0,0 +1,19 @@
++import { Controller, Get, Post, Body, HttpCode } from '@nestjs/common';
++import { KudosService } from './kudos.service';
++import { KudosRecord } from './kudos.types';
++
++@Controller('kudos')
++export class KudosController {
++  constructor(private readonly kudosService: KudosService) {}
++
++  @Post()
++  @HttpCode(201)
++  async create(@Body() body: unknown): Promise<KudosRecord> {
++    return this.kudosService.create(body);
++  }
++
++  @Get()
++  async list(): Promise<KudosRecord[]> {
++    return this.kudosService.list();
++  }
++}
+diff --git a/src/modules/kudos/kudos.module.ts b/src/modules/kudos/kudos.module.ts
+new file mode 100644
+index 0000000..dfaa722
+--- /dev/null
++++ b/src/modules/kudos/kudos.module.ts
+@@ -0,0 +1,11 @@
++import { Module } from '@nestjs/common';
++import { KudosController } from './kudos.controller';
++import { KudosService } from './kudos.service';
++import { PrismaService } from './kudos.prisma';
++
++@Module({
++  controllers: [KudosController],
++  providers: [KudosService, PrismaService],
++  exports: [KudosService, PrismaService],
++})
++export class KudosModule {}
+diff --git a/src/modules/kudos/kudos.prisma.ts b/src/modules/kudos/kudos.prisma.ts
+new file mode 100644
+index 0000000..bb6565f
+--- /dev/null
++++ b/src/modules/kudos/kudos.prisma.ts
+@@ -0,0 +1,13 @@
++import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
++import { PrismaClient } from '@prisma/client';
++
++@Injectable()
++export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
++  async onModuleInit() {
++    await this.$connect();
++  }
++
++  async onModuleDestroy() {
++    await this.$disconnect();
++  }
++}
+diff --git a/src/modules/kudos/kudos.service.ts b/src/modules/kudos/kudos.service.ts
+new file mode 100644
+index 0000000..d6984a8
+--- /dev/null
++++ b/src/modules/kudos/kudos.service.ts
+@@ -0,0 +1,61 @@
++import { Injectable, BadRequestException } from '@nestjs/common';
++import { PrismaService } from './kudos.prisma';
++import { KudosRecord, FROM_MAX, TO_MAX, MESSAGE_MAX } from './kudos.types';
++
++@Injectable()
++export class KudosService {
++  constructor(private readonly prisma: PrismaService) {}
++
++  async create(body: unknown): Promise<KudosRecord> {
++    if (!body || typeof body !== 'object' || Array.isArray(body)) {
++      throw new BadRequestException('Body must be a plain object');
++    }
++
++    const keys = Object.keys(body);
++    for (const key of keys) {
++      if (key !== 'from' && key !== 'to' && key !== 'message') {
++        throw new BadRequestException(`Unknown key: ${key}`);
++      }
++    }
++
++    for (const key of ['from', 'to', 'message']) {
++      if (!(key in body) || typeof (body as any)[key] !== 'string') {
++        throw new BadRequestException(`Missing or non-string field: ${key}`);
++      }
++    }
++
++    const trimmedFrom = (body as any).from.trim();
++    const trimmedTo = (body as any).to.trim();
++    const trimmedMessage = (body as any).message.trim();
++
++    if (trimmedFrom.length === 0 || trimmedTo.length === 0 || trimmedMessage.length === 0) {
++      throw new BadRequestException('Fields cannot be empty after trimming');
++    }
++
++    if (trimmedFrom.length > FROM_MAX) {
++      throw new BadRequestException(`from exceeds max length of ${FROM_MAX}`);
++    }
++
++    if (trimmedTo.length > TO_MAX) {
++      throw new BadRequestException(`to exceeds max length of ${TO_MAX}`);
++    }
++
++    if (trimmedMessage.length > MESSAGE_MAX) {
++      throw new BadRequestException(`message exceeds max length of ${MESSAGE_MAX}`);
++    }
++
++    return this.prisma.kudos.create({
++      data: {
++        from: trimmedFrom,
++        to: trimmedTo,
++        message: trimmedMessage,
++      },
++    });
++  }
++
++  async list(): Promise<KudosRecord[]> {
++    return this.prisma.kudos.findMany({
++      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
++    });
++  }
++}
+diff --git a/src/modules/kudos/kudos.types.ts b/src/modules/kudos/kudos.types.ts
+new file mode 100644
+index 0000000..369d78a
+--- /dev/null
++++ b/src/modules/kudos/kudos.types.ts
+@@ -0,0 +1,11 @@
++export interface KudosRecord {
++  id: number;
++  from: string;
++  to: string;
++  message: string;
++  createdAt: Date;
++}
++
++export const FROM_MAX = 80;
++export const TO_MAX = 80;
++export const MESSAGE_MAX = 280;
+diff --git a/test/modules/kudos/kudos.registration.spec.ts b/test/modules/kudos/kudos.registration.spec.ts
+new file mode 100644
+index 0000000..8f824ac
+--- /dev/null
++++ b/test/modules/kudos/kudos.registration.spec.ts
+@@ -0,0 +1,28 @@
++import { describe, it, expect } from 'vitest';
++import { Test } from '@nestjs/testing';
++import { MODULES } from '../../../src/modules';
++import { KudosModule } from '../../../src/modules/kudos/kudos.module';
++import { KudosController } from '../../../src/modules/kudos/kudos.controller';
++import { PrismaService } from '../../../src/modules/kudos/kudos.prisma';
++
++describe('KudosModule Registration', () => {
++  it('MODULES array includes KudosModule', () => {
++    expect(MODULES).toContain(KudosModule);
++  });
++
++  it('compiles testing module and resolves KudosController', async () => {
++    const moduleRef = await Test.createTestingModule({
++      imports: [KudosModule],
++    })
++      .overrideProvider(PrismaService)
++      .useValue({
++        kudos: {
++          findMany: async () => [],
++        },
++      })
++      .compile();
++
++    const controller = moduleRef.get(KudosController);
++    expect(controller).toBeDefined();
++  });
++});
+diff --git a/test/modules/kudos/kudos.service.spec.ts b/test/modules/kudos/kudos.service.spec.ts
+new file mode 100644
+index 0000000..11e97ff
+--- /dev/null
++++ b/test/modules/kudos/kudos.service.spec.ts
+@@ -0,0 +1,156 @@
++import { describe, it, expect, beforeEach } from 'vitest';
++import { BadRequestException } from '@nestjs/common';
++import { KudosService } from '../../../src/modules/kudos/kudos.service';
++import { FROM_MAX, TO_MAX, MESSAGE_MAX } from '../../../src/modules/kudos/kudos.types';
++
++class InMemoryPrismaService {
++  public records: any[] = [];
++  private autoId = 1;
++
++  kudos = {
++    create: async ({ data }: { data: { from: string; to: string; message: string } }) => {
++      const record = {
++        id: this.autoId++,
++        from: data.from,
++        to: data.to,
++        message: data.message,
++        createdAt: new Date(),
++      };
++      this.records.push(record);
++      return record;
++    },
++    findMany: async (args?: { orderBy?: any[] }) => {
++      const sorted = [...this.records];
++      if (args?.orderBy) {
++        sorted.sort((a, b) => {
++          for (const ord of args.orderBy) {
++            if (ord.createdAt) {
++              const diff = b.createdAt.getTime() - a.createdAt.getTime();
++              if (diff !== 0) return ord.createdAt === 'desc' ? diff : -diff;
++            }
++            if (ord.id) {
++              const diff = b.id - a.id;
++              if (diff !== 0) return ord.id === 'desc' ? diff : -diff;
++            }
++          }
++          return 0;
++        });
++      }
++      return sorted;
++    },
++  };
++}
++
++describe('KudosService', () => {
++  let service: KudosService;
++  let prismaStub: InMemoryPrismaService;
++
++  beforeEach(() => {
++    prismaStub = new InMemoryPrismaService();
++    service = new KudosService(prismaStub as any);
++  });
++
++  it('rejects non-object bodies (null, string, array)', async () => {
++    await expect(service.create(null)).rejects.toThrow(BadRequestException);
++    await expect(service.create('hello')).rejects.toThrow(BadRequestException);
++    await expect(service.create([])).rejects.toThrow(BadRequestException);
++  });
++
++  it('rejects extra keys (e.g. id)', async () => {
++    await expect(
++      service.create({ from: 'Alice', to: 'Bob', message: 'Great job', id: 123 })
++    ).rejects.toThrow(BadRequestException);
++  });
++
++  it('rejects missing keys', async () => {
++    await expect(service.create({ from: 'Alice', to: 'Bob' })).rejects.toThrow(BadRequestException);
++    await expect(service.create({ to: 'Bob', message: 'Hi' })).rejects.toThrow(BadRequestException);
++    await expect(service.create({ from: 'Alice', message: 'Hi' })).rejects.toThrow(BadRequestException);
++  });
++
++  it('rejects non-string fields', async () => {
++    await expect(
++      service.create({ from: 123, to: 'Bob', message: 'Hi' })
++    ).rejects.toThrow(BadRequestException);
++    await expect(
++      service.create({ from: 'Alice', to: null, message: 'Hi' })
++    ).rejects.toThrow(BadRequestException);
++  });
++
++  it('rejects blank-after-trim fields', async () => {
++    await expect(
++      service.create({ from: '   ', to: 'Bob', message: 'Hi' })
++    ).rejects.toThrow(BadRequestException);
++    await expect(
++      service.create({ from: 'Alice', to: '\t\n', message: 'Hi' })
++    ).rejects.toThrow(BadRequestException);
++    await expect(
++      service.create({ from: 'Alice', to: 'Bob', message: '   ' })
++    ).rejects.toThrow(BadRequestException);
++  });
++
++  it('accepts max lengths (80/80/280) and rejects over-by-one (81/81/281)', async () => {
++    const validFrom = 'a'.repeat(FROM_MAX);
++    const validTo = 'b'.repeat(TO_MAX);
++    const validMsg = 'c'.repeat(MESSAGE_MAX);
++
++    const res = await service.create({ from: validFrom, to: validTo, message: validMsg });
++    expect(res).toBeDefined();
++
++    const invalidFrom = 'a'.repeat(FROM_MAX + 1);
++    await expect(
++      service.create({ from: invalidFrom, to: validTo, message: validMsg })
++    ).rejects.toThrow(BadRequestException);
++
++    const invalidTo = 'b'.repeat(TO_MAX + 1);
++    await expect(
++      service.create({ from: validFrom, to: invalidTo, message: validMsg })
++    ).rejects.toThrow(BadRequestException);
++
++    const invalidMsg = 'c'.repeat(MESSAGE_MAX + 1);
++    await expect(
++      service.create({ from: validFrom, to: validTo, message: invalidMsg })
++    ).rejects.toThrow(BadRequestException);
++  });
++
++  it('trims whitespace around fields (" Ada ")', async () => {
++    const res = await service.create({
++      from: '  Ada  ',
++      to: '  Grace  ',
++      message: '  Awesome work!  ',
++    });
++    expect(res.from).toBe('Ada');
++    expect(res.to).toBe('Grace');
++    expect(res.message).toBe('Awesome work!');
++  });
++
++  it('created record echoes trimmed fields plus a truthy id and a createdAt', async () => {
++    const res = await service.create({
++      from: 'Alice',
++      to: 'Bob',
++      message: 'Thanks',
++    });
++    expect(res.id).toBeTruthy();
++    expect(res.createdAt).toBeInstanceOf(Date);
++  });
++
++  it('list() returns most-recent-first order, empty array when empty, and tie-break by id', async () => {
++    expect(await service.list()).toEqual([]);
++
++    await service.create({ from: 'A', to: 'B', message: 'First' });
++    await service.create({ from: 'C', to: 'D', message: 'Second' });
++    await service.create({ from: 'E', to: 'F', message: 'Third' });
++
++    const listed = await service.list();
++    expect(listed.map(x => x.id)).toEqual([3, 2, 1]);
++
++    // Test tie-break on createdAt: two rows with same createdAt come back highest-id-first
++    const now = new Date();
++    prismaStub.records = [
++      { id: 10, from: 'X', to: 'Y', message: 'A', createdAt: now },
++      { id: 20, from: 'X', to: 'Y', message: 'B', createdAt: now },
++    ];
++    const tied = await service.list();
++    expect(tied.map(x => x.id)).toEqual([20, 10]);
++  });
++});

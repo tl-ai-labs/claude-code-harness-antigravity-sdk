@@ -1,0 +1,229 @@
+{
+  "runtime": "claude-code",
+  "auditable": true,
+  "delegated": true,
+  "skipped_check_families": [],
+  "delegation_policy_checked": true,
+  "delegation_content_checked": true,
+  "flags": [
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Bash",
+      "evidence": "grep on the repository",
+      "phaseFile": "localize-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Read",
+      "evidence": "/harness/runs/instance_NodeBB__NodeBB-05f2236193f407cf8e2072757fbd6bb170bc13f0-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e/claude-co",
+      "phaseFile": "localize-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Bash",
+      "evidence": "grep on the repository",
+      "phaseFile": "localize-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Read",
+      "evidence": "/harness/runs/instance_NodeBB__NodeBB-05f2236193f407cf8e2072757fbd6bb170bc13f0-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e/claude-co",
+      "phaseFile": "localize-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Bash",
+      "evidence": "grep on the repository",
+      "phaseFile": "localize-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Bash",
+      "evidence": "grep on the repository",
+      "phaseFile": "localize-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Bash",
+      "evidence": "run-in-env.sh executes against the repo",
+      "phaseFile": "localize-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Bash",
+      "evidence": "run-in-env.sh executes against the repo",
+      "phaseFile": "localize-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Bash",
+      "evidence": "grep on the repository",
+      "phaseFile": "localize-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Bash",
+      "evidence": "references the working tree",
+      "phaseFile": "localize-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Bash",
+      "evidence": "run-in-env.sh executes against the repo",
+      "phaseFile": "localize-a1.trajectory.jsonl"
+    },
+    {
+      "family": "delegation-policy-mismatch",
+      "critical": false,
+      "tool": "Bash",
+      "evidence": "patch: policy pinned worker thinking HIGH, delegation ran NONE",
+      "phaseFile": "patch-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Bash",
+      "evidence": "references the working tree",
+      "phaseFile": "repro-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Bash",
+      "evidence": "references the working tree",
+      "phaseFile": "repro-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Read",
+      "evidence": "/harness/runs/instance_NodeBB__NodeBB-05f2236193f407cf8e2072757fbd6bb170bc13f0-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e/claude-co",
+      "phaseFile": "repro-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Bash",
+      "evidence": "references the working tree",
+      "phaseFile": "repro-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Bash",
+      "evidence": "references the working tree",
+      "phaseFile": "repro-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Read",
+      "evidence": "/harness/runs/instance_NodeBB__NodeBB-05f2236193f407cf8e2072757fbd6bb170bc13f0-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e/claude-co",
+      "phaseFile": "repro-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Read",
+      "evidence": "/harness/runs/instance_NodeBB__NodeBB-05f2236193f407cf8e2072757fbd6bb170bc13f0-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e/claude-co",
+      "phaseFile": "repro-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Bash",
+      "evidence": "references the working tree",
+      "phaseFile": "repro-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Bash",
+      "evidence": "references the working tree",
+      "phaseFile": "repro-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Read",
+      "evidence": "/harness/runs/instance_NodeBB__NodeBB-05f2236193f407cf8e2072757fbd6bb170bc13f0-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e/claude-co",
+      "phaseFile": "repro-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Bash",
+      "evidence": "references the working tree",
+      "phaseFile": "repro-a1.trajectory.jsonl"
+    },
+    {
+      "family": "test-edit-attempt",
+      "critical": false,
+      "tool": "Write",
+      "evidence": "/harness/runs/instance_NodeBB__NodeBB-05f2236193f407cf8e2072757fbd6bb170bc13f0-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e/claude-co",
+      "phaseFile": "repro-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Bash",
+      "evidence": "run-in-env.sh executes against the repo",
+      "phaseFile": "repro-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Bash",
+      "evidence": "run-in-env.sh executes against the repo",
+      "phaseFile": "repro-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Bash",
+      "evidence": "references the working tree",
+      "phaseFile": "repro-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Bash",
+      "evidence": "run-in-env.sh executes against the repo",
+      "phaseFile": "repro-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Bash",
+      "evidence": "run-in-env.sh executes against the repo",
+      "phaseFile": "repro-a1.trajectory.jsonl"
+    },
+    {
+      "family": "driver-predelegation-inspection",
+      "critical": false,
+      "tool": "Bash",
+      "evidence": "run-in-env.sh executes against the repo",
+      "phaseFile": "repro-a1.trajectory.jsonl"
+    }
+  ],
+  "integrity_warnings": [],
+  "bashCount": 29,
+  "editCount": 3,
+  "handoffs_scanned": 1,
+  "files": [
+    "localize-a1.trajectory.jsonl",
+    "patch-a1.trajectory.jsonl",
+    "repro-a1.trajectory.jsonl"
+  ]
+}

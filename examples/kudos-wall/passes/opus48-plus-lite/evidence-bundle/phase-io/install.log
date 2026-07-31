@@ -1,0 +1,37 @@
+Lockfile is up to date, resolution step is skipped
+
+   ╭───────────────────────────────────────────────────────────────────╮
+   │                                                                   │
+   │                Update available! 9.12.3 → 11.18.0.                │
+   │   Changelog: https://github.com/pnpm/pnpm/releases/tag/v11.18.0   │
+   │         Run "corepack install -g pnpm@11.18.0" to update.         │
+   │                                                                   │
+   │         Follow @pnpmjs for updates: https://x.com/pnpmjs          │
+   │                                                                   │
+   ╰───────────────────────────────────────────────────────────────────╯
+
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages: +168
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 168, reused 105, downloaded 0, added 0
+Progress: resolved 168, reused 168, downloaded 0, added 16
+Progress: resolved 168, reused 168, downloaded 0, added 119
+Progress: resolved 168, reused 168, downloaded 0, added 167
+Progress: resolved 168, reused 168, downloaded 0, added 168, done
+
+dependencies:
++ @nestjs/common 10.4.22
++ @nestjs/core 10.4.22
++ @nestjs/platform-express 10.4.22
++ @prisma/client 5.22.0
++ reflect-metadata 0.2.2
++ rxjs 7.8.2
+
+devDependencies:
++ @nestjs/testing 10.4.22
++ @types/node 22.20.0
++ prisma 5.22.0
++ typescript 5.9.3
++ vitest 2.1.9
+
+Done in 7.2s

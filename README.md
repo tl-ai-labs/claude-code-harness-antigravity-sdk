@@ -180,9 +180,13 @@ read the driver-to-worker channel without running the harness:
 - **[examples/kudos-wall/passes/opus48-plus-lite/](examples/kudos-wall/passes/opus48-plus-lite/)** — the single hand-off and receipt from a real
   run of the cost-tier `opus48-plus-lite` policy (Claude Opus 4.8 driver,
   `gemini-3.5-flash-lite` worker). RESOLVED, 14/14 grade tests, judge 9/10.
+  Its `evidence-bundle/` subdirectory is the run's full scrubbed evidence
+  bundle (trajectories, audit, diffs — start at `AUDIT-NOTE.md`).
 - **[examples/swe-bench-pro/passes/nodebb/](examples/swe-bench-pro/passes/nodebb/)** — the single hand-off and receipt from one real
   `opus48-plus-lite` SWE-bench Pro attempt (NodeBB instance). Not resolved:
-  the patch applies but failed the held-out evaluator — committed as-is.
+  the patch applies but failed the held-out evaluator — committed as-is,
+  with its full scrubbed evidence bundle under `evidence-bundle/` (start at
+  `AUDIT-NOTE.md`).
 
 All were recorded in July 2026, and their receipts name the worker that
 ran at the time — `gemini-3.5-flash`, `gemini-2.5-flash`, and

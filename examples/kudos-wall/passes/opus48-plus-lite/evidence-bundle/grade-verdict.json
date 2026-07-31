@@ -1,0 +1,20 @@
+{
+  "task_id": "kudos-wall",
+  "resolved": true,
+  "build": {
+    "exit_code": 0
+  },
+  "tests": {
+    "exit_code": 0,
+    "failed": 0,
+    "passed": 14,
+    "total": 14
+  },
+  "judge_scores": {
+    "requirements_fidelity": 9.5,
+    "code_quality": 8.5,
+    "test_quality": 8,
+    "overall": 9
+  },
+  "grader": "scaffold build+test re-run via run-in-env.sh (sdlc-env:node22-pnpm9.12.3)"
+}

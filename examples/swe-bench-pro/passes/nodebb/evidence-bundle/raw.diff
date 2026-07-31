@@ -1,0 +1,155 @@
+diff --git a/src/topics/sorted.js b/src/topics/sorted.js
+index c2bbe8d..730ebd5 100644
+--- a/src/topics/sorted.js
++++ b/src/topics/sorted.js
+@@ -55,18 +55,22 @@ module.exports = function (Topics) {
+ 		} else if (params.tags.length) {
+ 			tids = await getTagTids(params);
+ 		} else {
+-			tids = await db.getSortedSetRevRange(`topics:${params.sort}`, 0, meta.config.recentMaxTopics - 1);
++			const sort = params.sort === 'old' ? 'recent' : params.sort;
++			const method = params.sort === 'old' ? 'getSortedSetRange' : 'getSortedSetRevRange';
++			tids = await db[method](`topics:${sort}`, 0, meta.config.recentMaxTopics - 1);
+ 		}
+ 
+ 		return tids;
+ 	}
+ 
+ 	async function getTagTids(params) {
++		const sort = params.sort === 'old' ? 'recent' : params.sort;
++		const method = params.sort === 'old' ? 'getSortedSetIntersect' : 'getSortedSetRevIntersect';
+ 		const sets = [
+-			`topics:${params.sort}`,
++			`topics:${sort}`,
+ 			...params.tags.map(tag => `tag:${tag}:topics`),
+ 		];
+-		return await db.getSortedSetRevIntersect({
++		return await db[method]({
+ 			sets: sets,
+ 			start: 0,
+ 			stop: meta.config.recentMaxTopics - 1,
+@@ -75,17 +79,18 @@ module.exports = function (Topics) {
+ 	}
+ 
+ 	async function getCidTids(params) {
++		const method = params.sort === 'old' ? 'getSortedSetRange' : 'getSortedSetRevRange';
+ 		if (params.tags.length) {
+ 			return _.intersection(...await Promise.all(params.tags.map(async (tag) => {
+ 				const sets = params.cids.map(cid => `cid:${cid}:tag:${tag}:topics`);
+-				return await db.getSortedSetRevRange(sets, 0, -1);
++				return await db[method](sets, 0, -1);
+ 			})));
+ 		}
+ 
+ 		const sets = [];
+ 		const pinnedSets = [];
+ 		params.cids.forEach((cid) => {
+-			if (params.sort === 'recent') {
++			if (params.sort === 'recent' || params.sort === 'old') {
+ 				sets.push(`cid:${cid}:tids`);
+ 			} else {
+ 				sets.push(`cid:${cid}:tids${params.sort ? `:${params.sort}` : ''}`);
+@@ -94,7 +99,7 @@ module.exports = function (Topics) {
+ 		});
+ 		let pinnedTids = await db.getSortedSetRevRange(pinnedSets, 0, -1);
+ 		pinnedTids = await Topics.tools.checkPinExpiry(pinnedTids);
+-		const tids = await db.getSortedSetRevRange(sets, 0, meta.config.recentMaxTopics - 1);
++		const tids = await db[method](sets, 0, meta.config.recentMaxTopics - 1);
+ 		return pinnedTids.concat(tids);
+ 	}
+ 
+@@ -104,7 +109,9 @@ module.exports = function (Topics) {
+ 		}
+ 		const topicData = await Topics.getTopicsFields(tids, ['tid', 'lastposttime', 'upvotes', 'downvotes', 'postcount', 'pinned']);
+ 		let sortFn = sortRecent;
+-		if (params.sort === 'posts') {
++		if (params.sort === 'old') {
++			sortFn = sortOld;
++		} else if (params.sort === 'posts') {
+ 			sortFn = sortPopular;
+ 		} else if (params.sort === 'votes') {
+ 			sortFn = sortVotes;
+@@ -127,6 +134,10 @@ module.exports = function (Topics) {
+ 		return b.lastposttime - a.lastposttime;
+ 	}
+ 
++	function sortOld(a, b) {
++		return a.lastposttime - b.lastposttime;
++	}
++
+ 	function sortVotes(a, b) {
+ 		if (a.votes !== b.votes) {
+ 			return b.votes - a.votes;
+diff --git a/test/harness_repro.js b/test/harness_repro.js
+new file mode 100644
+index 0000000..01fe30d
+--- /dev/null
++++ b/test/harness_repro.js
+@@ -0,0 +1,67 @@
++'use strict';
++
++// Reproduction for: "Lack of support for retrieving topics in ascending order
++// by last post date". getSortedTopics should honour a `sort: 'old'` option and
++// return topics ordered by `lastposttime` from oldest to newest. The current
++// implementation has no handling for 'old', so the topics come back in the
++// wrong order (or not at all).
++
++const assert = require('assert');
++
++require('./mocks/databasemock');
++const topics = require('../src/topics');
++const categories = require('../src/categories');
++const User = require('../src/user');
++
++describe('getSortedTopics with sort="old" (harness_repro)', () => {
++	let uid;
++	let cid;
++	// tids keyed by the lastposttime we assign to them.
++	let oldestTid;
++	let middleTid;
++	let newestTid;
++
++	before(async () => {
++		uid = await User.create({ username: 'harness_repro_user' });
++		const category = await categories.create({
++			name: 'Harness Repro Category',
++			description: 'Category used by the harness_repro reproduction',
++		});
++		cid = category.cid;
++
++		// Create three topics. Creation order does not match the intended
++		// chronological order of lastposttime, so a correct ascending sort is
++		// clearly distinguishable from the default (descending) behaviour.
++		const a = await topics.post({ uid, cid, title: 'topic A', content: 'content A' });
++		const b = await topics.post({ uid, cid, title: 'topic B', content: 'content B' });
++		const c = await topics.post({ uid, cid, title: 'topic C', content: 'content C' });
++
++		// Assign explicit, distinct lastposttimes so both the sorted-set scores
++		// and the topic hash fields are deterministic.
++		newestTid = a.topicData.tid; // most recent post
++		oldestTid = b.topicData.tid; // oldest post
++		middleTid = c.topicData.tid; // in between
++
++		await topics.updateLastPostTime(oldestTid, 1000);
++		await topics.updateLastPostTime(middleTid, 2000);
++		await topics.updateLastPostTime(newestTid, 3000);
++	});
++
++	it('should return topics ordered by lastposttime ascending (oldest first)', async () => {
++		const data = await topics.getSortedTopics({
++			cids: [cid],
++			uid: uid,
++			start: 0,
++			stop: -1,
++			sort: 'old',
++		});
++
++		const returnedTids = data.topics.map(t => t.tid);
++
++		assert.deepStrictEqual(
++			returnedTids,
++			[oldestTid, middleTid, newestTid],
++			`expected ascending-by-lastposttime order but got ${JSON.stringify(returnedTids)}`
++		);
++	});
++});

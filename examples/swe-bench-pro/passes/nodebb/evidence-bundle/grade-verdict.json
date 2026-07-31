@@ -1,0 +1,8 @@
+{
+  "instance_id": "instance_NodeBB__NodeBB-05f2236193f407cf8e2072757fbd6bb170bc13f0-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+  "resolved": false,
+  "grader": "scale swe_bench_pro_eval.py (local docker, network blocked)",
+  "raw": {
+    "instance_NodeBB__NodeBB-05f2236193f407cf8e2072757fbd6bb170bc13f0-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e": false
+  }
+}

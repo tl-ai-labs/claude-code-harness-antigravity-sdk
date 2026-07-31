@@ -91,15 +91,33 @@ test("longest prefix wins — a partially rewritten path is never produced", () 
  * relation rather than the rule names means a future fifth shape cannot be
  * inserted in the wrong slot and still pass.
  */
-test("the rules are ordered longest-literal-first, generic net last", () => {
-  const literals = RULES.slice(0, -1).map((r) => r.re.source);
+test("the rules are ordered longest-literal-first, then net, then costumes", () => {
+  // Block 1 — the slash-path literals, each strictly extending the next
+  // (harness dir ⊃ repo root ⊃ home), so the longest match always wins.
+  const literals = RULES.slice(0, 3).map((r) => r.re.source);
   for (let i = 0; i < literals.length - 1; i += 1) {
     assert.ok(literals[i].startsWith(literals[i + 1]) && literals[i].length > literals[i + 1].length,
       `rule ${i} (${literals[i]}) must strictly extend rule ${i + 1} (${literals[i + 1]}) — ` +
       `otherwise the shorter one fires first and leaves a partially rewritten path`);
   }
+  // Block 2 — the generic /Users/ net, directly after the literals: any
+  // earlier and it would eat this machine's paths before the specific
+  // placeholders could claim them.
+  assert.ok(RULES[3].re.source.includes("[^"),
+    `rule 3 must be the generic /Users/ net, found: ${RULES[3].re.source}`);
+  // Block 3 — the dash-munged costume repeats the same prefix discipline in
+  // its own encoding: the munged repo root strictly extends the munged home.
+  const [mungedRepo, mungedHome] = [RULES[4].re.source, RULES[5].re.source];
+  assert.ok(mungedRepo.startsWith(mungedHome) && mungedRepo.length > mungedHome.length,
+    `munged repo-root rule (${mungedRepo}) must strictly extend the munged home rule (${mungedHome})`);
+  // Block 4 — the bare account name is LAST and word-bounded, so every
+  // path-shaped rule consumes its copies of the name before this net sees
+  // what is left; earlier, it would turn `/Users/testuser/...` into
+  // `/Users/user/...` and the literal rules would no longer match.
+  assert.equal(RULES.length, 7, "expected 3 literals + net + 2 munged + account name");
   const last = RULES[RULES.length - 1].re.source;
-  assert.ok(last.includes("[^"), `the generic /Users/ net must be last, found: ${last}`);
+  assert.ok(last.startsWith("\\b") && last.endsWith("\\b"),
+    `the bare account-name rule must be last and word-bounded, found: ${last}`);
 });
 
 test("scrubbing is idempotent", () => {
@@ -336,4 +354,43 @@ test("the frozen corpus is already clean and the rules are a no-op on it", () =>
     assert.equal(scrubText(text, rules), text,
       `${n} would be modified by the scrub — the corpus must already be final`);
   }
+});
+
+// ---- the two costume shapes (2026-07-31, first full-bundle publication) ----
+//
+// Found by publishing, not by review: the first evidence bundles committed to
+// examples/ passed --check ("no host paths") while still carrying the machine
+// identity twice — in Claude Code's dash-munged config-dir name, where no "/"
+// survives for the path rules to see, and in `ls -l` owner columns, where the
+// account name appears with no path anywhere near it. The munged literals
+// below are split like the `/Users/` heads above and for the same reason:
+// this file is published through the substitution it tests.
+
+test("the dash-munged config-dir form of the repo root is rewritten", () => {
+  const munged = `-${"Users"}-testuser-Desktop-demo-console`;
+  assert.equal(scrub(`projects/${munged}/settings.json`), "projects/-repo/settings.json");
+});
+
+test("the dash-munged home form survives with its suffix when the repo differs", () => {
+  const munged = `-${"Users"}-testuser-Desktop-other-proj`;
+  assert.equal(scrub(`projects/${munged}`), "projects/-home-user-Desktop-other-proj");
+});
+
+test("the account name in ls -l owner position is rewritten", () => {
+  assert.equal(scrub("drwxr-xr-x@ 7 testuser  staff   224 Jul 31 15:31 ."),
+    "drwxr-xr-x@ 7 user  staff   224 Jul 31 15:31 .");
+});
+
+test("the account rule is word-bounded — never fires inside a longer token", () => {
+  assert.equal(scrub("testuser123 and untestuser stay"), "testuser123 and untestuser stay");
+});
+
+test("hostPathHits flags the dash-munged form on any machine", () => {
+  const s = `ls projects/-${"Users"}-alice-Desktop-thing`;
+  assert.deepEqual(hostPathHits(s, { account: "nobody-here" }), [`-${"Users"}-alice-Desktop-thing`]);
+});
+
+test("hostPathHits flags the bare account name it is told to look for", () => {
+  assert.ok(hostPathHits("-rw-r--r-- 1 alice  staff  395", { account: "alice" }).includes("alice"));
+  assert.equal(hostPathHits("-rw-r--r-- 1 alice  staff", { account: "bob" }).length, 0);
 });

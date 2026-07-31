@@ -1,0 +1,17 @@
+
+> service-web-scaffold@0.1.0 test /app
+> vitest run
+
+
+ RUN  v2.1.9 /app
+
+ ✓ test/modules/kudos/kudos.service.spec.ts (9 tests) 14ms
+ ✓ test/platform/chassis.test.ts (3 tests) 5ms
+ ✓ test/modules/kudos/kudos.registration.spec.ts (2 tests) 15ms
+
+ Test Files  3 passed (3)
+      Tests  14 passed (14)
+   Start at  10:03:18
+   Duration  1.79s (transform 510ms, setup 0ms, collect 1.91s, tests 34ms, environment 1ms, prepare 366ms)
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m

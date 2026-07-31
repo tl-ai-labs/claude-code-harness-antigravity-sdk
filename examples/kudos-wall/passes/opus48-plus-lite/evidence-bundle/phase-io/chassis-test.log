@@ -1,0 +1,15 @@
+
+> service-web-scaffold@0.1.0 test /app
+> vitest run
+
+
+ RUN  v2.1.9 /app
+
+ ✓ test/platform/chassis.test.ts (3 tests) 4ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  09:54:59
+   Duration  817ms (transform 115ms, setup 0ms, collect 357ms, tests 4ms, environment 0ms, prepare 166ms)
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
